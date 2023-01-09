@@ -1,10 +1,9 @@
-﻿using System;
+using System;
 using System.Net.Http;
 using Newtonsoft.Json.Linq;
 
-
-
 //Mock CPH
+
 public class CPHmock
 {
     private string currentScene = "RocksmithBigCam";
@@ -19,6 +18,21 @@ public class CPHmock
     public string ObsGetCurrentScene() { return currentScene; }
 
     public void SendMessage(string str) { Console.WriteLine(str); }
+
+    public string GetGlobalVar<Type>(string key)
+    {
+        string value = "";
+        if (key.Equals("snifferIP")) value = "192.168.1.37";
+        if (key.Equals("snifferPort")) value = "9938";
+        if (key.Equals("songScene")) value = "RocksmithBigCamInGame";
+        if (key.Equals("rocksmithScene")) value = "RocksmithBigCam";
+        if (key.Equals("pauseScene")) value = "RocksmithBigCam";
+
+
+
+        return value;
+
+    }
 
     public static void Main(string[] args )
     { 
@@ -48,8 +62,8 @@ public class CPHInline
         , InTuner
     }
 
-    private string SnifferIp;
-    private string SnifferPort;
+    private string snifferIp;
+    private string snifferPort;
     private string songID;
     private string arrangementID;
     private GameStage currentGameStage;
@@ -59,10 +73,11 @@ public class CPHInline
     private double accuracy;
     private int currentHitStreak;
 
-    private string RocksmithScene;
-    private string SongScene;
-    private string SongPausedScene;
-
+    private string rocksmithScene;
+    private string songScene;
+    private string songPausedScene;
+	private string currentScene;
+	
     private HttpClient client;
     private HttpResponseMessage response;
     private string responseString;
@@ -109,17 +124,24 @@ public class CPHInline
     public void Init()
     {
 
-        //Those will later be moved to external arguments
-        SnifferIp = "192.168.1.37";
-        SnifferPort = "9938";
-        RocksmithScene = "RocksmithBigCam";
-        SongScene = "RocksmithBigCamInGame";
-        SongPausedScene = RocksmithScene;
+        //Init happens before arguments are passed, therefore temporary globals are used.
+        snifferIp = CPH.GetGlobalVar<string>("snifferIP").Replace('"',' ').Trim();//"192.168.1.37";
+        verboseLog(string.Format("Initialized sniffer ip as {0}",snifferIp));
+		snifferPort = "9938";
+		verboseLog(string.Format("Initialized sniffer port as {0}",snifferPort));
+        rocksmithScene = CPH.GetGlobalVar<string>("rocksmithScene");
+		verboseLog(string.Format("Initialized Rocksmith scene as {0}",rocksmithScene));
+        songScene = CPH.GetGlobalVar<string>("songScene");
+		verboseLog(string.Format("Initialized song scene as {0}",songScene));
+        songPausedScene = CPH.GetGlobalVar<string>("pauseScene");
+		verboseLog(string.Format("Initialized pause scene as {0}",songPausedScene));
+
         lastSceneChange = DateTime.Now;
         minDelay = 3;
         verboseLog("Initialising sniffer");
         client = new HttpClient();
         if (client == null) debug("Failed instantiating HttpClient");
+		currentScene = "";
     }
 
     private bool getLatestResponse()
@@ -127,7 +149,7 @@ public class CPHInline
         bool success;
         try
         {
-            string address = string.Format("http://{0}:{1}", SnifferIp, SnifferPort);
+            string address = string.Format("http://{0}:{1}", snifferIp, snifferPort);
             verboseLog(string.Format("Trying to fetch latest response from {0}", address));
             response = client.GetAsync(address).GetAwaiter().GetResult();
             if (response != null)
@@ -157,9 +179,14 @@ public class CPHInline
 
     private bool isRelevantScene()
     {
-        //Not sure I need/Want this
-        bool isRelevant = true;
-
+        bool isRelevant = false;
+		currentScene = CPH.ObsGetCurrentScene();
+		if (currentScene.Equals(rocksmithScene)
+		|| currentScene.Equals(songScene)
+		|| currentScene.Equals(songPausedScene))
+		{
+			isRelevant = true;
+		}
         return isRelevant;
     }
 
@@ -221,13 +248,12 @@ public class CPHInline
 
     private void performSceneSwitchIfNecessary()
     {
-        string currentScene = CPH.ObsGetCurrentScene();
         verboseLog(string.Format("Currently in scene {0}", currentScene));
 
         if (currentGameStage == GameStage.InSong)
         {
             verboseLog("Current game stage in song");
-            if (currentScene.Equals(RocksmithScene))
+            if (currentScene.Equals(rocksmithScene))
             {
                 verboseLog("Current scene is the Rocksmith scene");
                 if (!currentSongTimer.Equals(lastSongTimer))
@@ -235,8 +261,8 @@ public class CPHInline
                     verboseLog("Song timer has changed");
                     if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
                     {
-                        verboseLog(string.Format("Switching to {0}", SongScene));
-                        CPH.ObsSetScene(SongScene);
+                        verboseLog(string.Format("Switching to {0}", songScene));
+                        CPH.ObsSetScene(songScene);
                         lastSceneChange = DateTime.Now;
                     }
                 }
@@ -245,13 +271,13 @@ public class CPHInline
                     //Already in correct scene
                 }
             }
-            else if (currentScene.Equals(SongScene))
+            else if (currentScene.Equals(songScene))
             {
                 verboseLog("Current scene is song scene");
                 if (currentSongTimer.Equals(lastSongTimer))
                     if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
                     {
-                        CPH.ObsSetScene(SongPausedScene);
+                        CPH.ObsSetScene(songPausedScene);
                         lastSceneChange = DateTime.Now;
                     }
 
@@ -260,12 +286,12 @@ public class CPHInline
         else if (currentGameStage == GameStage.Menu)
         {
             verboseLog("Currently in game stage menu");
-            if (!currentScene.Equals(RocksmithScene))
+            if (!currentScene.Equals(rocksmithScene))
             {
-                verboseLog(string.Format("Switching scene from {0} to {1}",currentScene,RocksmithScene));
+                verboseLog(string.Format("Switching scene from {0} to {1}",currentScene, rocksmithScene));
                 if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
                 {
-                    CPH.ObsSetScene(RocksmithScene);
+                    CPH.ObsSetScene(rocksmithScene);
                     lastSceneChange = DateTime.Now;
                 }
             }
@@ -286,7 +312,6 @@ public class CPHInline
                 parseLatestResponse();
                 verboseLog("Performing necessary switches");
                 performSceneSwitchIfNecessary();
-
             }
             else
             {
@@ -298,9 +323,3 @@ public class CPHInline
         return true;
     }
 }
-
-
-
-
-
-
