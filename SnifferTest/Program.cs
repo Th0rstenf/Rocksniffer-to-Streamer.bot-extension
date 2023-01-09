@@ -30,7 +30,7 @@ public class CPHmock
         {   
             Console.Clear();
             obj.Execute();
-            Thread.Sleep(5000);
+            Thread.Sleep(1000);
         }
     }
 
@@ -72,18 +72,20 @@ public class CPHInline
 
     private CPHmock CPH = new CPHmock();
 
-    bool LogToChat = false;
+    bool doLogToChat = false;
+    // Disabling regular verbose request as they really bloat the log file rather quickly. Can be enabled if need be
+    bool doLogVerbose = false;
 
     void debug(string str)
     {
-        if (LogToChat) CPH.SendMessage(str);
+        if (doLogToChat) CPH.SendMessage(str);
         CPH.LogDebug(str);
     }
 
     void verboseLog(string str)
     {
-        if (LogToChat) CPH.SendMessage(str);
-        CPH.LogVerbose(str);
+        if (doLogToChat) CPH.SendMessage(str);
+        if (doLogVerbose) CPH.LogVerbose(str);
     }
 
     private GameStage evalGameStage(string stage)
@@ -165,6 +167,7 @@ public class CPHInline
     {
         verboseLog("Calling Parse()");
         var obj = JObject.Parse(responseString)["memoryReadout"];
+        var songDetails = JObject.Parse(responseString)["songDetails"];
         if (obj == null) debug("Could not parse MemoryReadout");
         if (obj != null)
         {
@@ -200,7 +203,7 @@ public class CPHInline
             else verboseLog("Song id: " + songID);
             if (arrangementID == null) debug("Failed parsing arrangement ID");
 
-            var songDetails = obj["songDetails"];
+
             if (songDetails == null) { CPH.LogDebug("Songdetails not found. New sniffer version?"); }
             else
             {
