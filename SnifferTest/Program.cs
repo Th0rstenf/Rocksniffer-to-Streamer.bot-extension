@@ -7,15 +7,16 @@ using Newtonsoft.Json.Linq;
 //Mock CPH
 public class CPHmock
 {
+    private string currentScene = "RocksmithBigCam";
     public void LogDebug(string str) { Console.WriteLine(str); }
     public void LogInfo(string str) { Console.WriteLine(str); }
     public void LogError(string str) { Console.WriteLine(str); }
 
     public void LogVerbose(string str) { Console.WriteLine(str); }
 
-    public void ObsSetScene(string str) { Console.WriteLine(str); }
+    public void ObsSetScene(string str) { Console.WriteLine(string.Format("Setting scene: {0}", str)); currentScene = str; }
 
-    public string ObsGetCurrentScene() { return "RockSmithBigCam"; }
+    public string ObsGetCurrentScene() { return currentScene; }
 
     public void SendMessage(string str) { Console.WriteLine(str); }
 
@@ -26,7 +27,8 @@ public class CPHmock
         obj.Init();
 
         while (true)
-        {
+        {   
+            Console.Clear();
             obj.Execute();
             Thread.Sleep(5000);
         }
@@ -173,31 +175,40 @@ public class CPHInline
             currentGameStage = evalGameStage(obj["gameStage"].ToString());
             currentSongTimer = double.Parse(obj["songTimer"].ToString());
 
-            //No matter if i check for null or HasValues, i always run into an exception?
-              
-            if (obj["noteData"] != null)
+            //var noteData = JObject.Parse(obj.ToString())["noteData"];
+            var noteData = obj["noteData"];
+            if (noteData == null)
             {
-                var noteData = JObject.Parse(obj.ToString())["noteData"];
-                accuracy = double.Parse(noteData["Accuracy"].ToString());
-                currentHitStreak = int.Parse(noteData["currentHitStreak"].ToString());
+                CPH.LogDebug("noteData node not found. New sniffer version?");
             }
             else
             {
-                accuracy = 0.0;
-                currentHitStreak = 0;
+                if (noteData.HasValues)
+                {
+                    verboseLog("Fetching Accurary and streak");
+                    accuracy = double.Parse(noteData["Accuracy"].ToString());
+                    currentHitStreak = int.Parse(noteData["CurrentHitStreak"].ToString());
+                }
+                else
+                {
+                    verboseLog("No note data available");
+                    accuracy = 0.0;
+                    currentHitStreak = 0;
+                }
             }
-            
             if (songID == null) debug("Failed parsing song ID");
             else verboseLog("Song id: " + songID);
             if (arrangementID == null) debug("Failed parsing arrangement ID");
-            if (currentGameStage == null) debug("Failed parsing game stage");
 
-            
-            if (obj["songDetails"].HasValues)
+            var songDetails = obj["songDetails"];
+            if (songDetails == null) { CPH.LogDebug("Songdetails not found. New sniffer version?"); }
+            else
             {
-                //Here we can readout current song information to post in chat, or deliver uppon command
+                if (songDetails.HasValues)
+                {
+                    //Here we can readout current song information to post in chat, or deliver uppon command
+                }
             }
-
         }
         else
         {
@@ -245,8 +256,10 @@ public class CPHInline
         }
         else if (currentGameStage == GameStage.Menu)
         {
+            verboseLog("Currently in game stage menu");
             if (!currentScene.Equals(RocksmithScene))
             {
+                verboseLog(string.Format("Switching scene from {0} to {1}",currentScene,RocksmithScene));
                 if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
                 {
                     CPH.ObsSetScene(RocksmithScene);
