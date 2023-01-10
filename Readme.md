@@ -50,6 +50,7 @@ This project is licensed under the MIT License - see the LICENSE.txt file for de
 
 * [awesome-readme](https://github.com/matiassingers/awesome-readme)
 <<<<<<< HEAD
+<<<<<<< HEAD
 * [Warths Scene Switcher](https://github.com/Warths/Rocksmith-Scene-Switcher)
 =======
 * [PurpleBooth](https://gist.github.com/PurpleBooth/109311bb0361f32d87a2)
@@ -57,3 +58,6 @@ This project is licensed under the MIT License - see the LICENSE.txt file for de
 * [zenorocha](https://gist.github.com/zenorocha/4526327)
 * [fvcproductions](https://gist.github.com/fvcproductions/1bfc2d4aecb01a834b46)
 >>>>>>> f311754 (Updated license information. Added Readme)
+=======
+* [Warths Scene Switcher](https://github.com/Warths/Rocksmith-Scene-Switcher)
+>>>>>>> 943cb3e (Update Readme.md)
