@@ -4,7 +4,7 @@ A [streamer.bot](https://streamer.bot) implementation to replace Warth's SceneSw
 
 ## Description
 
-This code fetches the output of Rocksniffer and evaluates game state and song timer. 
+This code fetches the output of Rocksniffer and evaluates game state and song timer. Depending on the state it switches to the scenes defined in global variables for Rocksmith, song, and break (pausing during a song)
 
 ## Getting Started
 
