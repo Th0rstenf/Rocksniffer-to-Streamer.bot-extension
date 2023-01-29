@@ -140,6 +140,8 @@ public class CPHInline
 
     private GameStage currentGameStage;
     private GameStage lastGameStage;
+    private SectionType currentSectionType;
+    private SectionType lastSectionType;
     private double currentSongTimer;
     private double lastSongTimer;
 
@@ -225,6 +227,7 @@ public class CPHInline
 		currentScene = "";
         
         currentSectionIndex = -1;
+        lastSectionType = currentSectionType = SectionType.Default;
     }
 
     private bool getLatestResponse()
@@ -302,6 +305,25 @@ public class CPHInline
         }
     }
 
+    private void identifySection()
+    {
+        if (currentArrangement != null)
+        {
+            string name = currentArrangement.Sections[currentSectionIndex].Name;
+            if (name.ToLower().Contains("solo")) { currentSectionType = SectionType.Solo; }
+            else if (name.ToLower().Contains("riff")) { currentSectionType = SectionType.Riff; }
+            else if (name.ToLower().Contains("bridge")) { currentSectionType = SectionType.Brigde; }
+            else if (name.ToLower().Contains("breakdown")) { currentSectionType = SectionType.Breakdown; }
+            else if (name.ToLower().Contains("chorus")) { currentSectionType = SectionType.Chorus; }
+            else if (name.ToLower().Contains("verse")) { currentSectionType = SectionType.Verse; }
+            else { currentSectionType = SectionType.Default; }
+        }
+        else
+        { 
+            currentSectionType = SectionType.Default; 
+        }
+    }
+
     private void performSceneSwitchIfNecessary()
     {
         verboseLog(string.Format("Currently in scene {0}", currentScene));
@@ -365,11 +387,13 @@ public class CPHInline
     {
         if (currentArrangement != null)
         {
+            bool hasSectionChanged = false;
             if (currentSectionIndex == -1)
             {
                 if (currentSongTimer >= currentArrangement.Sections[0].StartTime)
                 {
                     currentSectionIndex = 0;
+                    hasSectionChanged = true;
                 }
             }
             else
@@ -377,7 +401,16 @@ public class CPHInline
                 // Check if entered a new section
                 if (currentSongTimer >= currentArrangement.Sections[currentSectionIndex].EndTime)
                 {
-                    verboseLog(string.Format("Now entering Section: {0}", currentArrangement.Sections[++currentSectionIndex].Name));
+                    hasSectionChanged = true;
+                }
+            }
+            if (hasSectionChanged)
+            {
+                if (currentSectionType != lastSectionType)
+                {
+                    CPH.RunAction(string.Format("leave{0}", lastSectionType));
+                    CPH.RunAction(string.Format("enter{0}", currentSectionType));
+                    lastSectionType = currentSectionType;
                 }
             }
         }
