@@ -21,6 +21,8 @@ public class CPHmock
 
     public void SendMessage(string str) { Console.WriteLine(str); }
 
+    public void RunAction(string str) { Console.WriteLine(string.Format("Running action: {0}",str)); }
+
     public string GetGlobalVar<Type>(string key)
     {
         string value = "";
@@ -59,13 +61,13 @@ public class CPHmock
 record MemoryReadout
 {
     [JsonRequired]
-    public string SongId { get; set; }
+    public string SongId { get; set; } = null!;
     [JsonRequired]
-    public string ArrangementId { get; set; }
+    public string ArrangementId { get; set; } = null!;
     [JsonRequired]
-    public string GameStage { get; set; }
+    public string GameStage { get; set; } = null!;
     public double SongTimer { get; set; }
-    public NoteData NoteData { get; set; }
+    public NoteData NoteData { get; set; } = null!;
 }
 record NoteData
 {
@@ -74,40 +76,40 @@ record NoteData
 }
 record SongDetails
 {
-    public string SongName { get; set; } 
-    public string ArtistName { get; set; } 
+    public string SongName { get; set; } = null!;
+    public string ArtistName { get; set; } = null!;
     public double SongLength { get; set; }
-    public string AlbumName { get; set; }
+    public string AlbumName { get; set; } = null!;
     public int AlbumYear { get; set; }
-    public Arrangement[] Arrangements { get; set; }
-    
+    public Arrangement[] Arrangements { get; set; } = null!;
+
 }
 
 
 record Arrangement
 {
-    public string Name { get; set; }
-    public string ArrangementID { get; set; }
-    public string type { get; set; }
-    public Tuning Tuning { get; set; }
+    public string Name { get; set; } = null!;
+    public string ArrangementID { get; set; } = null!;
+    public string type { get; set; } = null!;
+    public Tuning Tuning { get; set; } = null!;
 
-    public Section[] Sections { get; set; }
+    public Section[] Sections { get; set; } = null!;
 }
 record Tuning
 {
-    public string TuningName { get; set; }
+    public string TuningName { get; set; } = null!;
 }
 
 record Section
 {
-    public string Name { get; set; }
+    public string Name { get; set; } = null!;
     public double StartTime { get; set; }
     public double EndTime { get; set; }
 }
 record Response
 {
-    public MemoryReadout MemoryReadout { get; set; }
-    public SongDetails SongDetails { get; set; }
+    public MemoryReadout MemoryReadout { get; set; } = null!;
+    public SongDetails SongDetails { get; set; } = null!;
 }
 
 //Implementation for Streamer.bot
@@ -132,8 +134,8 @@ public class CPHInline
         ,Breakdown
     }
 
-    private string snifferIp;
-    private string snifferPort;
+    private string snifferIp = null!;
+    private string snifferPort = null!;
 
 
     private GameStage currentGameStage;
@@ -141,20 +143,20 @@ public class CPHInline
     private double currentSongTimer;
     private double lastSongTimer;
 
-    private Arrangement currentArrangement;
+    private Arrangement? currentArrangement = null!;
     private int currentSectionIndex;
    
     //Split into memory details and SongDetails, as it is only necessary to parse the latter once
-    private Response lastResponse;
+    private Response lastResponse = null!;
 
-    private string rocksmithScene;
-    private string songScene;
-    private string songPausedScene;
-	private string currentScene;
+    private string rocksmithScene = null!;
+    private string songScene = null!;
+    private string songPausedScene = null!;
+	private string currentScene = null!;
 	
-    private HttpClient client;
-    private HttpResponseMessage response;
-    private string responseString;
+    private HttpClient client = null!;
+    private HttpResponseMessage response = null!;
+    private string responseString = null!;
 
     private DateTime lastSceneChange;
     private int minDelay;
@@ -221,7 +223,7 @@ public class CPHInline
         client = new HttpClient();
         if (client == null) debug("Failed instantiating HttpClient");
 		currentScene = "";
-        currentArrangement = null;
+        
         currentSectionIndex = -1;
     }
 
@@ -275,10 +277,9 @@ public class CPHInline
     {
         try
         {
-            lastResponse = JsonConvert.DeserializeObject<Response>(responseString);
+            lastResponse = JsonConvert.DeserializeObject<Response>(responseString) ?? throw new Exception("Is never supposed to be zero");
             currentGameStage = evalGameStage(lastResponse.MemoryReadout.GameStage);
             currentSongTimer = lastResponse.MemoryReadout.SongTimer;
-
         }
         catch (System.Text.Json.JsonException ex)
         {
