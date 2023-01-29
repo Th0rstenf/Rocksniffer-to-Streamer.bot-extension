@@ -64,7 +64,7 @@ record MemoryReadout
     public string ArrangementId { get; set; }
     [JsonRequired]
     public string GameStage { get; set; }
-    public string SongTimer { get; set; }
+    public double SongTimer { get; set; }
     public NoteData NoteData { get; set; }
 }
 record NoteData
@@ -79,9 +79,9 @@ record SongDetails
     public double SongLength { get; set; }
     public string AlbumName { get; set; }
     public int AlbumYear { get; set; }
-    public Arrangement[] Arrangements { get; set; }  
+    public Arrangement[] Arrangements { get; set; }
+    
 }
-
 
 
 record Arrangement
@@ -91,6 +91,7 @@ record Arrangement
     public string type { get; set; }
     public Tuning Tuning { get; set; }
 
+    public Section[] Sections { get; set; }
 }
 record Tuning
 {
@@ -120,23 +121,30 @@ public class CPHInline
         , InTuner
     }
 
+    enum SectionType
+    {
+        Default
+        ,Riff
+        ,Solo
+        ,Verse
+        ,Chorus
+        ,Brigde
+        ,Breakdown
+    }
+
     private string snifferIp;
     private string snifferPort;
-    private string songID;
-    private string arrangementID;
-    /// <summary>
-    /// /////////////////////////////////////////////
-    /// </summary>
+
+
     private GameStage currentGameStage;
     private GameStage lastGameStage;
     private double currentSongTimer;
     private double lastSongTimer;
-    private double accuracy;
-    private int currentHitStreak;
-    /// <summary>
-    /// ///////////////////////////////////////////////
-    /// </summary>
-    /// 
+
+    private Arrangement currentArrangement;
+    private int currentSectionIndex;
+   
+    //Split into memory details and SongDetails, as it is only necessary to parse the latter once
     private Response lastResponse;
 
     private string rocksmithScene;
@@ -180,6 +188,10 @@ public class CPHInline
             verboseLog("Evaluated as InSong");
             currentStage = GameStage.InSong;
         }
+        else if (stage.Equals("las_tuner"))
+        {
+            currentStage = GameStage.InTuner;
+        }
         else
         {
             verboseLog("Evaluated as Menu");
@@ -209,6 +221,8 @@ public class CPHInline
         client = new HttpClient();
         if (client == null) debug("Failed instantiating HttpClient");
 		currentScene = "";
+        currentArrangement = null;
+        currentSectionIndex = -1;
     }
 
     private bool getLatestResponse()
@@ -257,72 +271,33 @@ public class CPHInline
         return isRelevant;
     }
 
-    private Response parseLatestResponse2()
+    private void parseLatestResponse()
     {
         try
         {
-            return JsonConvert.DeserializeObject<Response>(responseString);
+            lastResponse = JsonConvert.DeserializeObject<Response>(responseString);
+            currentGameStage = evalGameStage(lastResponse.MemoryReadout.GameStage);
+            currentSongTimer = lastResponse.MemoryReadout.SongTimer;
+
         }
         catch (System.Text.Json.JsonException ex)
         {
             debug("Error parsing response: " + ex.Message);
         }
-        return null;
+        
     }
 
-    private void parseLatestResponse()
+    private void identifyArrangement()
     {
-        verboseLog("Calling Parse()");
-        var obj = JObject.Parse(responseString)["memoryReadout"];
-        var songDetails = JObject.Parse(responseString)["songDetails"];
-        if (obj == null) debug("Could not parse MemoryReadout");
-        if (obj != null)
+        currentArrangement = null;
+        currentSectionIndex = -1;
+        foreach (Arrangement arr in lastResponse.SongDetails.Arrangements)
         {
-            verboseLog("Successfully parsed memoryReadout");
-            songID = obj["songID"].ToString();
-
-            arrangementID = obj["arrangementID"].ToString();
-            currentGameStage = evalGameStage(obj["gameStage"].ToString());
-            currentSongTimer = double.Parse(obj["songTimer"].ToString());
-
-            //var noteData = JObject.Parse(obj.ToString())["noteData"];
-            var noteData = obj["noteData"];
-            if (noteData == null)
+            if (arr.ArrangementID == lastResponse.MemoryReadout.ArrangementId)
             {
-                CPH.LogDebug("noteData node not found. New sniffer version?");
+                currentArrangement = arr;
+                break;
             }
-            else
-            {
-                if (noteData.HasValues)
-                {
-                    verboseLog("Fetching Accurary and streak");
-                    accuracy = double.Parse(noteData["Accuracy"].ToString());
-                    currentHitStreak = int.Parse(noteData["CurrentHitStreak"].ToString());
-                }
-                else
-                {
-                    verboseLog("No note data available");
-                    accuracy = 0.0;
-                    currentHitStreak = 0;
-                }
-            }
-            if (songID == null) debug("Failed parsing song ID");
-            else verboseLog("Song id: " + songID);
-            if (arrangementID == null) debug("Failed parsing arrangement ID");
-
-
-            if (songDetails == null) { CPH.LogDebug("Songdetails not found. New sniffer version?"); }
-            else
-            {
-                if (songDetails.HasValues)
-                {
-                    //Here we can readout current song information to post in chat, or deliver uppon command
-                }
-            }
-        }
-        else
-        {
-            debug("Could not parse response.");
         }
     }
 
@@ -332,11 +307,16 @@ public class CPHInline
 
         if (currentGameStage == GameStage.InSong)
         {
+            if (lastGameStage == GameStage.InTuner)
+            {
+                identifyArrangement();
+            }
+
             verboseLog("Current game stage in song");
             if (currentScene.Equals(rocksmithScene))
             {
                 verboseLog("Current scene is the Rocksmith scene");
-                if (!currentSongTimer.Equals(lastSongTimer))
+                if (!lastResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
                 {
                     verboseLog("Song timer has changed");
                     if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
@@ -354,7 +334,7 @@ public class CPHInline
             else if (currentScene.Equals(songScene))
             {
                 verboseLog("Current scene is song scene");
-                if (currentSongTimer.Equals(lastSongTimer))
+                if (lastResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
                     if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
                     {
                         CPH.ObsSetScene(songPausedScene);
@@ -377,7 +357,29 @@ public class CPHInline
             }
         }
         lastGameStage = currentGameStage;
-        lastSongTimer = currentSongTimer;
+        lastSongTimer = lastResponse.MemoryReadout.SongTimer;
+    }
+
+    private void checkSectionActions()
+    {
+        if (currentArrangement != null)
+        {
+            if (currentSectionIndex == -1)
+            {
+                if (currentSongTimer >= currentArrangement.Sections[0].StartTime)
+                {
+                    currentSectionIndex = 0;
+                }
+            }
+            else
+            {
+                // Check if entered a new section
+                if (currentSongTimer >= currentArrangement.Sections[currentSectionIndex].EndTime)
+                {
+                    verboseLog(string.Format("Now entering Section: {0}", currentArrangement.Sections[++currentSectionIndex].Name));
+                }
+            }
+        }
     }
 
     public bool Execute()
@@ -390,9 +392,9 @@ public class CPHInline
             {
                 verboseLog("Now Parsing response");
                 parseLatestResponse();
-                lastResponse = parseLatestResponse2();
                 verboseLog("Performing necessary switches");
                 performSceneSwitchIfNecessary();
+                checkSectionActions();
             }
             else
             {
