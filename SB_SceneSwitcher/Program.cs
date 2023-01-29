@@ -1,5 +1,7 @@
 using System;
 using System.Net.Http;
+//using System.Text.Json;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 //Mock CPH
@@ -51,8 +53,64 @@ public class CPHmock
 }
 
 
+// Objects for parsing the song data
+// 
+
+record MemoryReadout
+{
+    [JsonRequired]
+    public string SongId { get; set; }
+    [JsonRequired]
+    public string ArrangementId { get; set; }
+    [JsonRequired]
+    public string GameStage { get; set; }
+    public string SongTimer { get; set; }
+    public NoteData NoteData { get; set; }
+}
+record NoteData
+{
+    public double Accuracy { get; set; }
+    public int CurrentHitStreak { get; set; }
+}
+record SongDetails
+{
+    public string SongName { get; set; } 
+    public string ArtistName { get; set; } 
+    public double SongLength { get; set; }
+    public string AlbumName { get; set; }
+    public int AlbumYear { get; set; }
+    public Arrangement[] Arrangements { get; set; }  
+}
+
+
+
+record Arrangement
+{
+    public string Name { get; set; }
+    public string ArrangementID { get; set; }
+    public string type { get; set; }
+    public Tuning Tuning { get; set; }
+
+}
+record Tuning
+{
+    public string TuningName { get; set; }
+}
+
+record Section
+{
+    public string Name { get; set; }
+    public double StartTime { get; set; }
+    public double EndTime { get; set; }
+}
+record Response
+{
+    public MemoryReadout MemoryReadout { get; set; }
+    public SongDetails SongDetails { get; set; }
+}
+
 //Implementation for Streamer.bot
- 
+
 public class CPHInline
 {
     enum GameStage
@@ -66,12 +124,20 @@ public class CPHInline
     private string snifferPort;
     private string songID;
     private string arrangementID;
+    /// <summary>
+    /// /////////////////////////////////////////////
+    /// </summary>
     private GameStage currentGameStage;
     private GameStage lastGameStage;
     private double currentSongTimer;
     private double lastSongTimer;
     private double accuracy;
     private int currentHitStreak;
+    /// <summary>
+    /// ///////////////////////////////////////////////
+    /// </summary>
+    /// 
+    private Response lastResponse;
 
     private string rocksmithScene;
     private string songScene;
@@ -85,6 +151,7 @@ public class CPHInline
     private DateTime lastSceneChange;
     private int minDelay;
 
+    //Needs to be commented out in streamer bot.
     private CPHmock CPH = new CPHmock();
 
     bool doLogToChat = false;
@@ -188,6 +255,19 @@ public class CPHInline
 			isRelevant = true;
 		}
         return isRelevant;
+    }
+
+    private Response parseLatestResponse2()
+    {
+        try
+        {
+            return JsonConvert.DeserializeObject<Response>(responseString);
+        }
+        catch (System.Text.Json.JsonException ex)
+        {
+            debug("Error parsing response: " + ex.Message);
+        }
+        return null;
     }
 
     private void parseLatestResponse()
@@ -310,6 +390,7 @@ public class CPHInline
             {
                 verboseLog("Now Parsing response");
                 parseLatestResponse();
+                lastResponse = parseLatestResponse2();
                 verboseLog("Performing necessary switches");
                 performSceneSwitchIfNecessary();
             }
