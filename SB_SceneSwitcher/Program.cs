@@ -408,8 +408,8 @@ public class CPHInline
             {
                 if (currentSectionType != lastSectionType)
                 {
-                    CPH.RunAction(string.Format("leave{0}", lastSectionType));
-                    CPH.RunAction(string.Format("enter{0}", currentSectionType));
+                    CPH.RunAction(string.Format("leave{0}", Enum.GetName(typeof(SectionType),lastSectionType)));
+                    CPH.RunAction(string.Format("enter{0}", Enum.GetName(typeof(SectionType),currentSectionType)));
                     lastSectionType = currentSectionType;
                 }
             }
