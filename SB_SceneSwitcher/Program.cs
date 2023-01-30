@@ -19,7 +19,7 @@ public class CPHmock
 
     public string ObsGetCurrentScene() { return currentScene; }
 	
-    public void ObsSetGdiText(string scene, string source, string text, int source =0){}
+    public void ObsSetGdiText(string scene, string source, string text, int connection =0){ Console.WriteLine(string.Format("Setting text field {1} in scene {0} to {2}", scene, source, text)); }
     
     public void SendMessage(string str) { Console.WriteLine(str); }
 
@@ -45,10 +45,10 @@ public class CPHmock
         CPHInline obj = new CPHInline();
 
         obj.Init();
-
+        int i = 0;
         while (true)
         {   
-            Console.Clear();
+            if (((++i) % 10) == 0) Console.Clear();
             obj.Execute();
             Thread.Sleep(1000);
         }
@@ -166,7 +166,7 @@ public class CPHInline
     private int minDelay;
 
     //Needs to be commented out in streamer bot.
-    //private CPHmock CPH = new CPHmock();
+    private CPHmock CPH = new CPHmock();
 
     bool doLogToChat = false;
     // Disabling regular verbose request as they really bloat the log file rather quickly. Can be enabled if need be
