@@ -284,7 +284,7 @@ public class CPHInline
             currentGameStage = evalGameStage(lastResponse.MemoryReadout.GameStage);
             currentSongTimer = lastResponse.MemoryReadout.SongTimer;
         }
-        catch (System.Text.Json.JsonException ex)
+        catch (JsonException ex)
         {
             debug("Error parsing response: " + ex.Message);
         }
