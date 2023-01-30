@@ -376,7 +376,6 @@ public class CPHInline
                         CPH.ObsSetScene(songPausedScene);
                         lastSceneChange = DateTime.Now;
                     }
-
             }
         }
         else if (currentGameStage == GameStage.Menu)
