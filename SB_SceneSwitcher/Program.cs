@@ -18,7 +18,9 @@ public class CPHmock
     public void ObsSetScene(string str) { Console.WriteLine(string.Format("Setting scene: {0}", str)); currentScene = str; }
 
     public string ObsGetCurrentScene() { return currentScene; }
-
+	
+    public void ObsSetGdiText(string scene, string source, string text, int source =0){}
+    
     public void SendMessage(string str) { Console.WriteLine(str); }
 
     public void RunAction(string str) { Console.WriteLine(string.Format("Running action: {0}",str)); }
@@ -164,7 +166,7 @@ public class CPHInline
     private int minDelay;
 
     //Needs to be commented out in streamer bot.
-    private CPHmock CPH = new CPHmock();
+    //private CPHmock CPH = new CPHmock();
 
     bool doLogToChat = false;
     // Disabling regular verbose request as they really bloat the log file rather quickly. Can be enabled if need be
@@ -267,6 +269,7 @@ public class CPHInline
     {
         bool isRelevant = false;
 		currentScene = CPH.ObsGetCurrentScene();
+		if (currentScene != null)
 		if (currentScene.Equals(rocksmithScene)
 		|| currentScene.Equals(songScene)
 		|| currentScene.Equals(songPausedScene))
@@ -284,7 +287,7 @@ public class CPHInline
             currentGameStage = evalGameStage(lastResponse.MemoryReadout.GameStage);
             currentSongTimer = lastResponse.MemoryReadout.SongTimer;
         }
-        catch (System.Text.Json.JsonException ex)
+        catch (JsonException ex)
         {
             debug("Error parsing response: " + ex.Message);
         }
@@ -301,7 +304,8 @@ public class CPHInline
             {
                 if (arr.ArrangementID == lastResponse.MemoryReadout.ArrangementId)
                 {
-                    currentArrangement = arr;
+                    CPH.SendMessage("Identified arrangement");
+					currentArrangement = arr;
                     break;
                 }
             }
@@ -409,8 +413,10 @@ public class CPHInline
             }
             if (hasSectionChanged)
             {
-                identifySection();
-                if (currentSectionType != lastSectionType)
+				identifySection();
+				//TODO: Should only happen if I execute it
+				CPH.ObsSetGdiText("Projection(RS)","textSectionName",currentArrangement.Sections[currentSectionIndex].Name);
+				if (currentSectionType != lastSectionType)
                 {
                     CPH.RunAction(string.Format("leave{0}", Enum.GetName(typeof(SectionType),lastSectionType)));
                     CPH.RunAction(string.Format("enter{0}", Enum.GetName(typeof(SectionType),currentSectionType)));
