@@ -1,8 +1,8 @@
 using System;
-using System.Net.Http;
+//using System.Net.Http;
 //using System.Text.Json;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+//using Newtonsoft.Json.Linq;
 
 //Mock CPH
 
@@ -304,11 +304,18 @@ public class CPHInline
             {
                 if (arr.ArrangementID == lastResponse.MemoryReadout.ArrangementId)
                 {
-                    CPH.SendMessage("Identified arrangement");
 					currentArrangement = arr;
                     break;
                 }
             }
+        }
+        if (currentArrangement != null)
+        {
+            CPH.RunAction("ArrangementAvailable");
+        }
+        else
+        {
+            CPH.RunAction("NoArrangementAvailable");
         }
     }
     private void identifySection()
