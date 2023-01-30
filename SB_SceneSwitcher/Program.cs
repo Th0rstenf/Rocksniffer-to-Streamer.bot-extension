@@ -1,6 +1,8 @@
 using System;
-using System.Net.Http;
-using Newtonsoft.Json.Linq;
+//using System.Net.Http;
+//using System.Text.Json;
+using Newtonsoft.Json;
+//using Newtonsoft.Json.Linq;
 
 //Mock CPH
 
@@ -16,8 +18,12 @@ public class CPHmock
     public void ObsSetScene(string str) { Console.WriteLine(string.Format("Setting scene: {0}", str)); currentScene = str; }
 
     public string ObsGetCurrentScene() { return currentScene; }
-
+	
+    public void ObsSetGdiText(string scene, string source, string text, int connection =0){ Console.WriteLine(string.Format("Setting text field {1} in scene {0} to {2}", scene, source, text)); }
+    
     public void SendMessage(string str) { Console.WriteLine(str); }
+
+    public void RunAction(string str) { Console.WriteLine(string.Format("Running action: {0}",str)); }
 
     public string GetGlobalVar<Type>(string key)
     {
@@ -39,10 +45,10 @@ public class CPHmock
         CPHInline obj = new CPHInline();
 
         obj.Init();
-
+        int i = 0;
         while (true)
         {   
-            Console.Clear();
+            if (((++i) % 10) == 0) Console.Clear();
             obj.Execute();
             Thread.Sleep(1000);
         }
@@ -51,8 +57,65 @@ public class CPHmock
 }
 
 
+// Objects for parsing the song data
+// 
+
+record MemoryReadout
+{
+    [JsonRequired]
+    public string SongId { get; set; } = null!;
+    [JsonRequired]
+    public string ArrangementId { get; set; } = null!;
+    [JsonRequired]
+    public string GameStage { get; set; } = null!;
+    public double SongTimer { get; set; }
+    public NoteData NoteData { get; set; } = null!;
+}
+record NoteData
+{
+    public double Accuracy { get; set; }
+    public int CurrentHitStreak { get; set; }
+}
+record SongDetails
+{
+    public string SongName { get; set; } = null!;
+    public string ArtistName { get; set; } = null!;
+    public double SongLength { get; set; }
+    public string AlbumName { get; set; } = null!;
+    public int AlbumYear { get; set; }
+    public Arrangement[] Arrangements { get; set; } = null!;
+
+}
+
+
+record Arrangement
+{
+    public string Name { get; set; } = null!;
+    public string ArrangementID { get; set; } = null!;
+    public string type { get; set; } = null!;
+    public Tuning Tuning { get; set; } = null!;
+
+    public Section[] Sections { get; set; } = null!;
+}
+record Tuning
+{
+    public string TuningName { get; set; } = null!;
+}
+
+record Section
+{
+    public string Name { get; set; } = null!;
+    public double StartTime { get; set; }
+    public double EndTime { get; set; }
+}
+record Response
+{
+    public MemoryReadout MemoryReadout { get; set; } = null!;
+    public SongDetails SongDetails { get; set; } = null!;
+}
+
 //Implementation for Streamer.bot
- 
+
 public class CPHInline
 {
     enum GameStage
@@ -62,29 +125,47 @@ public class CPHInline
         , InTuner
     }
 
-    private string snifferIp;
-    private string snifferPort;
-    private string songID;
-    private string arrangementID;
+    enum SectionType
+    {
+        Default
+        ,Riff
+        ,Solo
+        ,Verse
+        ,Chorus
+        ,Brigde
+        ,Breakdown
+    }
+
+    private string snifferIp = null!;
+    private string snifferPort = null!;
+
+
     private GameStage currentGameStage;
     private GameStage lastGameStage;
+    private SectionType currentSectionType;
+    private SectionType lastSectionType;
     private double currentSongTimer;
     private double lastSongTimer;
-    private double accuracy;
-    private int currentHitStreak;
 
-    private string rocksmithScene;
-    private string songScene;
-    private string songPausedScene;
-	private string currentScene;
+    private Arrangement? currentArrangement = null!;
+    private int currentSectionIndex;
+   
+    //Split into memory details and SongDetails, as it is only necessary to parse the latter once
+    private Response lastResponse = null!;
+
+    private string rocksmithScene = null!;
+    private string songScene = null!;
+    private string songPausedScene = null!;
+	private string currentScene = null!;
 	
-    private HttpClient client;
-    private HttpResponseMessage response;
-    private string responseString;
+    private HttpClient client = null!;
+    private HttpResponseMessage response = null!;
+    private string responseString = null!;
 
     private DateTime lastSceneChange;
     private int minDelay;
 
+    //Needs to be commented out in streamer bot.
     private CPHmock CPH = new CPHmock();
 
     bool doLogToChat = false;
@@ -112,6 +193,10 @@ public class CPHInline
         {
             verboseLog("Evaluated as InSong");
             currentStage = GameStage.InSong;
+        }
+        else if (stage.Equals("las_tuner"))
+        {
+            currentStage = GameStage.InTuner;
         }
         else
         {
@@ -142,6 +227,9 @@ public class CPHInline
         client = new HttpClient();
         if (client == null) debug("Failed instantiating HttpClient");
 		currentScene = "";
+        
+        currentSectionIndex = -1;
+        lastSectionType = currentSectionType = SectionType.Default;
     }
 
     private bool getLatestResponse()
@@ -181,6 +269,7 @@ public class CPHInline
     {
         bool isRelevant = false;
 		currentScene = CPH.ObsGetCurrentScene();
+		if (currentScene != null)
 		if (currentScene.Equals(rocksmithScene)
 		|| currentScene.Equals(songScene)
 		|| currentScene.Equals(songPausedScene))
@@ -192,57 +281,59 @@ public class CPHInline
 
     private void parseLatestResponse()
     {
-        verboseLog("Calling Parse()");
-        var obj = JObject.Parse(responseString)["memoryReadout"];
-        var songDetails = JObject.Parse(responseString)["songDetails"];
-        if (obj == null) debug("Could not parse MemoryReadout");
-        if (obj != null)
+        try
         {
-            verboseLog("Successfully parsed memoryReadout");
-            songID = obj["songID"].ToString();
+            lastResponse = JsonConvert.DeserializeObject<Response>(responseString) ?? throw new Exception("Is never supposed to be zero");
+            currentGameStage = evalGameStage(lastResponse.MemoryReadout.GameStage);
+            currentSongTimer = lastResponse.MemoryReadout.SongTimer;
+        }
+        catch (JsonException ex)
+        {
+            debug("Error parsing response: " + ex.Message);
+        }
+        
+    }
 
-            arrangementID = obj["arrangementID"].ToString();
-            currentGameStage = evalGameStage(obj["gameStage"].ToString());
-            currentSongTimer = double.Parse(obj["songTimer"].ToString());
-
-            //var noteData = JObject.Parse(obj.ToString())["noteData"];
-            var noteData = obj["noteData"];
-            if (noteData == null)
+    private void identifyArrangement()
+    {
+        currentArrangement = null;
+        currentSectionIndex = -1;
+        if (lastResponse.SongDetails != null) 
+        { 
+            foreach (Arrangement arr in lastResponse.SongDetails.Arrangements)
             {
-                CPH.LogDebug("noteData node not found. New sniffer version?");
-            }
-            else
-            {
-                if (noteData.HasValues)
+                if (arr.ArrangementID == lastResponse.MemoryReadout.ArrangementId)
                 {
-                    verboseLog("Fetching Accurary and streak");
-                    accuracy = double.Parse(noteData["Accuracy"].ToString());
-                    currentHitStreak = int.Parse(noteData["CurrentHitStreak"].ToString());
-                }
-                else
-                {
-                    verboseLog("No note data available");
-                    accuracy = 0.0;
-                    currentHitStreak = 0;
-                }
-            }
-            if (songID == null) debug("Failed parsing song ID");
-            else verboseLog("Song id: " + songID);
-            if (arrangementID == null) debug("Failed parsing arrangement ID");
-
-
-            if (songDetails == null) { CPH.LogDebug("Songdetails not found. New sniffer version?"); }
-            else
-            {
-                if (songDetails.HasValues)
-                {
-                    //Here we can readout current song information to post in chat, or deliver uppon command
+					currentArrangement = arr;
+                    break;
                 }
             }
         }
+        if (currentArrangement != null)
+        {
+            CPH.RunAction("ArrangementAvailable");
+        }
         else
         {
-            debug("Could not parse response.");
+            CPH.RunAction("NoArrangementAvailable");
+        }
+    }
+    private void identifySection()
+    {
+        if (currentArrangement != null)
+        {
+            string name = currentArrangement.Sections[currentSectionIndex].Name;
+            if (name.ToLower().Contains("solo")) { currentSectionType = SectionType.Solo; }
+            else if (name.ToLower().Contains("riff")) { currentSectionType = SectionType.Riff; }
+            else if (name.ToLower().Contains("bridge")) { currentSectionType = SectionType.Brigde; }
+            else if (name.ToLower().Contains("breakdown")) { currentSectionType = SectionType.Breakdown; }
+            else if (name.ToLower().Contains("chorus")) { currentSectionType = SectionType.Chorus; }
+            else if (name.ToLower().Contains("verse")) { currentSectionType = SectionType.Verse; }
+            else { currentSectionType = SectionType.Default; }
+        }
+        else
+        { 
+            currentSectionType = SectionType.Default; 
         }
     }
 
@@ -252,11 +343,16 @@ public class CPHInline
 
         if (currentGameStage == GameStage.InSong)
         {
+            if (lastGameStage == GameStage.InTuner)
+            {
+                identifyArrangement();
+            }
+
             verboseLog("Current game stage in song");
             if (currentScene.Equals(rocksmithScene))
             {
                 verboseLog("Current scene is the Rocksmith scene");
-                if (!currentSongTimer.Equals(lastSongTimer))
+                if (!lastResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
                 {
                     verboseLog("Song timer has changed");
                     if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
@@ -274,13 +370,12 @@ public class CPHInline
             else if (currentScene.Equals(songScene))
             {
                 verboseLog("Current scene is song scene");
-                if (currentSongTimer.Equals(lastSongTimer))
+                if (lastResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
                     if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
                     {
                         CPH.ObsSetScene(songPausedScene);
                         lastSceneChange = DateTime.Now;
                     }
-
             }
         }
         else if (currentGameStage == GameStage.Menu)
@@ -297,7 +392,44 @@ public class CPHInline
             }
         }
         lastGameStage = currentGameStage;
-        lastSongTimer = currentSongTimer;
+        lastSongTimer = lastResponse.MemoryReadout.SongTimer;
+    }
+
+    private void checkSectionActions()
+    {
+        if (currentArrangement != null)
+        {
+            bool hasSectionChanged = false;
+            if (currentSectionIndex == -1)
+            {
+                if (currentSongTimer >= currentArrangement.Sections[0].StartTime)
+                {
+                    currentSectionIndex = 0;
+                    hasSectionChanged = true;
+                }
+            }
+            else
+            {
+                // Check if entered a new section
+                if (currentSongTimer >= currentArrangement.Sections[currentSectionIndex].EndTime)
+                {
+                    ++currentSectionIndex;
+                    hasSectionChanged = true;
+                }
+            }
+            if (hasSectionChanged)
+            {
+				identifySection();
+				//TODO: Should only happen if I execute it
+				CPH.ObsSetGdiText("Projection(RS)","textSectionName",currentArrangement.Sections[currentSectionIndex].Name);
+				if (currentSectionType != lastSectionType)
+                {
+                    CPH.RunAction(string.Format("leave{0}", Enum.GetName(typeof(SectionType),lastSectionType)));
+                    CPH.RunAction(string.Format("enter{0}", Enum.GetName(typeof(SectionType),currentSectionType)));
+                    lastSectionType = currentSectionType;
+                }
+            }
+        }
     }
 
     public bool Execute()
@@ -312,6 +444,7 @@ public class CPHInline
                 parseLatestResponse();
                 verboseLog("Performing necessary switches");
                 performSceneSwitchIfNecessary();
+                checkSectionActions();
             }
             else
             {
