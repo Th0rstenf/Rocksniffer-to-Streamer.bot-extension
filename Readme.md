@@ -38,7 +38,8 @@ Otherwise streamerbot will misinterpret it as double value. If the issues can no
 
 
 ## Version History
-
+* 0.2
+   * Detecting different tyes of sections and calling enter/leave actions in Streamerbot 
 * 0.1
     * Initial Release
 
