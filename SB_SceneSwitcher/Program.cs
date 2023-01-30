@@ -295,16 +295,18 @@ public class CPHInline
     {
         currentArrangement = null;
         currentSectionIndex = -1;
-        foreach (Arrangement arr in lastResponse.SongDetails.Arrangements)
-        {
-            if (arr.ArrangementID == lastResponse.MemoryReadout.ArrangementId)
+        if (lastResponse.SongDetails != null) 
+        { 
+            foreach (Arrangement arr in lastResponse.SongDetails.Arrangements)
             {
-                currentArrangement = arr;
-                break;
+                if (arr.ArrangementID == lastResponse.MemoryReadout.ArrangementId)
+                {
+                    currentArrangement = arr;
+                    break;
+                }
             }
         }
     }
-
     private void identifySection()
     {
         if (currentArrangement != null)
@@ -401,11 +403,13 @@ public class CPHInline
                 // Check if entered a new section
                 if (currentSongTimer >= currentArrangement.Sections[currentSectionIndex].EndTime)
                 {
+                    ++currentSectionIndex;
                     hasSectionChanged = true;
                 }
             }
             if (hasSectionChanged)
             {
+                identifySection();
                 if (currentSectionType != lastSectionType)
                 {
                     CPH.RunAction(string.Format("leave{0}", Enum.GetName(typeof(SectionType),lastSectionType)));
