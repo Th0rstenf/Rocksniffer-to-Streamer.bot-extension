@@ -1,7 +1,6 @@
 using System;
-using System.Text.Http;
+using System.Net.Http;
 using Newtonsoft.Json;
-
 
 //Mock CPH
 /*
@@ -176,13 +175,12 @@ public class CPHInline
 
     private DateTime lastSceneChange;
     private int minDelay;
-
+	private bool doLogToChat = false;
+	private bool isArrangementIdentified = false;
     //Needs to be commented out in streamer bot.
     //private CPHmock CPH = new CPHmock();
 
-    private bool doLogToChat = false;
-    private bool isSectionDetectionActive = false;
-
+    
     void debug(string str)
     {
         if (doLogToChat) CPH.SendMessage(str);
@@ -217,10 +215,6 @@ public class CPHInline
 		songScene = CPH.GetGlobalVar<string>("songScene");
 		songPausedScene = CPH.GetGlobalVar<string>("pauseScene");
 		
-        if (CPH.GetGlobalVar<string>("sectionDetection").ToLower().Contains("true") == true)
-        {
-            isSectionDetectionActive = true;
-        }
         lastSceneChange = DateTime.Now;
         minDelay = 3;
         client = new HttpClient();
@@ -292,7 +286,7 @@ public class CPHInline
         CPH.SetGlobalVar("AlbumName", currentResponse.SongDetails.AlbumName, false);
         if (currentArrangement != null)
         {
-            CPH.SetGlobalVar("Tuning", currentArrangement.Tuning, false);
+//            CPH.SetGlobalVar("Tuning", currentArrangement.Tuning, false);
         }
     }
     private void saveNoteDataIfNecessary()
@@ -311,7 +305,7 @@ public class CPHInline
             }
         }
     }
-    private void identifyArrangement()
+    private bool identifyArrangement()
     {
         currentArrangement = null;
         currentSectionIndex = -1;
@@ -326,6 +320,8 @@ public class CPHInline
                 }
             }
         }
+		// TODO: Evaluate whether arrangement has useful section names...
+		/*
         if (currentArrangement != null)
         {
             CPH.RunAction("ArrangementAvailable");
@@ -334,6 +330,8 @@ public class CPHInline
         {
             CPH.RunAction("NoArrangementAvailable");
         }
+		*/
+		return (currentArrangement != null);
     }
     private void identifySection()
     {
@@ -357,13 +355,17 @@ public class CPHInline
     {
         if (currentGameStage == GameStage.InSong)
         {
-            if (lastGameStage == GameStage.InTuner)
-            {
-                identifyArrangement();
-                saveSongMetaData();
+			
+            if (lastGameStage != GameStage.InSong)
+            {	
                 CPH.RunAction("SongStart");
             }
 
+			if (!isArrangementIdentified)
+			{
+				isArrangementIdentified = identifyArrangement();
+                saveSongMetaData();
+			}
             if (currentScene.Equals(rocksmithScene))
             {
                 if (!currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
@@ -403,7 +405,8 @@ public class CPHInline
             }
             if (lastGameStage == GameStage.InSong)
             {
-                invalidateGlobalVariables();
+                isArrangementIdentified = false;
+				invalidateGlobalVariables();
                 CPH.RunAction("SongEnd");
             }
         }
@@ -468,11 +471,8 @@ public class CPHInline
                 parseLatestResponse();
                 saveNoteDataIfNecessary();
                 performSceneSwitchIfNecessary();
+                checkSectionActions();
                 
-                if (isSectionDetectionActive)
-                {
-                    checkSectionActions();
-                }
             }
             else
             {
