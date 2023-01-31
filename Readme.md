@@ -40,6 +40,7 @@ Otherwise streamerbot will misinterpret it as double value. If the issues can no
 ## Version History
 * 0.2
    * Detecting different tyes of sections and calling enter/leave actions in Streamerbot 
+   * Storing Note data and other meta data in global variables to be used in other actions
 * 0.1
     * Initial Release
 
