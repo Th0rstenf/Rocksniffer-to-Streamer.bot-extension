@@ -1,8 +1,6 @@
 using System;
-//using System.Net.Http;
-//using System.Text.Json;
 using Newtonsoft.Json;
-//using Newtonsoft.Json.Linq;
+
 
 //Mock CPH
 
@@ -41,6 +39,10 @@ public class CPHmock
     public void SetGlobalVar(string varName, object value, bool persisted = true)
     {
         Console.WriteLine(string.Format("Writing value {1} to variable {0}",varName,value));
+    }
+    public void UnsetGlobalVar(string varName, bool persisted = true)
+    {
+        Console.WriteLine("Invalidating var: " + varName);
     }
     public static void Main(string[] args )
     { 
@@ -134,7 +136,6 @@ public class CPHInline
         , InSong
         , InTuner
     }
-
     enum SectionType
     {
         Default
@@ -148,7 +149,6 @@ public class CPHInline
 
     private string snifferIp = null!;
     private string snifferPort = null!;
-
 
     private GameStage currentGameStage;
     private GameStage lastGameStage;
@@ -180,9 +180,6 @@ public class CPHInline
     private CPHmock CPH = new CPHmock();
 
     private bool doLogToChat = false;
-    // Disabling regular verbose request as they really bloat the log file rather quickly. Can be enabled if need be
-    private bool doLogVerbose = false;
-
     private bool isSectionDetectionActive = false;
 
     void debug(string str)
@@ -190,7 +187,6 @@ public class CPHInline
         if (doLogToChat) CPH.SendMessage(str);
         CPH.LogDebug(str);
     }
-
     private GameStage evalGameStage(string stage)
     {
         GameStage currentStage = GameStage.Menu;
@@ -210,7 +206,6 @@ public class CPHInline
 
         return currentStage;
     }
-
     public void Init()
     {
 
@@ -234,7 +229,6 @@ public class CPHInline
         currentSectionIndex = -1;
         lastSectionType = currentSectionType = SectionType.Default;
     }
-
     private bool getLatestResponse()
     {
         bool success;
@@ -263,7 +257,6 @@ public class CPHInline
         if (!success) debug("Failed fetching response");
         return success;
     }
-
     private bool isRelevantScene()
     {
         bool isRelevant = false;
@@ -277,7 +270,6 @@ public class CPHInline
 		}
         return isRelevant;
     }
-
     private void parseLatestResponse()
     {
         try
@@ -292,7 +284,6 @@ public class CPHInline
         }
         
     }
-
     private void saveSongMetaData()
     {
         CPH.SetGlobalVar("SongName", currentResponse.SongDetails.SongName, false);
@@ -361,7 +352,6 @@ public class CPHInline
             currentSectionType = SectionType.Default; 
         }
     }
-
     private void performSceneSwitchIfNecessary()
     {
         if (currentGameStage == GameStage.InSong)
@@ -370,6 +360,7 @@ public class CPHInline
             {
                 identifyArrangement();
                 saveSongMetaData();
+                CPH.RunAction("SongStart");
             }
 
             if (currentScene.Equals(rocksmithScene))
@@ -409,11 +400,15 @@ public class CPHInline
                     lastSceneChange = DateTime.Now;
                 }
             }
+            if (lastGameStage == GameStage.InSong)
+            {
+                invalidateGlobalVariables();
+                CPH.RunAction("SongEnd");
+            }
         }
         lastGameStage = currentGameStage;
         lastSongTimer = currentResponse.MemoryReadout.SongTimer;
     }
-
     private void checkSectionActions()
     {
         if (currentArrangement != null)
@@ -450,7 +445,19 @@ public class CPHInline
             }
         }
     }
-
+    private void invalidateGlobalVariables()
+    {
+        CPH.UnsetGlobalVar("SongName");
+        CPH.UnsetGlobalVar("ArtistName");
+        CPH.UnsetGlobalVar("AlbumName");
+        CPH.UnsetGlobalVar("Tuning");
+        CPH.UnsetGlobalVar("Accuracy");
+        CPH.UnsetGlobalVar("CurrentHitStreak");
+        CPH.UnsetGlobalVar("CurrentMissStreak");
+        CPH.UnsetGlobalVar("TotalNotes");
+        CPH.UnsetGlobalVar("TotalNotesHit");
+        CPH.UnsetGlobalVar("TotalNotesMissed");
+    }
     public bool Execute()
     {
         if (isRelevantScene())
