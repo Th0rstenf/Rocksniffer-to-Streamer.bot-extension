@@ -33,13 +33,15 @@ public class CPHmock
         if (key.Equals("songScene")) value = "RocksmithBigCamInGame";
         if (key.Equals("rocksmithScene")) value = "RocksmithBigCam";
         if (key.Equals("pauseScene")) value = "RocksmithBigCam";
-
-
+        if (key.Equals("sectionDetection")) value = "True";
 
         return value;
 
     }
-
+    public void SetGlobalVar(string varName, object value, bool persisted = true)
+    {
+        Console.WriteLine(string.Format("Writing value {1} to variable {0}",varName,value));
+    }
     public static void Main(string[] args )
     { 
         CPHInline obj = new CPHInline();
@@ -74,7 +76,13 @@ record MemoryReadout
 record NoteData
 {
     public double Accuracy { get; set; }
+    public int TotalNotes { get; set; }
+    public int TotalNotesHit { get; set; }
     public int CurrentHitStreak { get; set; }
+
+    public int HighestHitStreak { get; set; }
+    public int TotalNotesMissed { get; set; }
+    public int CurrentMissStreak { get; set; }
 }
 record SongDetails
 {
@@ -110,6 +118,8 @@ record Section
 }
 record Response
 {
+    //It does not give any performance boost to parse only partially, due to the way the parser works.
+    //However parsing the full song takes roughly 0.2 micro seconds, so it's pretty neglectable
     public MemoryReadout MemoryReadout { get; set; } = null!;
     public SongDetails SongDetails { get; set; } = null!;
 }
@@ -151,7 +161,8 @@ public class CPHInline
     private int currentSectionIndex;
    
     //Split into memory details and SongDetails, as it is only necessary to parse the latter once
-    private Response lastResponse = null!;
+    private Response currentResponse = null!;
+    private NoteData lastNoteData = null!;
 
     private string rocksmithScene = null!;
     private string songScene = null!;
@@ -168,9 +179,11 @@ public class CPHInline
     //Needs to be commented out in streamer bot.
     private CPHmock CPH = new CPHmock();
 
-    bool doLogToChat = false;
+    private bool doLogToChat = false;
     // Disabling regular verbose request as they really bloat the log file rather quickly. Can be enabled if need be
-    bool doLogVerbose = false;
+    private bool doLogVerbose = false;
+
+    private bool isSectionDetectionActive = false;
 
     void debug(string str)
     {
@@ -178,20 +191,12 @@ public class CPHInline
         CPH.LogDebug(str);
     }
 
-    void verboseLog(string str)
-    {
-        if (doLogToChat) CPH.SendMessage(str);
-        if (doLogVerbose) CPH.LogVerbose(str);
-    }
-
     private GameStage evalGameStage(string stage)
     {
         GameStage currentStage = GameStage.Menu;
-        verboseLog(string.Format("Evaluating game stage: {0}", stage));
         // Other potential values are: MainMenu las_SongList las_SongOptions las_tuner
         if (stage.Equals("las_game"))
         {
-            verboseLog("Evaluated as InSong");
             currentStage = GameStage.InSong;
         }
         else if (stage.Equals("las_tuner"))
@@ -200,7 +205,7 @@ public class CPHInline
         }
         else
         {
-            verboseLog("Evaluated as Menu");
+            //Evaluated as Menu
         }
 
         return currentStage;
@@ -211,19 +216,17 @@ public class CPHInline
 
         //Init happens before arguments are passed, therefore temporary globals are used.
         snifferIp = CPH.GetGlobalVar<string>("snifferIP").Replace('"',' ').Trim();//"192.168.1.37";
-        verboseLog(string.Format("Initialized sniffer ip as {0}",snifferIp));
-		snifferPort = "9938";
-		verboseLog(string.Format("Initialized sniffer port as {0}",snifferPort));
-        rocksmithScene = CPH.GetGlobalVar<string>("rocksmithScene");
-		verboseLog(string.Format("Initialized Rocksmith scene as {0}",rocksmithScene));
-        songScene = CPH.GetGlobalVar<string>("songScene");
-		verboseLog(string.Format("Initialized song scene as {0}",songScene));
-        songPausedScene = CPH.GetGlobalVar<string>("pauseScene");
-		verboseLog(string.Format("Initialized pause scene as {0}",songPausedScene));
-
+        snifferPort = "9938";
+		rocksmithScene = CPH.GetGlobalVar<string>("rocksmithScene");
+		songScene = CPH.GetGlobalVar<string>("songScene");
+		songPausedScene = CPH.GetGlobalVar<string>("pauseScene");
+		
+        if (CPH.GetGlobalVar<string>("sectionDetection").ToLower().Contains("true") == true)
+        {
+            isSectionDetectionActive = true;
+        }
         lastSceneChange = DateTime.Now;
         minDelay = 3;
-        verboseLog("Initialising sniffer");
         client = new HttpClient();
         if (client == null) debug("Failed instantiating HttpClient");
 		currentScene = "";
@@ -238,15 +241,11 @@ public class CPHInline
         try
         {
             string address = string.Format("http://{0}:{1}", snifferIp, snifferPort);
-            verboseLog(string.Format("Trying to fetch latest response from {0}", address));
             response = client.GetAsync(address).GetAwaiter().GetResult();
             if (response != null)
             {
-                verboseLog("Response received");
                 response.EnsureSuccessStatusCode();
-                verboseLog("Response Status Code validated");
                 responseString = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-                verboseLog("Successfully fetched new response from sniffer");
                 success = true;
             }
             else
@@ -282,10 +281,10 @@ public class CPHInline
     private void parseLatestResponse()
     {
         try
-        {
-            lastResponse = JsonConvert.DeserializeObject<Response>(responseString) ?? throw new Exception("Is never supposed to be zero");
-            currentGameStage = evalGameStage(lastResponse.MemoryReadout.GameStage);
-            currentSongTimer = lastResponse.MemoryReadout.SongTimer;
+        {             
+            currentResponse = JsonConvert.DeserializeObject<Response>(responseString) ?? throw new Exception("Is never supposed to be zero");
+            currentGameStage = evalGameStage(currentResponse.MemoryReadout.GameStage);
+            currentSongTimer = currentResponse.MemoryReadout.SongTimer;
         }
         catch (JsonException ex)
         {
@@ -294,15 +293,41 @@ public class CPHInline
         
     }
 
+    private void saveSongMetaData()
+    {
+        CPH.SetGlobalVar("SongName", currentResponse.SongDetails.SongName, false);
+        CPH.SetGlobalVar("ArtistName", currentResponse.SongDetails.ArtistName, false);
+        CPH.SetGlobalVar("AlbumName", currentResponse.SongDetails.AlbumName, false);
+        if (currentArrangement != null)
+        {
+            CPH.SetGlobalVar("Tuning", currentArrangement.Tuning, false);
+        }
+    }
+    private void saveNoteDataIfNecessary()
+    {
+        if (currentGameStage == GameStage.InSong)
+        {
+            if (lastNoteData != currentResponse.MemoryReadout.NoteData)
+            {
+                CPH.SetGlobalVar("Accuracy", currentResponse.MemoryReadout.NoteData.Accuracy, false);
+                CPH.SetGlobalVar("CurrentHitStreak", currentResponse.MemoryReadout.NoteData.CurrentHitStreak, false);
+                CPH.SetGlobalVar("CurrentMissStreak", currentResponse.MemoryReadout.NoteData.CurrentMissStreak, false);
+                CPH.SetGlobalVar("TotalNotes", currentResponse.MemoryReadout.NoteData.TotalNotes, false);
+                CPH.SetGlobalVar("TotalNotesHit", currentResponse.MemoryReadout.NoteData.TotalNotesHit, false);
+                CPH.SetGlobalVar("TotalNotesMissed", currentResponse.MemoryReadout.NoteData.TotalNotesMissed, false);
+                lastNoteData = currentResponse.MemoryReadout.NoteData;
+            }
+        }
+    }
     private void identifyArrangement()
     {
         currentArrangement = null;
         currentSectionIndex = -1;
-        if (lastResponse.SongDetails != null) 
+        if (currentResponse.SongDetails != null) 
         { 
-            foreach (Arrangement arr in lastResponse.SongDetails.Arrangements)
+            foreach (Arrangement arr in currentResponse.SongDetails.Arrangements)
             {
-                if (arr.ArrangementID == lastResponse.MemoryReadout.ArrangementId)
+                if (arr.ArrangementID == currentResponse.MemoryReadout.ArrangementId)
                 {
 					currentArrangement = arr;
                     break;
@@ -339,25 +364,20 @@ public class CPHInline
 
     private void performSceneSwitchIfNecessary()
     {
-        verboseLog(string.Format("Currently in scene {0}", currentScene));
-
         if (currentGameStage == GameStage.InSong)
         {
             if (lastGameStage == GameStage.InTuner)
             {
                 identifyArrangement();
+                saveSongMetaData();
             }
 
-            verboseLog("Current game stage in song");
             if (currentScene.Equals(rocksmithScene))
             {
-                verboseLog("Current scene is the Rocksmith scene");
-                if (!lastResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
+                if (!currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
                 {
-                    verboseLog("Song timer has changed");
                     if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
                     {
-                        verboseLog(string.Format("Switching to {0}", songScene));
                         CPH.ObsSetScene(songScene);
                         lastSceneChange = DateTime.Now;
                     }
@@ -369,21 +389,20 @@ public class CPHInline
             }
             else if (currentScene.Equals(songScene))
             {
-                verboseLog("Current scene is song scene");
-                if (lastResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
+                if (currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
+                {
                     if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
                     {
                         CPH.ObsSetScene(songPausedScene);
                         lastSceneChange = DateTime.Now;
                     }
+                }
             }
         }
         else if (currentGameStage == GameStage.Menu)
         {
-            verboseLog("Currently in game stage menu");
             if (!currentScene.Equals(rocksmithScene))
             {
-                verboseLog(string.Format("Switching scene from {0} to {1}",currentScene, rocksmithScene));
                 if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
                 {
                     CPH.ObsSetScene(rocksmithScene);
@@ -392,7 +411,7 @@ public class CPHInline
             }
         }
         lastGameStage = currentGameStage;
-        lastSongTimer = lastResponse.MemoryReadout.SongTimer;
+        lastSongTimer = currentResponse.MemoryReadout.SongTimer;
     }
 
     private void checkSectionActions()
@@ -434,17 +453,18 @@ public class CPHInline
 
     public bool Execute()
     {
-        verboseLog("Execute sniffing");
         if (isRelevantScene())
         {
-            verboseLog("Scene is relevant, now fetching response");
             if (getLatestResponse())
             {
-                verboseLog("Now Parsing response");
                 parseLatestResponse();
-                verboseLog("Performing necessary switches");
+                saveNoteDataIfNecessary();
                 performSceneSwitchIfNecessary();
-                checkSectionActions();
+                
+                if (isSectionDetectionActive)
+                {
+                    checkSectionActions();
+                }
             }
             else
             {
