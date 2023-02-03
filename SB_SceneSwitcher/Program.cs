@@ -139,6 +139,7 @@ public class CPHInline
     enum SectionType
     {
         Default
+		,NoGuitar
         ,Riff
         ,Solo
         ,Verse
@@ -339,6 +340,7 @@ public class CPHInline
         {
             string name = currentArrangement.Sections[currentSectionIndex].Name;
             if (name.ToLower().Contains("solo")) { currentSectionType = SectionType.Solo; }
+            else if (name.ToLower().Contains("noguitar")) { currentSectionType = SectionType.NoGuitar; }
             else if (name.ToLower().Contains("riff")) { currentSectionType = SectionType.Riff; }
             else if (name.ToLower().Contains("bridge")) { currentSectionType = SectionType.Brigde; }
             else if (name.ToLower().Contains("breakdown")) { currentSectionType = SectionType.Breakdown; }
