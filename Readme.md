@@ -5,8 +5,31 @@ A [streamer.bot](https://streamer.bot) implementation to replace Warth's SceneSw
 ## Description
 
 This code fetches the output of Rocksniffer and evaluates game state and song timer. Depending on the state it switches to the scenes defined in global variables for Rocksmith, song, and break (pausing during a song)
+In addition to that, it checks the current sections name, and differentiates between:
 
-## Getting Started
+* Breakdown
+* Bridge
+* Chorus
+* Riff
+* Solo
+* Verse
+* No guitar
+* Default (always active when scene name didn't give useful information)
+
+For each of those sections, an enter and leave action is provided. Those will automatically be called by the SceneSwitcher action. Feel free to fill them with whatever you like.
+
+### Installing
+
+* Import the content of import.txt into streamer.bot
+* Modify the global variables inside the *SceneSwitcher* action to match your configuration
+* Check if the code is compiling. If it doesn't, a reference is missing. References necessary are:
+    * mscorlib.dll
+    * System.dll
+    * System.Net.Http.dll
+    * Newtonsoft.Json.dll (should be in your streamer.bot folder)
+* Create a timed action (navigate Setting -> Timed Actions)
+* Connect it with the imported action `SceneSwitcher`
+
 
 
 ### Dependencies
@@ -14,14 +37,6 @@ This code fetches the output of Rocksniffer and evaluates game state and song ti
 * Rocksmith
 * [Rocksniffer](https://github.com/kokolihapihvi/RockSniffer/releases)
 * [streamer.bot](https://streamer.bot)
-
-### Installing
-
-* Import the content of import.txt into streamer.bot
-* Modify the global variables to match your configuration
-* Create a timed action (navigate Setting -> Timed Actions)
-* Connect it with the imported action `SceneSwitcher`
-
 
 ## Help
 
