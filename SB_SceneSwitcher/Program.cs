@@ -23,6 +23,8 @@ public class CPHmock
 
     public void RunAction(string str) { Console.WriteLine(string.Format("Running action: {0}",str)); }
 
+
+
     public string GetGlobalVar<Type>(string key)
     {
         string value = "";
@@ -38,7 +40,7 @@ public class CPHmock
     }
     public void SetGlobalVar(string varName, object value, bool persisted = true)
     {
-        Console.WriteLine(string.Format("Writing value {1} to variable {0}",varName,value));
+     //   Console.WriteLine(string.Format("Writing value {1} to variable {0}",varName,value));
     }
     public void UnsetGlobalVar(string varName, bool persisted = true)
     {
@@ -287,7 +289,9 @@ public class CPHInline
         CPH.SetGlobalVar("AlbumName", currentResponse.SongDetails.AlbumName, false);
         if (currentArrangement != null)
         {
-//            CPH.SetGlobalVar("Tuning", currentArrangement.Tuning, false);
+            CPH.SetGlobalVar("Arrangement", currentArrangement.Name, false);
+            CPH.SetGlobalVar("ArrangementType", currentArrangement.type, false);
+            CPH.SetGlobalVar("Tuning", currentArrangement.Tuning.TuningName, false);
         }
     }
     private void saveNoteDataIfNecessary()
