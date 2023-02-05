@@ -34,6 +34,9 @@ public class CPHmock
         if (key.Equals("rocksmithScene")) value = "RocksmithBigCam";
         if (key.Equals("pauseScene")) value = "RocksmithBigCam";
         if (key.Equals("sectionDetection")) value = "True";
+        if (key.Equals("alwaysOn")) value = "True";
+        if (key.Equals("switchScenes")) value = "True";
+        if (key.Equals("sectionActions")) value = "True";
 
         return value;
 
@@ -163,7 +166,6 @@ public class CPHInline
     private Arrangement? currentArrangement = null!;
     private int currentSectionIndex;
    
-    //Split into memory details and SongDetails, as it is only necessary to parse the latter once
     private Response currentResponse = null!;
     private NoteData lastNoteData = null!;
 
@@ -179,6 +181,9 @@ public class CPHInline
     private DateTime lastSceneChange;
     private int minDelay;
 	private bool doLogToChat = false;
+    private bool isAlwaysActive = false;
+    private bool isSwitchingScenes = true;
+    private bool isReactingToSections =true;
 	private bool isArrangementIdentified = false;
     //Needs to be commented out in streamer bot.
     //private CPHmock CPH = new CPHmock();
@@ -217,6 +222,10 @@ public class CPHInline
 		rocksmithScene = CPH.GetGlobalVar<string>("rocksmithScene");
 		songScene = CPH.GetGlobalVar<string>("songScene");
 		songPausedScene = CPH.GetGlobalVar<string>("pauseScene");
+
+        isAlwaysActive = CPH.GetGlobalVar<string>("alwaysOn").ToLower().Contains("true");
+        isSwitchingScenes = CPH.GetGlobalVar<string>("switchScenes").ToLower().Contains("true");
+        isReactingToSections = CPH.GetGlobalVar<string>("sectionActions").ToLower().Contains("true");
 		
         lastSceneChange = DateTime.Now;
         minDelay = 3;
@@ -257,7 +266,7 @@ public class CPHInline
     }
     private bool isRelevantScene()
     {
-        bool isRelevant = false;
+        bool isRelevant = isAlwaysActive;
 		currentScene = CPH.ObsGetCurrentScene();
 		if (currentScene != null)
 		if (currentScene.Equals(rocksmithScene)
@@ -372,7 +381,7 @@ public class CPHInline
 				isArrangementIdentified = identifyArrangement();
                 saveSongMetaData();
 			}
-            if (currentScene.Equals(rocksmithScene))
+            if (currentScene.Equals(rocksmithScene) && isSwitchingScenes)
             {
                 if (!currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
                 {
@@ -387,7 +396,7 @@ public class CPHInline
                     //Already in correct scene
                 }
             }
-            else if (currentScene.Equals(songScene))
+            else if (currentScene.Equals(songScene) && isSwitchingScenes)
             {
                 if (currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
                 {
@@ -401,7 +410,7 @@ public class CPHInline
         }
         else if (currentGameStage == GameStage.Menu)
         {
-            if (!currentScene.Equals(rocksmithScene))
+            if (!currentScene.Equals(rocksmithScene) && isSwitchingScenes)
             {
                 if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
                 {
@@ -477,8 +486,10 @@ public class CPHInline
                 parseLatestResponse();
                 saveNoteDataIfNecessary();
                 performSceneSwitchIfNecessary();
-                checkSectionActions();
-                
+                if (isReactingToSections)
+                {
+                    checkSectionActions();
+                }
             }
             else
             {
