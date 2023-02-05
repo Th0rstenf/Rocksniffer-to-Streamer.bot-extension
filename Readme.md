@@ -56,6 +56,9 @@ Otherwise streamerbot will misinterpret it as double value. If the issues can no
 * 0.2
    * Detecting different tyes of sections and calling enter/leave actions in Streamerbot 
    * Storing Note data and other meta data in global variables to be used in other actions
+   * Added option to disable white listing
+   * Added option to disable scene switches
+   * Added option to disable section change actions
 * 0.1
     * Initial Release
 
