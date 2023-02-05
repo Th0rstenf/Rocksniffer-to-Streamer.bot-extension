@@ -150,7 +150,7 @@ public class CPHInline
         ,Solo
         ,Verse
         ,Chorus
-        ,Brigde
+        ,Bridge
         ,Breakdown
     }
     enum AcivityBehavior
@@ -398,7 +398,7 @@ public class CPHInline
             if (name.ToLower().Contains("solo")) { currentSectionType = SectionType.Solo; }
             else if (name.ToLower().Contains("noguitar")) { currentSectionType = SectionType.NoGuitar; }
             else if (name.ToLower().Contains("riff")) { currentSectionType = SectionType.Riff; }
-            else if (name.ToLower().Contains("bridge")) { currentSectionType = SectionType.Brigde; }
+            else if (name.ToLower().Contains("bridge")) { currentSectionType = SectionType.Bridge; }
             else if (name.ToLower().Contains("breakdown")) { currentSectionType = SectionType.Breakdown; }
             else if (name.ToLower().Contains("chorus")) { currentSectionType = SectionType.Chorus; }
             else if (name.ToLower().Contains("verse")) { currentSectionType = SectionType.Verse; }
