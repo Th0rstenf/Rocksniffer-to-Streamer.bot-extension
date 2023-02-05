@@ -32,9 +32,9 @@ public class CPHmock
         if (key.Equals("snifferPort")) value = "9938";
         if (key.Equals("songScene")) value = "RocksmithBigCamInGame";
         if (key.Equals("menuScene")) value = "RocksmithBigCam";
-        if (key.Equals("pauseScene")) value = "RocksmithBigCam";
+        if (key.Equals("pauseScene")) value = "RocksmithPause";
         if (key.Equals("sectionDetection")) value = "True";
-        if (key.Equals("behavior")) value = "Blacklist";
+        if (key.Equals("behavior")) value = "WhiteList";
         if (key.Equals("switchScenes")) value = "True";
         if (key.Equals("sectionActions")) value = "True";
         if (key.Equals("blackList")) value = "Scenex,sceney,RocksmithBigCam";
@@ -178,7 +178,7 @@ public class CPHInline
     private Response currentResponse = null!;
     private NoteData lastNoteData = null!;
 
-    private string rocksmithScene = null!;
+    private string menuScene = null!;
     private string songScene = null!;
     private string songPausedScene = null!;
 	private string currentScene = null!;
@@ -189,8 +189,8 @@ public class CPHInline
 
     private DateTime lastSceneChange;
     private int minDelay;
+    private int sameTimeCounter;
 	private bool doLogToChat = false;
-    private bool isAlwaysActive = false;
     private bool isSwitchingScenes = true;
     private bool isReactingToSections =true;
 	private bool isArrangementIdentified = false;
@@ -227,7 +227,7 @@ public class CPHInline
         //Init happens before arguments are passed, therefore temporary globals are used.
         snifferIp = CPH.GetGlobalVar<string>("snifferIP").Replace('"',' ').Trim();
         snifferPort = "9938";
-		rocksmithScene = CPH.GetGlobalVar<string>("menuScene");
+		menuScene = CPH.GetGlobalVar<string>("menuScene");
 		songScene = CPH.GetGlobalVar<string>("songScene");
 		songPausedScene = CPH.GetGlobalVar<string>("pauseScene");
 
@@ -266,6 +266,7 @@ public class CPHInline
         currentSectionIndex = -1;
         lastSectionType = currentSectionType = SectionType.Default;
         lastGameStage = currentGameStage = GameStage.Menu;
+        sameTimeCounter= 0;
     }
     private bool getLatestResponse()
     {
@@ -305,7 +306,7 @@ public class CPHInline
             {
                 if (currentScene != null)
                 {
-                    if (currentScene.Equals(rocksmithScene)
+                    if (currentScene.Equals(menuScene)
                     || currentScene.Equals(songScene)
                     || currentScene.Equals(songPausedScene))
                     {
@@ -338,19 +339,24 @@ public class CPHInline
 		
         return isRelevant;
     }
-    private void parseLatestResponse()
+    private bool parseLatestResponse()
     {
+        bool success = false;
         try
         {             
             currentResponse = JsonConvert.DeserializeObject<Response>(responseString) ?? throw new Exception("Is never supposed to be zero");
-            currentGameStage = evalGameStage(currentResponse.MemoryReadout.GameStage);
-            currentSongTimer = currentResponse.MemoryReadout.SongTimer;
+            if (currentResponse != null)
+            {
+                currentGameStage = evalGameStage(currentResponse.MemoryReadout.GameStage);
+                currentSongTimer = currentResponse.MemoryReadout.SongTimer;
+                success = true;
+            }
         }
         catch (JsonException ex)
         {
             debug("Error parsing response: " + ex.Message);
         }
-        
+        return success;
     }
     private void saveSongMetaData()
     {
@@ -416,11 +422,35 @@ public class CPHInline
             currentSectionType = SectionType.Default; 
         }
     }
+    private bool isInPause()
+    {
+        bool isPause = false;
+        if (currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer)) 
+        {   //Checking for zero, as otherwise the start of the song can be mistakenly identified as pause
+            //When ending the song, there are a few responses with the same time before game state switches. Not triggering a pause if it's less than 250ms to end of song.
+            if (currentResponse.MemoryReadout.SongTimer.Equals(0)
+            || ((currentResponse.SongDetails.SongLength - currentResponse.MemoryReadout.SongTimer) < 0.25))
+            {
+                if ((sameTimeCounter++) >= minDelay)
+                {
+                    isPause = true;
+                }
+            }
+            else
+            { 
+                isPause = true; 
+            }        
+        }
+        else
+        {
+            sameTimeCounter = 0;
+        }
+        return isPause;
+    }
     private void performSceneSwitchIfNecessary()
     {
         if (currentGameStage == GameStage.InSong)
-        {
-			
+        {		
             if (lastGameStage != GameStage.InSong)
             {	
                 CPH.RunAction("SongStart");
@@ -435,6 +465,7 @@ public class CPHInline
             {
                 if (!currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
                 {
+                    sameTimeCounter = 0;
                     if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
                     {
                         if (currentScene.Equals(songPausedScene))
@@ -455,7 +486,7 @@ public class CPHInline
             }
             else if (currentScene.Equals(songScene))
             {
-                if (currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
+                if (isInPause())
                 {
                     CPH.RunAction("enterPause");
                     if (isSwitchingScenes)
@@ -467,15 +498,16 @@ public class CPHInline
                         }
                     }
                 }
+               
             }
         }
         else if (currentGameStage == GameStage.Menu)
         {
-            if (!currentScene.Equals(rocksmithScene) && isSwitchingScenes)
+            if (!currentScene.Equals(menuScene) && isSwitchingScenes)
             {
                 if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
                 {
-                    CPH.ObsSetScene(rocksmithScene);
+                    CPH.ObsSetScene(menuScene);
                     lastSceneChange = DateTime.Now;
                 }
             }
@@ -548,12 +580,14 @@ public class CPHInline
         {
             if (getLatestResponse())
             {
-                parseLatestResponse();
-                saveNoteDataIfNecessary();
-                performSceneSwitchIfNecessary();
-                if (isReactingToSections)
+                if (parseLatestResponse())
                 {
-                    checkSectionActions();
+                    saveNoteDataIfNecessary();
+                    performSceneSwitchIfNecessary();
+                    if (isReactingToSections)
+                    {
+                        checkSectionActions();
+                    }
                 }
             }
             else
