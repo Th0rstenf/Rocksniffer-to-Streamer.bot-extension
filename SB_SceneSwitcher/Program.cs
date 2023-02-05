@@ -189,6 +189,7 @@ public class CPHInline
 
     private DateTime lastSceneChange;
     private int minDelay;
+    private int sameTimeCounter;
 	private bool doLogToChat = false;
     private bool isSwitchingScenes = true;
     private bool isReactingToSections =true;
@@ -265,6 +266,7 @@ public class CPHInline
         currentSectionIndex = -1;
         lastSectionType = currentSectionType = SectionType.Default;
         lastGameStage = currentGameStage = GameStage.Menu;
+        sameTimeCounter= 0;
     }
     private bool getLatestResponse()
     {
@@ -420,11 +422,35 @@ public class CPHInline
             currentSectionType = SectionType.Default; 
         }
     }
+    private bool isInPause()
+    {
+        bool isPause = false;
+        if (currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer)) 
+        {   //Checking for zero, as otherwise the start of the song can be mistakenly identified as pause
+            //When ending the song, there are a few responses with the same time before game state switches. Not triggering a pause if it's less than 250ms to end of song.
+            if (currentResponse.MemoryReadout.SongTimer.Equals(0)
+            || ((currentResponse.SongDetails.SongLength - currentResponse.MemoryReadout.SongTimer) < 0.25))
+            {
+                if ((sameTimeCounter++) >= minDelay)
+                {
+                    isPause = true;
+                }
+            }
+            else
+            { 
+                isPause = true; 
+            }        
+        }
+        else
+        {
+            sameTimeCounter = 0;
+        }
+        return isPause;
+    }
     private void performSceneSwitchIfNecessary()
     {
         if (currentGameStage == GameStage.InSong)
-        {
-			
+        {		
             if (lastGameStage != GameStage.InSong)
             {	
                 CPH.RunAction("SongStart");
@@ -439,6 +465,7 @@ public class CPHInline
             {
                 if (!currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
                 {
+                    sameTimeCounter = 0;
                     if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
                     {
                         if (currentScene.Equals(songPausedScene))
@@ -459,23 +486,19 @@ public class CPHInline
             }
             else if (currentScene.Equals(songScene))
             {
-                if (currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer) 
-                    && !currentResponse.MemoryReadout.SongTimer.Equals(0)) //Checking for zero, as otherwise the start of the song can be mistakenly identified as pause
+                if (isInPause())
                 {
-                    //When ending the song, there are a few responses with the same time before game state switches. Not triggering a pause if it's less than 250ms to end of song.
-                    if ((currentResponse.SongDetails.SongLength - currentResponse.MemoryReadout.SongTimer) > 0.25)
+                    CPH.RunAction("enterPause");
+                    if (isSwitchingScenes)
                     {
-                        CPH.RunAction("enterPause");
-                        if (isSwitchingScenes)
+                        if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
                         {
-                            if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
-                            {
-                                CPH.ObsSetScene(songPausedScene);
-                                lastSceneChange = DateTime.Now;
-                            }
+                            CPH.ObsSetScene(songPausedScene);
+                            lastSceneChange = DateTime.Now;
                         }
                     }
                 }
+               
             }
         }
         else if (currentGameStage == GameStage.Menu)
