@@ -187,7 +187,6 @@ public class CPHInline
 	private bool isArrangementIdentified = false;
     //Needs to be commented out in streamer bot.
     //private CPHmock CPH = new CPHmock();
-
     
     void debug(string str)
     {
@@ -235,6 +234,7 @@ public class CPHInline
         
         currentSectionIndex = -1;
         lastSectionType = currentSectionType = SectionType.Default;
+        lastGameStage = currentGameStage = GameStage.Menu;
     }
     private bool getLatestResponse()
     {
@@ -424,6 +424,10 @@ public class CPHInline
 				invalidateGlobalVariables();
                 CPH.RunAction("SongEnd");
             }
+        }
+        if (currentGameStage != lastGameStage)
+        {
+            CPH.SetGlobalVar("GameState",currentGameStage.ToString());
         }
         lastGameStage = currentGameStage;
         lastSongTimer = currentResponse.MemoryReadout.SongTimer;
