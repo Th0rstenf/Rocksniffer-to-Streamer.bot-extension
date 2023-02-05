@@ -3,7 +3,7 @@ using System.Net.Http;
 using Newtonsoft.Json;
 
 //Mock CPH
-/*
+
 public class CPHmock
 {
     private string currentScene = "RocksmithBigCam";
@@ -35,6 +35,7 @@ public class CPHmock
         if (key.Equals("pauseScene")) value = "RocksmithBigCam";
         if (key.Equals("sectionDetection")) value = "True";
         if (key.Equals("behavior")) value = "Blacklist";
+        if (key.Equals("behavior")) value = "Blacklist";
         if (key.Equals("switchScenes")) value = "True";
         if (key.Equals("sectionActions")) value = "True";
         if (key.Equals("blackList")) value = "Scenex,sceney,RocksmithBigCam";
@@ -65,7 +66,7 @@ public class CPHmock
     }
 
 }
-*/
+
 
 // Objects for parsing the song data
 // 
@@ -150,7 +151,7 @@ public class CPHInline
         ,Solo
         ,Verse
         ,Chorus
-        ,Brigde
+        ,Bridge
         ,Breakdown
     }
     enum AcivityBehavior
@@ -195,7 +196,7 @@ public class CPHInline
     private bool isReactingToSections =true;
 	private bool isArrangementIdentified = false;
     //Needs to be commented out in streamer bot.
-    //private CPHmock CPH = new CPHmock();
+    private CPHmock CPH = new CPHmock();
     
     void debug(string str)
     {
@@ -406,7 +407,7 @@ public class CPHInline
             if (name.ToLower().Contains("solo")) { currentSectionType = SectionType.Solo; }
             else if (name.ToLower().Contains("noguitar")) { currentSectionType = SectionType.NoGuitar; }
             else if (name.ToLower().Contains("riff")) { currentSectionType = SectionType.Riff; }
-            else if (name.ToLower().Contains("bridge")) { currentSectionType = SectionType.Brigde; }
+            else if (name.ToLower().Contains("bridge")) { currentSectionType = SectionType.Bridge; }
             else if (name.ToLower().Contains("breakdown")) { currentSectionType = SectionType.Breakdown; }
             else if (name.ToLower().Contains("chorus")) { currentSectionType = SectionType.Chorus; }
             else if (name.ToLower().Contains("verse")) { currentSectionType = SectionType.Verse; }
