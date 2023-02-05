@@ -3,7 +3,7 @@ using System.Net.Http;
 using Newtonsoft.Json;
 
 //Mock CPH
-/*
+
 public class CPHmock
 {
     private string currentScene = "RocksmithBigCam";
@@ -61,7 +61,7 @@ public class CPHmock
     }
 
 }
-*/
+
 
 // Objects for parsing the song data
 // 
@@ -179,9 +179,12 @@ public class CPHInline
     private DateTime lastSceneChange;
     private int minDelay;
 	private bool doLogToChat = false;
+    private bool isAlwaysActive = false;
+    private bool isSwitchingScenes = true;
+    private bool isReactingToSections =true;
 	private bool isArrangementIdentified = false;
     //Needs to be commented out in streamer bot.
-    //private CPHmock CPH = new CPHmock();
+    private CPHmock CPH = new CPHmock();
 
     
     void debug(string str)
@@ -257,7 +260,7 @@ public class CPHInline
     }
     private bool isRelevantScene()
     {
-        bool isRelevant = false;
+        bool isRelevant = isAlwaysActive;
 		currentScene = CPH.ObsGetCurrentScene();
 		if (currentScene != null)
 		if (currentScene.Equals(rocksmithScene)
@@ -372,7 +375,7 @@ public class CPHInline
 				isArrangementIdentified = identifyArrangement();
                 saveSongMetaData();
 			}
-            if (currentScene.Equals(rocksmithScene))
+            if (currentScene.Equals(rocksmithScene) && isSwitchingScenes)
             {
                 if (!currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
                 {
@@ -387,7 +390,7 @@ public class CPHInline
                     //Already in correct scene
                 }
             }
-            else if (currentScene.Equals(songScene))
+            else if (currentScene.Equals(songScene) && isSwitchingScenes)
             {
                 if (currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
                 {
@@ -401,7 +404,7 @@ public class CPHInline
         }
         else if (currentGameStage == GameStage.Menu)
         {
-            if (!currentScene.Equals(rocksmithScene))
+            if (!currentScene.Equals(rocksmithScene) && isSwitchingScenes)
             {
                 if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
                 {
@@ -477,8 +480,10 @@ public class CPHInline
                 parseLatestResponse();
                 saveNoteDataIfNecessary();
                 performSceneSwitchIfNecessary();
-                checkSectionActions();
-                
+                if (isReactingToSections)
+                {
+                    checkSectionActions();
+                }
             }
             else
             {
