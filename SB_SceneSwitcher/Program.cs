@@ -178,7 +178,7 @@ public class CPHInline
     private Response currentResponse = null!;
     private NoteData lastNoteData = null!;
 
-    private string rocksmithScene = null!;
+    private string menuScene = null!;
     private string songScene = null!;
     private string songPausedScene = null!;
 	private string currentScene = null!;
@@ -227,7 +227,7 @@ public class CPHInline
         //Init happens before arguments are passed, therefore temporary globals are used.
         snifferIp = CPH.GetGlobalVar<string>("snifferIP").Replace('"',' ').Trim();
         snifferPort = "9938";
-		rocksmithScene = CPH.GetGlobalVar<string>("menuScene");
+		menuScene = CPH.GetGlobalVar<string>("menuScene");
 		songScene = CPH.GetGlobalVar<string>("songScene");
 		songPausedScene = CPH.GetGlobalVar<string>("pauseScene");
 
@@ -305,7 +305,7 @@ public class CPHInline
             {
                 if (currentScene != null)
                 {
-                    if (currentScene.Equals(rocksmithScene)
+                    if (currentScene.Equals(menuScene)
                     || currentScene.Equals(songScene)
                     || currentScene.Equals(songPausedScene))
                     {
@@ -471,11 +471,11 @@ public class CPHInline
         }
         else if (currentGameStage == GameStage.Menu)
         {
-            if (!currentScene.Equals(rocksmithScene) && isSwitchingScenes)
+            if (!currentScene.Equals(menuScene) && isSwitchingScenes)
             {
                 if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
                 {
-                    CPH.ObsSetScene(rocksmithScene);
+                    CPH.ObsSetScene(menuScene);
                     lastSceneChange = DateTime.Now;
                 }
             }
