@@ -427,7 +427,7 @@ public class CPHInline
         }
         if (currentGameStage != lastGameStage)
         {
-            CPH.SetGlobalVar("GameState",Enum.GetName(typeof(GameStage),currentGameStage));
+            CPH.SetGlobalVar("GameState",currentGameStage.ToString());
         }
         lastGameStage = currentGameStage;
         lastSongTimer = currentResponse.MemoryReadout.SongTimer;
