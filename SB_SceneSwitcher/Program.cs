@@ -31,12 +31,13 @@ public class CPHmock
         if (key.Equals("snifferIP")) value = "192.168.1.37";
         if (key.Equals("snifferPort")) value = "9938";
         if (key.Equals("songScene")) value = "RocksmithBigCamInGame";
-        if (key.Equals("rocksmithScene")) value = "RocksmithBigCam";
+        if (key.Equals("menuScene")) value = "RocksmithBigCam";
         if (key.Equals("pauseScene")) value = "RocksmithBigCam";
         if (key.Equals("sectionDetection")) value = "True";
-        if (key.Equals("alwaysOn")) value = "True";
+        if (key.Equals("behavior")) value = "Blacklist";
         if (key.Equals("switchScenes")) value = "True";
         if (key.Equals("sectionActions")) value = "True";
+        if (key.Equals("blackList")) value = "Scenex,sceney,RocksmithBigCam";
 
         return value;
 
@@ -152,6 +153,12 @@ public class CPHInline
         ,Brigde
         ,Breakdown
     }
+    enum AcivityBehavior
+    {
+        WhiteList
+        ,BlackList
+        ,AlwaysOn
+    }
 
     private string snifferIp = null!;
     private string snifferPort = null!;
@@ -160,6 +167,8 @@ public class CPHInline
     private GameStage lastGameStage;
     private SectionType currentSectionType;
     private SectionType lastSectionType;
+    private AcivityBehavior itsBehavior;
+    private string[] blackListedScenes = null!;
     private double currentSongTimer;
     private double lastSongTimer;
 
@@ -216,9 +225,9 @@ public class CPHInline
     {
 
         //Init happens before arguments are passed, therefore temporary globals are used.
-        snifferIp = CPH.GetGlobalVar<string>("snifferIP").Replace('"',' ').Trim();//"192.168.1.37";
+        snifferIp = CPH.GetGlobalVar<string>("snifferIP").Replace('"',' ').Trim();
         snifferPort = "9938";
-		rocksmithScene = CPH.GetGlobalVar<string>("rocksmithScene");
+		rocksmithScene = CPH.GetGlobalVar<string>("menuScene");
 		songScene = CPH.GetGlobalVar<string>("songScene");
 		songPausedScene = CPH.GetGlobalVar<string>("pauseScene");
 
@@ -231,6 +240,29 @@ public class CPHInline
         client = new HttpClient();
         if (client == null) debug("Failed instantiating HttpClient");
 		currentScene = "";
+
+        string behaviorString = CPH.GetGlobalVar<string>("behavior");
+        if (behaviorString!= null)
+        {
+            if (behaviorString.ToLower().Contains("whitelist")) itsBehavior = AcivityBehavior.WhiteList;
+            else if (behaviorString.ToLower().Contains("blacklist")) itsBehavior = AcivityBehavior.BlackList;
+            else if (behaviorString.ToLower().Contains("always")) itsBehavior = AcivityBehavior.AlwaysOn;
+            else
+            {
+                itsBehavior = AcivityBehavior.WhiteList;
+                debug("Behavior not configured, setting to whitelist as default");
+            }
+        }
+
+        if (itsBehavior == AcivityBehavior.BlackList)
+        {
+            string temp = CPH.GetGlobalVar<string>("blackList");
+            blackListedScenes = temp.Split(',');
+        }
+        else
+        {
+            blackListedScenes = new string[1];
+        }
         
         currentSectionIndex = -1;
         lastSectionType = currentSectionType = SectionType.Default;
@@ -266,15 +298,37 @@ public class CPHInline
     }
     private bool isRelevantScene()
     {
-        bool isRelevant = isAlwaysActive;
-		currentScene = CPH.ObsGetCurrentScene();
-		if (currentScene != null)
-		if (currentScene.Equals(rocksmithScene)
-		|| currentScene.Equals(songScene)
-		|| currentScene.Equals(songPausedScene))
-		{
-			isRelevant = true;
-		}
+        bool isRelevant = false;
+        currentScene = CPH.ObsGetCurrentScene();
+        switch (itsBehavior)
+        {
+            case AcivityBehavior.WhiteList:
+            {
+                if (currentScene != null)
+                {
+                    if (currentScene.Equals(rocksmithScene)
+                    || currentScene.Equals(songScene)
+                    || currentScene.Equals(songPausedScene))
+                    {
+                        isRelevant = true;
+                    }
+                }
+                break;
+            }
+            case AcivityBehavior.BlackList:
+            {
+                isRelevant = (!blackListedScenes.Contains(currentScene));                
+                break;
+            }
+            case AcivityBehavior.AlwaysOn:
+            {
+                 isRelevant= true;
+                 break;
+            }
+            
+        }
+
+		
         return isRelevant;
     }
     private void parseLatestResponse()
