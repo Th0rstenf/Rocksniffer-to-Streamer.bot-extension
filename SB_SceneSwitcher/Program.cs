@@ -3,7 +3,7 @@ using System.Net.Http;
 using Newtonsoft.Json;
 
 //Mock CPH
-
+/*
 public class CPHmock
 {
     private string currentScene = "RocksmithBigCam";
@@ -65,7 +65,7 @@ public class CPHmock
     }
 
 }
-
+*/
 
 // Objects for parsing the song data
 // 
@@ -195,7 +195,7 @@ public class CPHInline
     private bool isReactingToSections =true;
 	private bool isArrangementIdentified = false;
     //Needs to be commented out in streamer bot.
-    private CPHmock CPH = new CPHmock();
+    //private CPHmock CPH = new CPHmock();
     
     void debug(string str)
     {
