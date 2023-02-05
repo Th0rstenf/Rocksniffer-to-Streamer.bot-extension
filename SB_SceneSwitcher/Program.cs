@@ -34,6 +34,9 @@ public class CPHmock
         if (key.Equals("rocksmithScene")) value = "RocksmithBigCam";
         if (key.Equals("pauseScene")) value = "RocksmithBigCam";
         if (key.Equals("sectionDetection")) value = "True";
+        if (key.Equals("alwaysOn")) value = "True";
+        if (key.Equals("switchScenes")) value = "True";
+        if (key.Equals("sectionActions")) value = "True";
 
         return value;
 
@@ -163,7 +166,6 @@ public class CPHInline
     private Arrangement? currentArrangement = null!;
     private int currentSectionIndex;
    
-    //Split into memory details and SongDetails, as it is only necessary to parse the latter once
     private Response currentResponse = null!;
     private NoteData lastNoteData = null!;
 
@@ -220,6 +222,10 @@ public class CPHInline
 		rocksmithScene = CPH.GetGlobalVar<string>("rocksmithScene");
 		songScene = CPH.GetGlobalVar<string>("songScene");
 		songPausedScene = CPH.GetGlobalVar<string>("pauseScene");
+
+        isAlwaysActive = CPH.GetGlobalVar<string>("alwaysOn").ToLower().Contains("true");
+        isSwitchingScenes = CPH.GetGlobalVar<string>("switchScenes").ToLower().Contains("true");
+        isReactingToSections = CPH.GetGlobalVar<string>("sectionActions").ToLower().Contains("true");
 		
         lastSceneChange = DateTime.Now;
         minDelay = 3;
