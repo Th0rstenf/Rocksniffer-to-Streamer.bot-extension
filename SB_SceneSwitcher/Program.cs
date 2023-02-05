@@ -3,7 +3,7 @@ using System.Net.Http;
 using Newtonsoft.Json;
 
 //Mock CPH
-/*
+
 public class CPHmock
 {
     private string currentScene = "RocksmithBigCam";
@@ -64,7 +64,7 @@ public class CPHmock
     }
 
 }
-*/
+
 
 // Objects for parsing the song data
 // 
@@ -186,7 +186,7 @@ public class CPHInline
     private bool isReactingToSections =true;
 	private bool isArrangementIdentified = false;
     //Needs to be commented out in streamer bot.
-    //private CPHmock CPH = new CPHmock();
+    private CPHmock CPH = new CPHmock();
     
     void debug(string str)
     {
@@ -334,17 +334,6 @@ public class CPHInline
                 }
             }
         }
-		// TODO: Evaluate whether arrangement has useful section names...
-		/*
-        if (currentArrangement != null)
-        {
-            CPH.RunAction("ArrangementAvailable");
-        }
-        else
-        {
-            CPH.RunAction("NoArrangementAvailable");
-        }
-		*/
 		return (currentArrangement != null);
     }
     private void identifySection()
@@ -381,14 +370,21 @@ public class CPHInline
 				isArrangementIdentified = identifyArrangement();
                 saveSongMetaData();
 			}
-            if (currentScene.Equals(rocksmithScene) && isSwitchingScenes)
+            if (!currentScene.Equals(songScene))
             {
                 if (!currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
                 {
                     if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
                     {
-                        CPH.ObsSetScene(songScene);
-                        lastSceneChange = DateTime.Now;
+                        if (currentScene.Equals(songPausedScene))
+                        {
+                            CPH.RunAction("leavePause");
+                        }
+                        if (isSwitchingScenes)
+                        {
+                            CPH.ObsSetScene(songScene);
+                            lastSceneChange = DateTime.Now;
+                        }
                     }
                 }
                 else
@@ -396,14 +392,18 @@ public class CPHInline
                     //Already in correct scene
                 }
             }
-            else if (currentScene.Equals(songScene) && isSwitchingScenes)
+            else if (currentScene.Equals(songScene))
             {
                 if (currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
                 {
-                    if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
+                    CPH.RunAction("enterPause");
+                    if (isSwitchingScenes)
                     {
-                        CPH.ObsSetScene(songPausedScene);
-                        lastSceneChange = DateTime.Now;
+                        if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
+                        {
+                            CPH.ObsSetScene(songPausedScene);
+                            lastSceneChange = DateTime.Now;
+                        }
                     }
                 }
             }
