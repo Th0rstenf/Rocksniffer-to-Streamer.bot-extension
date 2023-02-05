@@ -190,7 +190,6 @@ public class CPHInline
     private DateTime lastSceneChange;
     private int minDelay;
 	private bool doLogToChat = false;
-    private bool isAlwaysActive = false;
     private bool isSwitchingScenes = true;
     private bool isReactingToSections =true;
 	private bool isArrangementIdentified = false;
@@ -338,19 +337,24 @@ public class CPHInline
 		
         return isRelevant;
     }
-    private void parseLatestResponse()
+    private bool parseLatestResponse()
     {
+        bool success = false;
         try
         {             
             currentResponse = JsonConvert.DeserializeObject<Response>(responseString) ?? throw new Exception("Is never supposed to be zero");
-            currentGameStage = evalGameStage(currentResponse.MemoryReadout.GameStage);
-            currentSongTimer = currentResponse.MemoryReadout.SongTimer;
+            if (currentResponse != null)
+            {
+                currentGameStage = evalGameStage(currentResponse.MemoryReadout.GameStage);
+                currentSongTimer = currentResponse.MemoryReadout.SongTimer;
+                success = true;
+            }
         }
         catch (JsonException ex)
         {
             debug("Error parsing response: " + ex.Message);
         }
-        
+        return success;
     }
     private void saveSongMetaData()
     {
@@ -455,15 +459,20 @@ public class CPHInline
             }
             else if (currentScene.Equals(songScene))
             {
-                if (currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
+                if (currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer) 
+                    && !currentResponse.MemoryReadout.SongTimer.Equals(0)) //Checking for zero, as otherwise the start of the song can be mistakenly identified as pause
                 {
-                    CPH.RunAction("enterPause");
-                    if (isSwitchingScenes)
+                    //When ending the song, there are a few responses with the same time before game state switches. Not triggering a pause if it's less than 250ms to end of song.
+                    if ((currentResponse.SongDetails.SongLength - currentResponse.MemoryReadout.SongTimer) > 0.25)
                     {
-                        if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
+                        CPH.RunAction("enterPause");
+                        if (isSwitchingScenes)
                         {
-                            CPH.ObsSetScene(songPausedScene);
-                            lastSceneChange = DateTime.Now;
+                            if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
+                            {
+                                CPH.ObsSetScene(songPausedScene);
+                                lastSceneChange = DateTime.Now;
+                            }
                         }
                     }
                 }
@@ -548,12 +557,14 @@ public class CPHInline
         {
             if (getLatestResponse())
             {
-                parseLatestResponse();
-                saveNoteDataIfNecessary();
-                performSceneSwitchIfNecessary();
-                if (isReactingToSections)
+                if (parseLatestResponse())
                 {
-                    checkSectionActions();
+                    saveNoteDataIfNecessary();
+                    performSceneSwitchIfNecessary();
+                    if (isReactingToSections)
+                    {
+                        checkSectionActions();
+                    }
                 }
             }
             else
