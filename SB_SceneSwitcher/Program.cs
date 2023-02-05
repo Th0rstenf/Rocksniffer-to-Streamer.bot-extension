@@ -153,7 +153,7 @@ public class CPHInline
         ,Bridge
         ,Breakdown
     }
-    enum AcivityBehavior
+    enum ActivityBehavior
     {
         WhiteList
         ,BlackList
@@ -167,7 +167,7 @@ public class CPHInline
     private GameStage lastGameStage;
     private SectionType currentSectionType;
     private SectionType lastSectionType;
-    private AcivityBehavior itsBehavior;
+    private ActivityBehavior itsBehavior;
     private string[] blackListedScenes = null!;
     private double currentSongTimer;
     private double lastSongTimer;
@@ -243,17 +243,17 @@ public class CPHInline
         string behaviorString = CPH.GetGlobalVar<string>("behavior");
         if (behaviorString!= null)
         {
-            if (behaviorString.ToLower().Contains("whitelist")) itsBehavior = AcivityBehavior.WhiteList;
-            else if (behaviorString.ToLower().Contains("blacklist")) itsBehavior = AcivityBehavior.BlackList;
-            else if (behaviorString.ToLower().Contains("always")) itsBehavior = AcivityBehavior.AlwaysOn;
+            if (behaviorString.ToLower().Contains("whitelist")) itsBehavior = ActivityBehavior.WhiteList;
+            else if (behaviorString.ToLower().Contains("blacklist")) itsBehavior = ActivityBehavior.BlackList;
+            else if (behaviorString.ToLower().Contains("always")) itsBehavior = ActivityBehavior.AlwaysOn;
             else
             {
-                itsBehavior = AcivityBehavior.WhiteList;
+                itsBehavior = ActivityBehavior.WhiteList;
                 debug("Behavior not configured, setting to whitelist as default");
             }
         }
 
-        if (itsBehavior == AcivityBehavior.BlackList)
+        if (itsBehavior == ActivityBehavior.BlackList)
         {
             string temp = CPH.GetGlobalVar<string>("blackList");
             blackListedScenes = temp.Split(',');
@@ -301,7 +301,7 @@ public class CPHInline
         currentScene = CPH.ObsGetCurrentScene();
         switch (itsBehavior)
         {
-            case AcivityBehavior.WhiteList:
+            case ActivityBehavior.WhiteList:
             {
                 if (currentScene != null)
                 {
@@ -314,7 +314,7 @@ public class CPHInline
                 }
                 break;
             }
-            case AcivityBehavior.BlackList:
+            case ActivityBehavior.BlackList:
             {
                isRelevant = true;
                 foreach (string str in blackListedScenes)
@@ -327,7 +327,7 @@ public class CPHInline
                 }    
                 break;
             }
-            case AcivityBehavior.AlwaysOn:
+            case ActivityBehavior.AlwaysOn:
             {
                  isRelevant= true;
                  break;
