@@ -520,7 +520,7 @@ public class CPHInline
         }
         if (currentGameStage != lastGameStage)
         {
-            CPH.SetGlobalVar("GameState",currentGameStage.ToString());
+            CPH.SetGlobalVar("gameState",currentGameStage.ToString());
         }
         lastGameStage = currentGameStage;
         lastSongTimer = currentResponse.MemoryReadout.SongTimer;

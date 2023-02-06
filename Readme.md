@@ -4,8 +4,29 @@ A [streamer.bot](https://streamer.bot) implementation to replace Warth's SceneSw
 
 ## Description
 
+## Switching Scenes
 This code fetches the output of Rocksniffer and evaluates game state and song timer. Depending on the state it switches to the scenes defined in global variables for Rocksmith, song, and break (pausing during a song)
-In addition to that, it checks the current sections name, and differentiates between:
+
+## Providing Global variables
+
+The following note data is written to global variables whenever they change:
+* accuracy
+* currentHitStreak
+* currentMissStreak
+* totalNotes
+* totalNotesHit
+* totalNotesMissed
+
+In addition to that, the following are provided to SB, as soon as the arrangement is identified:
+* songName 
+* artistName 
+* albumName 
+* arrangement 
+* arrangementType
+* tuning
+
+## Reacting to Sections
+Assuming the song has properly named sections, the following section types are recognized:
 
 * Breakdown
 * Bridge
@@ -16,11 +37,13 @@ In addition to that, it checks the current sections name, and differentiates bet
 * No guitar
 * Default (always active when scene name didn't give useful information)
 
-For each of those sections, an enter and leave action is provided. Those will automatically be called by the SceneSwitcher action. Feel free to fill them with whatever you like.
+For each of those sections, an enter and leave action is provided. Those will automatically be called by the SceneSwitcher action. Feel free to fill them with whatever you like.  
+In addition to that, actions for entering/leaving a pause, as well as starting or ending a song are provided. 
 
-### Installing
+## Installing
 
-* Import the content of import.txt into streamer.bot
+### Adding it to streamerbot
+* Import the content of importCode.txt into streamer.bot
 * Modify the global variables inside the *SceneSwitcher* action to match your configuration
 * Check if the code is compiling. If it doesn't, a reference is missing. References necessary are:
     * mscorlib.dll
@@ -28,11 +51,35 @@ For each of those sections, an enter and leave action is provided. Those will au
     * System.Net.Http.dll
     * Newtonsoft.Json.dll (should be in your streamer.bot folder)
 * Create a timed action (navigate Setting -> Timed Actions)
-* Connect it with the imported action `SceneSwitcher`
+    * Configure an interval of 1 second
+    * Make sure to tick *enabled* and *repeat*
+    * Connect it with the imported action `SceneSwitcher`
+
+### Adapt to your needs
+
+Inside the SceneSwitcher action, there are several global parameters that can/need to be changed:
+For scene switching:
+* menuScene - This should be scene you want to load when you're in the menu or tuner
+* songScene - The scene you switch to when the song starts
+* pauseScene - the scene that will be loaded when pausing during a song.  
+
+For the sniffer connection:
+* snifferIP - ip address of the PC that is running rocksniffer. If it's the same it should be `"127.0.0.1"` (Quotes are not optional!)
+* snifferPort - should usually never be touched (`9938`), but provided for sake of completeness.
+
+For determining when it is active:
+* behavior - The following options are available:
+    * Whitelist - Will only be active during the scenes defined in *menuScene*, *songScene* and *pauseScene*
+    * Blacklist - Will be active unless the current scene is in the blacklist
+    * AlwaysOn - Self-explanatory
+* blackList - Enter blacklisted scenes, coma separated.
+
+To disable certain aspects:
+* switchScenes - True or false
+* sectionActions - True or false
 
 
-
-### Dependencies
+## Dependencies
 
 * Rocksmith
 * [Rocksniffer](https://github.com/kokolihapihvi/RockSniffer/releases)
@@ -56,9 +103,10 @@ Otherwise streamerbot will misinterpret it as double value. If the issues can no
 * 0.2
    * Detecting different tyes of sections and calling enter/leave actions in Streamerbot 
    * Storing Note data and other meta data in global variables to be used in other actions
-   * Added option to disable white listing
+   * Behavior can now be changed between Whitelist / Blacklist / Alwayson
    * Added option to disable scene switches
    * Added option to disable section change actions
+   * Providing note & meta data in global variables
 * 0.1
     * Initial Release
 
