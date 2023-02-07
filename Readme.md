@@ -42,7 +42,7 @@ Assuming the song has properly named sections, the following section types are r
 * Default (always active when scene name didn't give useful information)
 
 For each of those sections, an enter and leave action is provided. Those will automatically be called by the SceneSwitcher action. Feel free to fill them with whatever you like.  
-In addition to that, actions for entering/leaving a pause, as well as starting or ending a song are provided. 
+In addition to that, actions for entering/leaving a pause, the tuner and starting or ending a song are provided. 
 
 ## Installing
 

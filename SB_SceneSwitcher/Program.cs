@@ -475,8 +475,12 @@ public class CPHInline
     }
     private void performSceneSwitchIfNecessary()
     {
+        if ((currentGameStage == GameStage.InTuner) && (lastGameStage != GameStage.InTuner)) CPH.RunAction("enterTuner");
+        if ((currentGameStage != GameStage.InTuner) && (lastGameStage == GameStage.InTuner)) CPH.RunAction("leaveTuner");
+
+
         if (currentGameStage == GameStage.InSong)
-        {		
+        {	
             if (lastGameStage != GameStage.InSong)
             {	
                 CPH.RunAction("SongStart");
