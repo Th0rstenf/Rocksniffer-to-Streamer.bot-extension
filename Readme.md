@@ -16,6 +16,10 @@ The following note data is written to global variables whenever they change:
 * totalNotes
 * totalNotesHit
 * totalNotesMissed
+* totalNotesSinceLaunch
+* totalNotesHitSinceLaunch
+* totalNotesMissedSinceLaunch
+* accuracySinceLaunch
 
 In addition to that, the following are provided to SB, as soon as the arrangement is identified:
 * songName 

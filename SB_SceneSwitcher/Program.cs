@@ -3,7 +3,7 @@ using System.Net.Http;
 using Newtonsoft.Json;
 
 //Mock CPH
-/*
+
 public class CPHmock
 {
     private string currentScene = "RocksmithBigCam";
@@ -65,7 +65,7 @@ public class CPHmock
     }
 
 }
-*/
+
 
 // Objects for parsing the song data
 // 
@@ -178,6 +178,13 @@ public class CPHInline
     private Response currentResponse = null!;
     private NoteData lastNoteData = null!;
 
+    private UInt32 totalNotesThisStream;
+    private UInt32 totalNotesHitThisStream;
+    private UInt32 totalNotesMissedThisStream;
+    private double accuracyThisStream;
+
+
+
     private string menuScene = null!;
     private string songScene = null!;
     private string songPausedScene = null!;
@@ -195,7 +202,7 @@ public class CPHInline
     private bool isReactingToSections =true;
 	private bool isArrangementIdentified = false;
     //Needs to be commented out in streamer bot.
-    //private CPHmock CPH = new CPHmock();
+    private CPHmock CPH = new CPHmock();
     
     void debug(string str)
     {
@@ -262,7 +269,10 @@ public class CPHInline
         {
             blackListedScenes = new string[1];
         }
-        
+        totalNotesThisStream= 0;
+        totalNotesHitThisStream = 0;
+        totalNotesMissedThisStream = 0;
+        accuracyThisStream = 0;
         currentSectionIndex = -1;
         lastSectionType = currentSectionType = SectionType.Default;
         lastGameStage = currentGameStage = GameStage.Menu;
@@ -360,14 +370,14 @@ public class CPHInline
     }
     private void saveSongMetaData()
     {
-        CPH.SetGlobalVar("SongName", currentResponse.SongDetails.SongName, false);
-        CPH.SetGlobalVar("ArtistName", currentResponse.SongDetails.ArtistName, false);
-        CPH.SetGlobalVar("AlbumName", currentResponse.SongDetails.AlbumName, false);
+        CPH.SetGlobalVar("songName", currentResponse.SongDetails.SongName, false);
+        CPH.SetGlobalVar("artistName", currentResponse.SongDetails.ArtistName, false);
+        CPH.SetGlobalVar("albumName", currentResponse.SongDetails.AlbumName, false);
         if (currentArrangement != null)
         {
-            CPH.SetGlobalVar("Arrangement", currentArrangement.Name, false);
-            CPH.SetGlobalVar("ArrangementType", currentArrangement.type, false);
-            CPH.SetGlobalVar("Tuning", currentArrangement.Tuning.TuningName, false);
+            CPH.SetGlobalVar("arrangement", currentArrangement.Name, false);
+            CPH.SetGlobalVar("arrangementType", currentArrangement.type, false);
+            CPH.SetGlobalVar("tuning", currentArrangement.Tuning.TuningName, false);
         }
     }
     private void saveNoteDataIfNecessary()
@@ -376,12 +386,28 @@ public class CPHInline
         {
             if (lastNoteData != currentResponse.MemoryReadout.NoteData)
             {
-                CPH.SetGlobalVar("Accuracy", currentResponse.MemoryReadout.NoteData.Accuracy, false);
-                CPH.SetGlobalVar("CurrentHitStreak", currentResponse.MemoryReadout.NoteData.CurrentHitStreak, false);
-                CPH.SetGlobalVar("CurrentMissStreak", currentResponse.MemoryReadout.NoteData.CurrentMissStreak, false);
-                CPH.SetGlobalVar("TotalNotes", currentResponse.MemoryReadout.NoteData.TotalNotes, false);
-                CPH.SetGlobalVar("TotalNotesHit", currentResponse.MemoryReadout.NoteData.TotalNotesHit, false);
-                CPH.SetGlobalVar("TotalNotesMissed", currentResponse.MemoryReadout.NoteData.TotalNotesMissed, false);
+                CPH.SetGlobalVar("accuracy", currentResponse.MemoryReadout.NoteData.Accuracy, false);
+                CPH.SetGlobalVar("currentHitStreak", currentResponse.MemoryReadout.NoteData.CurrentHitStreak, false);
+                CPH.SetGlobalVar("currentMissStreak", currentResponse.MemoryReadout.NoteData.CurrentMissStreak, false);
+                CPH.SetGlobalVar("totalNotes", currentResponse.MemoryReadout.NoteData.TotalNotes, false);
+                CPH.SetGlobalVar("totalNotesHit", currentResponse.MemoryReadout.NoteData.TotalNotesHit, false);
+                CPH.SetGlobalVar("totalNotesMissed", currentResponse.MemoryReadout.NoteData.TotalNotesMissed, false);
+
+                UInt32 additionalNotesHit = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesHit - lastNoteData.TotalNotesHit);
+                UInt32 additionalNotesMissed = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesMissed - lastNoteData.TotalNotesMissed);
+                UInt32 additionalNotes = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotes - lastNoteData.TotalNotes);
+                totalNotesHitThisStream += additionalNotesHit;
+                totalNotesMissedThisStream+= additionalNotesMissed;
+                totalNotesThisStream += additionalNotes;
+                CPH.SetGlobalVar("totalNotesSinceLaunch", totalNotesThisStream, false);
+                CPH.SetGlobalVar("totalNotesHitSinceLaunch", totalNotesHitThisStream, false);
+                CPH.SetGlobalVar("totalNotesMissedSinceLaunch", totalNotesMissedThisStream, false);
+                if (totalNotesThisStream > 0)
+                {
+                    accuracyThisStream = 100.0 * ((double)(totalNotesHitThisStream) / totalNotesThisStream);
+                }
+                CPH.SetGlobalVar("accuracySinceLaunch", accuracyThisStream, false);            
+
                 lastNoteData = currentResponse.MemoryReadout.NoteData;
             }
         }
