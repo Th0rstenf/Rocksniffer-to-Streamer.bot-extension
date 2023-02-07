@@ -3,7 +3,7 @@ using System.Net.Http;
 using Newtonsoft.Json;
 
 //Mock CPH
-
+/*
 public class CPHmock
 {
     private string currentScene = "RocksmithBigCam";
@@ -65,7 +65,7 @@ public class CPHmock
     }
 
 }
-
+*/
 
 // Objects for parsing the song data
 // 
@@ -202,7 +202,7 @@ public class CPHInline
     private bool isReactingToSections =true;
 	private bool isArrangementIdentified = false;
     //Needs to be commented out in streamer bot.
-    private CPHmock CPH = new CPHmock();
+    //private CPHmock CPH = new CPHmock();
     
     void debug(string str)
     {
@@ -475,8 +475,12 @@ public class CPHInline
     }
     private void performSceneSwitchIfNecessary()
     {
+        if ((currentGameStage == GameStage.InTuner) && (lastGameStage != GameStage.InTuner)) CPH.RunAction("enterTuner");
+        if ((currentGameStage != GameStage.InTuner) && (lastGameStage == GameStage.InTuner)) CPH.RunAction("leaveTuner");
+
+
         if (currentGameStage == GameStage.InSong)
-        {		
+        {	
             if (lastGameStage != GameStage.InSong)
             {	
                 CPH.RunAction("SongStart");
