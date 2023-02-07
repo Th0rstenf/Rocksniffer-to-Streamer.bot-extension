@@ -364,6 +364,6 @@ FodyWeavers.xsd
 
 # User defined
 ImportCode.txt
-
+.vscode
 /.idea/
 *.iml
