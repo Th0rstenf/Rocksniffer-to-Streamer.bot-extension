@@ -138,7 +138,7 @@ public class CPHInline
     private bool isReactingToSections =true;
 	private bool isArrangementIdentified = false;
     //Needs to be commented out in streamer bot.
-    private CPHmock CPH = new CPHmock();
+    //private CPHmock CPH = new CPHmock();
     
     void debug(string str)
     {
@@ -328,10 +328,21 @@ public class CPHInline
                 CPH.SetGlobalVar("totalNotes", currentResponse.MemoryReadout.NoteData.TotalNotes, false);
                 CPH.SetGlobalVar("totalNotesHit", currentResponse.MemoryReadout.NoteData.TotalNotesHit, false);
                 CPH.SetGlobalVar("totalNotesMissed", currentResponse.MemoryReadout.NoteData.TotalNotesMissed, false);
-
-                UInt32 additionalNotesHit = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesHit - lastNoteData.TotalNotesHit);
-                UInt32 additionalNotesMissed = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesMissed - lastNoteData.TotalNotesMissed);
-                UInt32 additionalNotes = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotes - lastNoteData.TotalNotes);
+                UInt32 additionalNotesHit;
+                UInt32 additionalNotesMissed;
+                UInt32 additionalNotes;
+                if (lastNoteData != null)
+                {
+                    additionalNotesHit = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesHit - lastNoteData.TotalNotesHit);
+                    additionalNotesMissed = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesMissed - lastNoteData.TotalNotesMissed);
+                    additionalNotes = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotes - lastNoteData.TotalNotes);
+                }
+                else
+                {
+                    additionalNotesHit = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesHit);
+                    additionalNotesMissed = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesMissed);
+                    additionalNotes = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotes);
+                }
                 totalNotesHitThisStream += additionalNotesHit;
                 totalNotesMissedThisStream+= additionalNotesMissed;
                 totalNotesThisStream += additionalNotes;
@@ -411,9 +422,14 @@ public class CPHInline
     }
     private void performSceneSwitchIfNecessary()
     {
-        if ((currentGameStage == GameStage.InTuner) && (lastGameStage != GameStage.InTuner)) CPH.RunAction("enterTuner");
-        if ((currentGameStage != GameStage.InTuner) && (lastGameStage == GameStage.InTuner)) CPH.RunAction("leaveTuner");
-
+        if ((currentGameStage == GameStage.InTuner) && (lastGameStage != GameStage.InTuner))
+        { 
+            CPH.RunAction("enterTuner");
+        }
+        if ((currentGameStage != GameStage.InTuner) && (lastGameStage == GameStage.InTuner))
+        {
+            CPH.RunAction("leaveTuner");
+        }
 
         if (currentGameStage == GameStage.InSong)
         {	
