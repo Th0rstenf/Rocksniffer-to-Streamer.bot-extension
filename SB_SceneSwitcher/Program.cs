@@ -448,8 +448,21 @@ public class CPHInline
 			if (!isArrangementIdentified)
 			{
 				isArrangementIdentified = identifyArrangement();
-                saveSongMetaData();
-			}
+                try
+                {
+                    saveSongMetaData();
+                }
+                catch ( ObjectDisposedException e)
+                {
+                    debug("Caught object disposed exception when trying to save meta data: " + e.Message);
+                    debug("Trying to reinitialize");
+                    Init();
+                }
+                catch (Exception e )
+                {
+                    debug("Caugt unknown exception when trying to write song meta data: " + e.Message);
+                }
+            }
             if (!currentScene.Equals(songScene))
             {
                 if (!currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
@@ -571,7 +584,20 @@ public class CPHInline
             {
                 if (parseLatestResponse())
                 {
-                    saveNoteDataIfNecessary();
+                    try
+                    {
+                        saveNoteDataIfNecessary();
+                    }
+                    catch (ObjectDisposedException e)
+                    {
+                        debug("Caught object disposed exception when trying to save note data: " + e.Message);
+                        debug("Trying to reinitialize");
+                        Init();
+                    }
+                    catch (Exception e)
+                    {
+                        debug("Caugt unknown exception when trying to write song meta data: " + e.Message);
+                    }
                     performSceneSwitchIfNecessary();
                     if (isReactingToSections)
                     {
