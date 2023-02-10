@@ -96,6 +96,10 @@ public class CPHInline
         ,AlwaysOn
     }
 
+    //Needs to be commented out in streamer bot.
+    //private CPHmock CPH = new CPHmock();
+
+
     private string snifferIp = null!;
     private string snifferPort = null!;
 
@@ -119,8 +123,6 @@ public class CPHInline
     private UInt32 totalNotesMissedThisStream;
     private double accuracyThisStream;
 
-
-
     private string menuScene = null!;
     private string songScene = null!;
     private string songPausedScene = null!;
@@ -137,14 +139,14 @@ public class CPHInline
     private bool isSwitchingScenes = true;
     private bool isReactingToSections =true;
 	private bool isArrangementIdentified = false;
-    //Needs to be commented out in streamer bot.
-    //private CPHmock CPH = new CPHmock();
+
     
     void debug(string str)
     {
         if (doLogToChat) CPH.SendMessage(str);
         CPH.LogDebug(str);
     }
+
     private GameStage evalGameStage(string stage)
     {
         GameStage currentStage = GameStage.Menu;
@@ -166,7 +168,6 @@ public class CPHInline
     }
     public void Init()
     {
-
         //Init happens before arguments are passed, therefore temporary globals are used.
         snifferIp = CPH.GetGlobalVar<string>("snifferIP").Replace('"',' ').Trim();
         snifferPort = "9938";
@@ -237,6 +238,12 @@ public class CPHInline
         {
             debug("Error in response");
             debug(string.Format("Caught exception trying to get response from sniffer: {0}", e.Message));
+            success = false;
+        }
+        catch (ObjectDisposedException e)
+        {
+            debug("HttpClient was disposed. Reinitialising.");
+            Init();
             success = false;
         }
         if (!success) debug("Failed fetching response");
