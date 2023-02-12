@@ -96,6 +96,10 @@ public class CPHInline
         ,AlwaysOn
     }
 
+    //Needs to be commented out in streamer bot.
+    //private CPHmock CPH = new CPHmock();
+
+
     private string snifferIp = null!;
     private string snifferPort = null!;
 
@@ -119,8 +123,6 @@ public class CPHInline
     private UInt32 totalNotesMissedThisStream;
     private double accuracyThisStream;
 
-
-
     private string menuScene = null!;
     private string songScene = null!;
     private string songPausedScene = null!;
@@ -137,13 +139,19 @@ public class CPHInline
     private bool isSwitchingScenes = true;
     private bool isReactingToSections =true;
 	private bool isArrangementIdentified = false;
-    //Needs to be commented out in streamer bot.
-    //private CPHmock CPH = new CPHmock();
+
     
     void debug(string str)
     {
         if (doLogToChat) CPH.SendMessage(str);
         CPH.LogDebug(str);
+    }
+
+    private string formatTime(int totalSeconds)
+    {
+        TimeSpan timeSpan= TimeSpan.FromSeconds(totalSeconds);
+        
+        return timeSpan.ToString();
     }
     private GameStage evalGameStage(string stage)
     {
@@ -166,7 +174,6 @@ public class CPHInline
     }
     public void Init()
     {
-
         //Init happens before arguments are passed, therefore temporary globals are used.
         snifferIp = CPH.GetGlobalVar<string>("snifferIP").Replace('"',' ').Trim();
         snifferPort = "9938";
@@ -239,6 +246,12 @@ public class CPHInline
             debug(string.Format("Caught exception trying to get response from sniffer: {0}", e.Message));
             success = false;
         }
+        catch (ObjectDisposedException e)
+        {
+            debug("HttpClient was disposed. Reinitialising.");
+            Init();
+            success = false;
+        }
         if (!success) debug("Failed fetching response");
         return success;
     }
@@ -309,6 +322,9 @@ public class CPHInline
         CPH.SetGlobalVar("songName", currentResponse.SongDetails.SongName, false);
         CPH.SetGlobalVar("artistName", currentResponse.SongDetails.ArtistName, false);
         CPH.SetGlobalVar("albumName", currentResponse.SongDetails.AlbumName, false);
+        CPH.SetGlobalVar("songLength", (int)currentResponse.SongDetails.SongLength, false);
+        string formatted = formatTime((int)currentResponse.SongDetails.SongLength);
+        CPH.SetGlobalVar("songLengthFormatted",formatted, false);
         if (currentArrangement != null)
         {
             CPH.SetGlobalVar("arrangement", currentArrangement.Name, false);
@@ -320,6 +336,9 @@ public class CPHInline
     {
         if (currentGameStage == GameStage.InSong)
         {
+            CPH.SetGlobalVar("songTimer", (int)currentResponse.MemoryReadout.SongTimer, false);
+            string formatted = formatTime((int)currentResponse.MemoryReadout.SongTimer);
+            CPH.SetGlobalVar("songTimerFormatted", formatted,false);
             if (lastNoteData != currentResponse.MemoryReadout.NoteData)
             {
                 CPH.SetGlobalVar("accuracy", currentResponse.MemoryReadout.NoteData.Accuracy, false);
@@ -344,7 +363,7 @@ public class CPHInline
                     additionalNotes = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotes);
                 }
                 totalNotesHitThisStream += additionalNotesHit;
-                totalNotesMissedThisStream+= additionalNotesMissed;
+                totalNotesMissedThisStream += additionalNotesMissed;
                 totalNotesThisStream += additionalNotes;
                 CPH.SetGlobalVar("totalNotesSinceLaunch", totalNotesThisStream, false);
                 CPH.SetGlobalVar("totalNotesHitSinceLaunch", totalNotesHitThisStream, false);
@@ -356,6 +375,7 @@ public class CPHInline
                 CPH.SetGlobalVar("accuracySinceLaunch", accuracyThisStream, false);            
 
                 lastNoteData = currentResponse.MemoryReadout.NoteData;
+                //Console.WriteLine(string.Format("Notes this stream: {0}/{1}. Accuracy: {2}",totalNotesHitThisStream,totalNotesThisStream, accuracyThisStream));
             }
         }
     }
@@ -441,8 +461,21 @@ public class CPHInline
 			if (!isArrangementIdentified)
 			{
 				isArrangementIdentified = identifyArrangement();
-                saveSongMetaData();
-			}
+                try
+                {
+                    saveSongMetaData();
+                }
+                catch ( ObjectDisposedException e)
+                {
+                    debug("Caught object disposed exception when trying to save meta data: " + e.Message);
+                    debug("Trying to reinitialize");
+                    Init();
+                }
+                catch (Exception e )
+                {
+                    debug("Caugt unknown exception when trying to write song meta data: " + e.Message);
+                }
+            }
             if (!currentScene.Equals(songScene))
             {
                 if (!currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
@@ -497,6 +530,7 @@ public class CPHInline
             {
                 isArrangementIdentified = false;
 				invalidateGlobalVariables();
+                lastNoteData = null;
                 CPH.RunAction("SongEnd");
             }
         }
@@ -564,7 +598,20 @@ public class CPHInline
             {
                 if (parseLatestResponse())
                 {
-                    saveNoteDataIfNecessary();
+                    try
+                    {
+                        saveNoteDataIfNecessary();
+                    }
+                    catch (ObjectDisposedException e)
+                    {
+                        debug("Caught object disposed exception when trying to save note data: " + e.Message);
+                        debug("Trying to reinitialize");
+                        Init();
+                    }
+                    catch (Exception e)
+                    {
+                        debug("Caugt unknown exception when trying to write song meta data: " + e.Message);
+                    }
                     performSceneSwitchIfNecessary();
                     if (isReactingToSections)
                     {
