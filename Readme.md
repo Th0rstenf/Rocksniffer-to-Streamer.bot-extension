@@ -9,7 +9,7 @@ This code fetches the output of Rocksniffer and evaluates game state and song ti
 
 ## Providing Global variables
 
-The following note data is written to global variables whenever they change:
+The following data is written to global variables whenever they change:
 * accuracy
 * currentHitStreak
 * currentMissStreak
@@ -20,6 +20,8 @@ The following note data is written to global variables whenever they change:
 * totalNotesHitSinceLaunch
 * totalNotesMissedSinceLaunch
 * accuracySinceLaunch
+* songLength (raw seconds)
+* songLengthFormatted (Formatted as HH:MM:SS)
 
 In addition to that, the following are provided to SB, as soon as the arrangement is identified:
 * songName 
@@ -28,6 +30,8 @@ In addition to that, the following are provided to SB, as soon as the arrangemen
 * arrangement 
 * arrangementType
 * tuning
+* songLength (raw seconds)
+* songLengthFormatted (HH:MM:SS)
 
 ## Reacting to Sections
 Assuming the song has properly named sections, the following section types are recognized:
