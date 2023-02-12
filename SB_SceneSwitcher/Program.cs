@@ -97,7 +97,7 @@ public class CPHInline
     }
 
     //Needs to be commented out in streamer bot.
-    //private CPHmock CPH = new CPHmock();
+    private CPHmock CPH = new CPHmock();
 
 
     private string snifferIp = null!;
@@ -147,6 +147,12 @@ public class CPHInline
         CPH.LogDebug(str);
     }
 
+    private string formatTime(int totalSeconds)
+    {
+        TimeSpan timeSpan= TimeSpan.FromSeconds(totalSeconds);
+        
+        return timeSpan.ToString();
+    }
     private GameStage evalGameStage(string stage)
     {
         GameStage currentStage = GameStage.Menu;
@@ -316,6 +322,9 @@ public class CPHInline
         CPH.SetGlobalVar("songName", currentResponse.SongDetails.SongName, false);
         CPH.SetGlobalVar("artistName", currentResponse.SongDetails.ArtistName, false);
         CPH.SetGlobalVar("albumName", currentResponse.SongDetails.AlbumName, false);
+        CPH.SetGlobalVar("songLength", (int)currentResponse.SongDetails.SongLength, false);
+        string formatted = formatTime((int)currentResponse.SongDetails.SongLength);
+        CPH.SetGlobalVar("songLengthFormatted",formatted, false);
         if (currentArrangement != null)
         {
             CPH.SetGlobalVar("arrangement", currentArrangement.Name, false);
@@ -327,6 +336,9 @@ public class CPHInline
     {
         if (currentGameStage == GameStage.InSong)
         {
+            CPH.SetGlobalVar("songTimer", (int)currentResponse.MemoryReadout.SongTimer, false);
+            string formatted = formatTime((int)currentResponse.MemoryReadout.SongTimer);
+            CPH.SetGlobalVar("songTimerFormatted", formatted,false);
             if (lastNoteData != currentResponse.MemoryReadout.NoteData)
             {
                 CPH.SetGlobalVar("accuracy", currentResponse.MemoryReadout.NoteData.Accuracy, false);
