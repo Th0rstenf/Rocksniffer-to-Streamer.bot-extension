@@ -97,7 +97,7 @@ public class CPHInline
     }
 
     //Needs to be commented out in streamer bot.
-    private CPHmock CPH = new CPHmock();
+    //private CPHmock CPH = new CPHmock();
 
 
     private string snifferIp = null!;
@@ -363,7 +363,7 @@ public class CPHInline
                 CPH.SetGlobalVar("accuracySinceLaunch", accuracyThisStream, false);            
 
                 lastNoteData = currentResponse.MemoryReadout.NoteData;
-                Console.WriteLine(string.Format("Notes this stream: {0}/{1}. Accuracy: {2}",totalNotesHitThisStream,totalNotesThisStream, accuracyThisStream));
+                //Console.WriteLine(string.Format("Notes this stream: {0}/{1}. Accuracy: {2}",totalNotesHitThisStream,totalNotesThisStream, accuracyThisStream));
             }
         }
     }
