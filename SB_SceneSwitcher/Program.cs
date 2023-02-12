@@ -97,7 +97,7 @@ public class CPHInline
     }
 
     //Needs to be commented out in streamer bot.
-    //private CPHmock CPH = new CPHmock();
+    private CPHmock CPH = new CPHmock();
 
 
     private string snifferIp = null!;
@@ -351,7 +351,7 @@ public class CPHInline
                     additionalNotes = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotes);
                 }
                 totalNotesHitThisStream += additionalNotesHit;
-                totalNotesMissedThisStream+= additionalNotesMissed;
+                totalNotesMissedThisStream += additionalNotesMissed;
                 totalNotesThisStream += additionalNotes;
                 CPH.SetGlobalVar("totalNotesSinceLaunch", totalNotesThisStream, false);
                 CPH.SetGlobalVar("totalNotesHitSinceLaunch", totalNotesHitThisStream, false);
@@ -363,6 +363,7 @@ public class CPHInline
                 CPH.SetGlobalVar("accuracySinceLaunch", accuracyThisStream, false);            
 
                 lastNoteData = currentResponse.MemoryReadout.NoteData;
+                Console.WriteLine(string.Format("Notes this stream: {0}/{1}. Accuracy: {2}",totalNotesHitThisStream,totalNotesThisStream, accuracyThisStream));
             }
         }
     }
@@ -517,6 +518,7 @@ public class CPHInline
             {
                 isArrangementIdentified = false;
 				invalidateGlobalVariables();
+                lastNoteData = null;
                 CPH.RunAction("SongEnd");
             }
         }
