@@ -705,7 +705,19 @@ public class CPHInline
                     {
                         debug("Caugt unknown exception when trying to write song meta data: " + e.Message);
                     }
-                    performSceneSwitchIfNecessary();
+
+                    try
+                    {
+                        performSceneSwitchIfNecessary();
+                    }
+                    catch(System.NullReferenceException e)
+                    {
+                        debug("Caught null reference in scene switch: " + e.Message);
+                        debug("Reinitialising to fix the issue");
+                        Init();
+                    }
+
+
                     if (isReactingToSections)
                     {
                         checkSectionActions();
