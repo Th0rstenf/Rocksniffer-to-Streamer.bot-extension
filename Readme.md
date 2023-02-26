@@ -5,7 +5,7 @@ A [streamer.bot](https://streamer.bot) implementation to replace Warth's SceneSw
 ## Description
 
 ## Switching Scenes
-This code fetches the output of Rocksniffer and evaluates game state and song timer. Depending on the state it switches to the scenes defined in global variables for Rocksmith, song, and break (pausing during a song)
+This code fetches the output of Rocksniffer and evaluates game state and song timer. Depending on the state it switches to the scenes defined in global variables for Rocksmith, song, and break (pausing during a song).  
 
 ## Providing Global variables
 
@@ -101,6 +101,8 @@ Note that the IP address needs to be entered with quotes e.g.
 "127.0.0.1"
 ```
 Otherwise streamerbot will misinterpret it as double value. If the issues can not be solved this way, feel free to contact me in discord. See below.
+
+With the usage of whitelist or blacklist, make sure to only switch to scenes that are valid for running. Otherwise you will not automatically switch back!
 
 ## Author
 
