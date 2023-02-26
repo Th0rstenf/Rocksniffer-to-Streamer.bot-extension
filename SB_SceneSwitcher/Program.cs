@@ -157,11 +157,11 @@ public class CPHInline
     {
         GameStage currentStage = GameStage.Menu;
         // Other potential values are: MainMenu las_SongList las_SongOptions las_tuner
-        if (stage.Equals("las_game"))
+        if (stage.Equals("las_game") || stage.Equals("sa_game"))
         {
             currentStage = GameStage.InSong;
         }
-        else if (stage.Equals("las_tuner"))
+        else if (stage.Contains("tuner"))
         {
             currentStage = GameStage.InTuner;
         }
