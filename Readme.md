@@ -1,4 +1,4 @@
-# StreamerBot_RocksmithSceneSwitcher
+# Rocksniffer to Streamer.bot extension
 
 A [streamer.bot](https://streamer.bot) implementation to replace Warth's SceneSwitcher
 
