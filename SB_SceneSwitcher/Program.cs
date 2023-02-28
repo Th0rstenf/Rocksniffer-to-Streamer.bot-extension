@@ -95,6 +95,11 @@ public class CPHInline
         ,BlackList
         ,AlwaysOn
     }
+    enum StreamProgramm
+    {
+        OBS
+        ,SLOBS
+    }
 
     //Needs to be commented out in streamer bot.
     private CPHmock CPH = new CPHmock();
@@ -152,6 +157,11 @@ public class CPHInline
         TimeSpan timeSpan= TimeSpan.FromSeconds(totalSeconds);
         
         return timeSpan.ToString();
+    }
+
+    private void switchToScene(string scene) 
+    {
+        CPH.ObsSetScene(scene);
     }
     private GameStage evalGameStage(string stage)
     {
@@ -489,7 +499,7 @@ public class CPHInline
                         }
                         if (isSwitchingScenes)
                         {
-                            CPH.ObsSetScene(songScene);
+                            switchToScene(songScene);
                             lastSceneChange = DateTime.Now;
                         }
                     }
@@ -508,7 +518,7 @@ public class CPHInline
                     {
                         if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
                         {
-                            CPH.ObsSetScene(songPausedScene);
+                            switchToScene(songPausedScene);
                             lastSceneChange = DateTime.Now;
                         }
                     }
@@ -522,7 +532,7 @@ public class CPHInline
             {
                 if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
                 {
-                    CPH.ObsSetScene(menuScene);
+                    switchToScene(menuScene);
                     lastSceneChange = DateTime.Now;
                 }
             }
