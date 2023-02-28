@@ -7,12 +7,13 @@
 
     public void LogVerbose(string str) { Console.WriteLine(str); }
 
-    public void ObsSetScene(string str) { Console.WriteLine(string.Format("Setting scene: {0}", str)); currentScene = str; }
+    public void ObsSetScene(string str) { Console.WriteLine(string.Format("Setting OBS scene to {0}", str)); currentScene = str; }
 
     public string ObsGetCurrentScene() { return currentScene; }
 
-    public void ObsSetGdiText(string scene, string source, string text, int connection = 0) { Console.WriteLine(string.Format("Setting text field {1} in scene {0} to {2}", scene, source, text)); }
+    public void SlobsSetScene(string str) { Console.WriteLine(string.Format("Setting SLOBS scene to {0}", str)); }
 
+    public string SlobsGetCurrentScene() { return currentScene; }
     public void SendMessage(string str) { Console.WriteLine(str); }
 
     public void RunAction(string str) { Console.WriteLine(string.Format("Running action: {0}", str)); }

@@ -1,6 +1,7 @@
 using System;
 using System.Net.Http;
 using Newtonsoft.Json;
+using static System.Formats.Asn1.AsnWriter;
 
 
 // Objects for parsing the song data
@@ -113,6 +114,7 @@ public class CPHInline
     private SectionType currentSectionType;
     private SectionType lastSectionType;
     private ActivityBehavior itsBehavior;
+    private StreamProgramm itsStreamProgramm;
     private string[] blackListedScenes = null!;
     private double currentSongTimer;
     private double lastSongTimer;
@@ -161,7 +163,48 @@ public class CPHInline
 
     private void switchToScene(string scene) 
     {
-        CPH.ObsSetScene(scene);
+        switch (itsStreamProgramm)
+        {
+            case StreamProgramm.OBS:
+            {
+                CPH.ObsSetScene(scene); break;
+            }
+            case StreamProgramm.SLOBS:
+            {
+                CPH.SlobsSetScene(scene);
+                break;
+            }
+            default:
+            {
+                debug("No stream program defined");
+                break;
+            }
+        }
+    }
+
+    private string getGurrentScene()
+    {
+        string scene = null!;
+        switch (itsStreamProgramm)
+        {
+            case StreamProgramm.OBS:
+            {
+                scene = CPH.ObsGetCurrentScene(); 
+                break;
+            }
+            case StreamProgramm.SLOBS:
+            {
+                scene = scene = CPH.SlobsGetCurrentScene();
+                break;
+            }
+            default:
+            {
+                debug("No stream program defined");
+                scene = "";
+                break;
+            }
+        }
+        return scene;
     }
     private GameStage evalGameStage(string stage)
     {
@@ -222,6 +265,9 @@ public class CPHInline
         {
             blackListedScenes = new string[1];
         }
+
+        string streamProgramm = CPH.GetGlobalVar<string>("program");
+
         totalNotesThisStream= 0;
         totalNotesHitThisStream = 0;
         totalNotesMissedThisStream = 0;
@@ -268,7 +314,7 @@ public class CPHInline
     private bool isRelevantScene()
     {
         bool isRelevant = false;
-        currentScene = CPH.ObsGetCurrentScene();
+        currentScene = getGurrentScene();
         switch (itsBehavior)
         {
             case ActivityBehavior.WhiteList:
@@ -576,8 +622,6 @@ public class CPHInline
             if (hasSectionChanged)
             {
 				identifySection();
-				//TODO: Should only happen if I execute it
-				CPH.ObsSetGdiText("Projection(RS)","textSectionName",currentArrangement.Sections[currentSectionIndex].Name);
 				if (currentSectionType != lastSectionType)
                 {
                     CPH.RunAction(string.Format("leave{0}", Enum.GetName(typeof(SectionType),lastSectionType)));
