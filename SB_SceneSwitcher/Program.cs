@@ -104,7 +104,7 @@ public class CPHInline
     }
 
     //Needs to be commented out in streamer bot.
-    private CPHmock CPH = new CPHmock();
+    //private CPHmock CPH = new CPHmock();
 
 
     private string snifferIp = null!;
