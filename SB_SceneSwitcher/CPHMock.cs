@@ -7,10 +7,13 @@
 
     public void LogVerbose(string str) { Console.WriteLine(str); }
 
+    public bool ObsIsConnected(int connection = 0) { return true; }
     public void ObsSetScene(string str) { Console.WriteLine(string.Format("Setting OBS scene to {0}", str)); currentScene = str; }
 
     public string ObsGetCurrentScene() { return currentScene; }
 
+
+    public bool SlobsIsConnected(int connectiot = 0) { return false; }
     public void SlobsSetScene(string str) { Console.WriteLine(string.Format("Setting SLOBS scene to {0}", str)); }
 
     public string SlobsGetCurrentScene() { return currentScene; }

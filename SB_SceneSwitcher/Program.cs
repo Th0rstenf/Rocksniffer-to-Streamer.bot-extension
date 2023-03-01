@@ -96,10 +96,11 @@ public class CPHInline
         ,BlackList
         ,AlwaysOn
     }
-    enum StreamProgramm
+    enum BroadcastingSoftware
     {
         OBS
         ,SLOBS
+        ,NONE
     }
 
     //Needs to be commented out in streamer bot.
@@ -114,7 +115,7 @@ public class CPHInline
     private SectionType currentSectionType;
     private SectionType lastSectionType;
     private ActivityBehavior itsBehavior;
-    private StreamProgramm itsStreamProgramm;
+    private BroadcastingSoftware itsBroadcastingSoftware;
     private string[] blackListedScenes = null!;
     private double currentSongTimer;
     private double lastSongTimer;
@@ -163,13 +164,13 @@ public class CPHInline
 
     private void switchToScene(string scene) 
     {
-        switch (itsStreamProgramm)
+        switch (itsBroadcastingSoftware)
         {
-            case StreamProgramm.OBS:
+            case BroadcastingSoftware.OBS:
             {
                 CPH.ObsSetScene(scene); break;
             }
-            case StreamProgramm.SLOBS:
+            case BroadcastingSoftware.SLOBS:
             {
                 CPH.SlobsSetScene(scene);
                 break;
@@ -185,14 +186,14 @@ public class CPHInline
     private string getGurrentScene()
     {
         string scene = null!;
-        switch (itsStreamProgramm)
+        switch (itsBroadcastingSoftware)
         {
-            case StreamProgramm.OBS:
+            case BroadcastingSoftware.OBS:
             {
                 scene = CPH.ObsGetCurrentScene(); 
                 break;
             }
-            case StreamProgramm.SLOBS:
+            case BroadcastingSoftware.SLOBS:
             {
                 scene = scene = CPH.SlobsGetCurrentScene();
                 break;
@@ -266,7 +267,7 @@ public class CPHInline
             blackListedScenes = new string[1];
         }
 
-        string streamProgramm = CPH.GetGlobalVar<string>("program");
+        itsBroadcastingSoftware = BroadcastingSoftware.NONE;
 
         totalNotesThisStream= 0;
         totalNotesHitThisStream = 0;
@@ -276,6 +277,16 @@ public class CPHInline
         lastSectionType = currentSectionType = SectionType.Default;
         lastGameStage = currentGameStage = GameStage.Menu;
         sameTimeCounter= 0;
+    }
+
+    private void determineConnectedBroadcastingSoftware()
+    {
+        if (CPH.ObsIsConnected())
+            itsBroadcastingSoftware = BroadcastingSoftware.OBS;
+        else if (CPH.SlobsIsConnected())
+            itsBroadcastingSoftware = BroadcastingSoftware.SLOBS;
+        else
+            itsBroadcastingSoftware= BroadcastingSoftware.NONE;
     }
     private bool getLatestResponse()
     {
@@ -304,7 +315,7 @@ public class CPHInline
         }
         catch (ObjectDisposedException e)
         {
-            debug("HttpClient was disposed. Reinitialising.");
+            debug("HttpClient was disposed. Exception: " + e.Message + " Reinitialising.");
             Init();
             success = false;
         }
@@ -646,6 +657,8 @@ public class CPHInline
     }
     public bool Execute()
     {
+        determineConnectedBroadcastingSoftware();
+
         if (isRelevantScene())
         {
             if (getLatestResponse())
