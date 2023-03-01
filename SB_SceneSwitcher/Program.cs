@@ -3,6 +3,7 @@ using System.Net.Http;
 using Newtonsoft.Json;
 
 
+
 // Objects for parsing the song data
 // 
 
@@ -95,6 +96,12 @@ public class CPHInline
         ,BlackList
         ,AlwaysOn
     }
+    enum BroadcastingSoftware
+    {
+        OBS
+        ,SLOBS
+        ,NONE
+    }
 
     //Needs to be commented out in streamer bot.
     //private CPHmock CPH = new CPHmock();
@@ -108,6 +115,7 @@ public class CPHInline
     private SectionType currentSectionType;
     private SectionType lastSectionType;
     private ActivityBehavior itsBehavior;
+    private BroadcastingSoftware itsBroadcastingSoftware;
     private string[] blackListedScenes = null!;
     private double currentSongTimer;
     private double lastSongTimer;
@@ -152,6 +160,52 @@ public class CPHInline
         TimeSpan timeSpan= TimeSpan.FromSeconds(totalSeconds);
         
         return timeSpan.ToString();
+    }
+
+    private void switchToScene(string scene) 
+    {
+        switch (itsBroadcastingSoftware)
+        {
+            case BroadcastingSoftware.OBS:
+            {
+                CPH.ObsSetScene(scene); break;
+            }
+            case BroadcastingSoftware.SLOBS:
+            {
+                CPH.SlobsSetScene(scene);
+                break;
+            }
+            default:
+            {
+                debug("No stream program defined");
+                break;
+            }
+        }
+    }
+
+    private string getGurrentScene()
+    {
+        string scene = null!;
+        switch (itsBroadcastingSoftware)
+        {
+            case BroadcastingSoftware.OBS:
+            {
+                scene = CPH.ObsGetCurrentScene(); 
+                break;
+            }
+            case BroadcastingSoftware.SLOBS:
+            {
+                scene = scene = CPH.SlobsGetCurrentScene();
+                break;
+            }
+            default:
+            {
+                debug("No stream program defined");
+                scene = "";
+                break;
+            }
+        }
+        return scene;
     }
     private GameStage evalGameStage(string stage)
     {
@@ -212,6 +266,9 @@ public class CPHInline
         {
             blackListedScenes = new string[1];
         }
+
+        itsBroadcastingSoftware = BroadcastingSoftware.NONE;
+
         totalNotesThisStream= 0;
         totalNotesHitThisStream = 0;
         totalNotesMissedThisStream = 0;
@@ -220,6 +277,16 @@ public class CPHInline
         lastSectionType = currentSectionType = SectionType.Default;
         lastGameStage = currentGameStage = GameStage.Menu;
         sameTimeCounter= 0;
+    }
+
+    private void determineConnectedBroadcastingSoftware()
+    {
+        if (CPH.ObsIsConnected())
+            itsBroadcastingSoftware = BroadcastingSoftware.OBS;
+        else if (CPH.SlobsIsConnected())
+            itsBroadcastingSoftware = BroadcastingSoftware.SLOBS;
+        else
+            itsBroadcastingSoftware= BroadcastingSoftware.NONE;
     }
     private bool getLatestResponse()
     {
@@ -248,7 +315,7 @@ public class CPHInline
         }
         catch (ObjectDisposedException e)
         {
-            debug("HttpClient was disposed. Reinitialising.");
+            debug("HttpClient was disposed. Exception: " + e.Message + " Reinitialising.");
             Init();
             success = false;
         }
@@ -258,7 +325,7 @@ public class CPHInline
     private bool isRelevantScene()
     {
         bool isRelevant = false;
-        currentScene = CPH.ObsGetCurrentScene();
+        currentScene = getGurrentScene();
         switch (itsBehavior)
         {
             case ActivityBehavior.WhiteList:
@@ -489,7 +556,7 @@ public class CPHInline
                         }
                         if (isSwitchingScenes)
                         {
-                            CPH.ObsSetScene(songScene);
+                            switchToScene(songScene);
                             lastSceneChange = DateTime.Now;
                         }
                     }
@@ -508,7 +575,7 @@ public class CPHInline
                     {
                         if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
                         {
-                            CPH.ObsSetScene(songPausedScene);
+                            switchToScene(songPausedScene);
                             lastSceneChange = DateTime.Now;
                         }
                     }
@@ -522,7 +589,7 @@ public class CPHInline
             {
                 if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
                 {
-                    CPH.ObsSetScene(menuScene);
+                    switchToScene(menuScene);
                     lastSceneChange = DateTime.Now;
                 }
             }
@@ -566,8 +633,6 @@ public class CPHInline
             if (hasSectionChanged)
             {
 				identifySection();
-				//TODO: Should only happen if I execute it
-				CPH.ObsSetGdiText("Projection(RS)","textSectionName",currentArrangement.Sections[currentSectionIndex].Name);
 				if (currentSectionType != lastSectionType)
                 {
                     CPH.RunAction(string.Format("leave{0}", Enum.GetName(typeof(SectionType),lastSectionType)));
@@ -592,6 +657,8 @@ public class CPHInline
     }
     public bool Execute()
     {
+        determineConnectedBroadcastingSoftware();
+
         if (isRelevantScene())
         {
             if (getLatestResponse())
