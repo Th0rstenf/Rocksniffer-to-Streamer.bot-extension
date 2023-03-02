@@ -122,6 +122,7 @@ public class CPHInline
 
     private Arrangement? currentArrangement = null!;
     private int currentSectionIndex;
+    private int currentSongSceneIndex;
    
     private Response currentResponse = null!;
     private NoteData lastNoteData = null!;
@@ -133,7 +134,7 @@ public class CPHInline
     private UInt32 highestStreakSinceLaunch;
 
     private string menuScene = null!;
-    private string songScene = null!;
+    private string[] songScenes = null!;
     private string songPausedScene = null!;
 	private string currentScene = null!;
 	
@@ -233,7 +234,7 @@ public class CPHInline
         snifferIp = CPH.GetGlobalVar<string>("snifferIP").Replace('"',' ').Trim();
         snifferPort = "9938";
 		menuScene = CPH.GetGlobalVar<string>("menuScene");
-		songScene = CPH.GetGlobalVar<string>("songScene");
+		songScenes = CPH.GetGlobalVar<string>("songScenes").Split(',');
 		songPausedScene = CPH.GetGlobalVar<string>("pauseScene");
 
         isSwitchingScenes = CPH.GetGlobalVar<string>("switchScenes").ToLower().Contains("true");
@@ -276,9 +277,25 @@ public class CPHInline
         accuracyThisStream = 0;
         highestStreakSinceLaunch= 0;
         currentSectionIndex = -1;
+        currentSongSceneIndex= 0;
         lastSectionType = currentSectionType = SectionType.Default;
         lastGameStage = currentGameStage = GameStage.Menu;
         sameTimeCounter= 0;
+    }
+
+    private bool isSongScene(string scene)
+    {
+        bool isSongScene = false;
+        foreach (string s in songScenes)
+        {
+            if(scene.Equals(s))
+            {
+                isSongScene = true;
+                break;
+            }
+        }
+
+        return isSongScene;
     }
 
     private void determineConnectedBroadcastingSoftware()
@@ -335,7 +352,7 @@ public class CPHInline
                 if (currentScene != null)
                 {
                     if (currentScene.Equals(menuScene)
-                    || currentScene.Equals(songScene)
+                    || isSongScene(currentScene)
                     || currentScene.Equals(songPausedScene))
                     {
                         isRelevant = true;
@@ -530,31 +547,31 @@ public class CPHInline
         }
 
         if (currentGameStage == GameStage.InSong)
-        {	
+        {
             if (lastGameStage != GameStage.InSong)
-            {	
+            {
                 CPH.RunAction("SongStart");
             }
 
-			if (!isArrangementIdentified)
-			{
-				isArrangementIdentified = identifyArrangement();
+            if (!isArrangementIdentified)
+            {
+                isArrangementIdentified = identifyArrangement();
                 try
                 {
                     saveSongMetaData();
                 }
-                catch ( ObjectDisposedException e)
+                catch (ObjectDisposedException e)
                 {
                     debug("Caught object disposed exception when trying to save meta data: " + e.Message);
                     debug("Trying to reinitialize");
                     Init();
                 }
-                catch (Exception e )
+                catch (Exception e)
                 {
                     debug("Caugt unknown exception when trying to write song meta data: " + e.Message);
                 }
             }
-            if (!currentScene.Equals(songScene))
+            if (!isSongScene(currentScene))
             {
                 if (!currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
                 {
@@ -567,7 +584,7 @@ public class CPHInline
                         }
                         if (isSwitchingScenes)
                         {
-                            switchToScene(songScene);
+                            switchToScene(songScenes[currentSongSceneIndex]);
                             lastSceneChange = DateTime.Now;
                         }
                     }
@@ -577,7 +594,7 @@ public class CPHInline
                     //Already in correct scene
                 }
             }
-            else if (currentScene.Equals(songScene))
+            else if (isSongScene(currentScene))
             {
                 if (isInPause())
                 {
