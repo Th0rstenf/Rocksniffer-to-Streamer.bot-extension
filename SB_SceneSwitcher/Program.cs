@@ -130,6 +130,7 @@ public class CPHInline
     private UInt32 totalNotesHitThisStream;
     private UInt32 totalNotesMissedThisStream;
     private double accuracyThisStream;
+    private UInt32 highestStreakSinceLaunch;
 
     private string menuScene = null!;
     private string songScene = null!;
@@ -273,6 +274,7 @@ public class CPHInline
         totalNotesHitThisStream = 0;
         totalNotesMissedThisStream = 0;
         accuracyThisStream = 0;
+        highestStreakSinceLaunch= 0;
         currentSectionIndex = -1;
         lastSectionType = currentSectionType = SectionType.Default;
         lastGameStage = currentGameStage = GameStage.Menu;
@@ -414,6 +416,15 @@ public class CPHInline
                 CPH.SetGlobalVar("totalNotes", currentResponse.MemoryReadout.NoteData.TotalNotes, false);
                 CPH.SetGlobalVar("totalNotesHit", currentResponse.MemoryReadout.NoteData.TotalNotesHit, false);
                 CPH.SetGlobalVar("totalNotesMissed", currentResponse.MemoryReadout.NoteData.TotalNotesMissed, false);
+
+                UInt32 highestHitStreak = (UInt32)currentResponse.MemoryReadout.NoteData.HighestHitStreak;
+                CPH.SetGlobalVar("highestHitStreak", highestHitStreak, false);
+                if (highestHitStreak > highestStreakSinceLaunch)
+                {
+                    highestStreakSinceLaunch = highestHitStreak;
+                    CPH.SetGlobalVar("highestHitStreakSinceLaunch", highestStreakSinceLaunch, false);
+                }
+                
                 UInt32 additionalNotesHit;
                 UInt32 additionalNotesMissed;
                 UInt32 additionalNotes;
