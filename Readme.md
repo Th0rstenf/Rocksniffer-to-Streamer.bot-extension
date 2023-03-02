@@ -12,6 +12,8 @@ This code fetches the output of Rocksniffer and evaluates game state and song ti
 The following data is written to global variables whenever they change:
 * accuracy
 * currentHitStreak
+* highestHitStreak
+* highestHitStreakSinceLaunch
 * currentMissStreak
 * totalNotes
 * totalNotesHit
