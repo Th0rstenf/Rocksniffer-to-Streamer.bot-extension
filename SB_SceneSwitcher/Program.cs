@@ -104,7 +104,7 @@ public class CPHInline
     }
 
     //Needs to be commented out in streamer bot.
-    //private CPHmock CPH = new CPHmock();
+    private CPHmock CPH = new CPHmock();
 
 
     private string snifferIp = null!;
@@ -229,16 +229,22 @@ public class CPHInline
     }
     public void Init()
     {
+        debug("Initialising Rocksniffer to SB plugin");
         //Init happens before arguments are passed, therefore temporary globals are used.
         snifferIp = CPH.GetGlobalVar<string>("snifferIP").Replace('"',' ').Trim();
         snifferPort = "9938";
+        debug(string.Format("Sniffer ip configured as {0}:{1}",snifferIp,snifferPort));
 		menuScene = CPH.GetGlobalVar<string>("menuScene");
+        debug("Menu scene: " + menuScene);
 		songScene = CPH.GetGlobalVar<string>("songScene");
+        debug("Song scene: " + songScene);
 		songPausedScene = CPH.GetGlobalVar<string>("pauseScene");
+        debug("Song paused scene: " + songPausedScene);
 
         isSwitchingScenes = CPH.GetGlobalVar<string>("switchScenes").ToLower().Contains("true");
+        debug("Switching scenes configured to " + isSwitchingScenes.ToString());
         isReactingToSections = CPH.GetGlobalVar<string>("sectionActions").ToLower().Contains("true");
-		
+		debug("Section actions are configured to " + isReactingToSections.ToString());
         lastSceneChange = DateTime.Now;
         minDelay = 3;
         client = new HttpClient();
@@ -257,11 +263,20 @@ public class CPHInline
                 debug("Behavior not configured, setting to whitelist as default");
             }
         }
+        else
+        {
+            debug("Behavior configured as " + itsBehavior.ToString());
+        }
 
         if (itsBehavior == ActivityBehavior.BlackList)
         {
             string temp = CPH.GetGlobalVar<string>("blackList");
             blackListedScenes = temp.Split(',');
+            debug("The following scenes are blacklisted:");
+            foreach (string str in blackListedScenes)
+            {
+                debug(str);
+            }
         }
         else
         {
