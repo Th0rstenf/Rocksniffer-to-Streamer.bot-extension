@@ -155,6 +155,11 @@ public class CPHInline
         if (doLogToChat) CPH.SendMessage(str);
         CPH.LogDebug(str);
     }
+    void error(string str)
+    {
+        if (doLogToChat) CPH.SendMessage(str);
+        CPH.LogError(str);
+    }
 
     private string formatTime(int totalSeconds)
     {
@@ -321,22 +326,22 @@ public class CPHInline
             else
             {
                 success = false;
-                debug("Response is null");
+                error("Response is null");
             }
         }
         catch (HttpRequestException e)
         {
-            debug("Error in response");
-            debug(string.Format("Caught exception trying to get response from sniffer: {0}", e.Message));
+            error("Error in response");
+            error(string.Format("Caught exception trying to get response from sniffer: {0}", e.Message));
             success = false;
         }
         catch (ObjectDisposedException e)
         {
-            debug("HttpClient was disposed. Exception: " + e.Message + " Reinitialising.");
+            error("HttpClient was disposed. Exception: " + e.Message + " Reinitialising.");
             Init();
             success = false;
         }
-        if (!success) debug("Failed fetching response");
+        if (!success) error("Failed fetching response");
         return success;
     }
     private bool isRelevantScene()
@@ -397,7 +402,12 @@ public class CPHInline
         }
         catch (JsonException ex)
         {
-            debug("Error parsing response: " + ex.Message);
+            error("Error parsing response: " + ex.Message);
+        }
+        catch (Exception e)
+        {
+            error("Caught exception when trying to deserialize response string");
+            error("Exception: " + e.Message);
         }
         return success;
     }
@@ -468,7 +478,6 @@ public class CPHInline
                 CPH.SetGlobalVar("accuracySinceLaunch", accuracyThisStream, false);            
 
                 lastNoteData = currentResponse.MemoryReadout.NoteData;
-                //Console.WriteLine(string.Format("Notes this stream: {0}/{1}. Accuracy: {2}",totalNotesHitThisStream,totalNotesThisStream, accuracyThisStream));
             }
         }
     }
@@ -697,13 +706,13 @@ public class CPHInline
                     }
                     catch (ObjectDisposedException e)
                     {
-                        debug("Caught object disposed exception when trying to save note data: " + e.Message);
-                        debug("Trying to reinitialize");
+                        error("Caught object disposed exception when trying to save note data: " + e.Message);
+                        error("Trying to reinitialize");
                         Init();
                     }
                     catch (Exception e)
                     {
-                        debug("Caugt unknown exception when trying to write song meta data: " + e.Message);
+                        error("Caugt unknown exception when trying to write song meta data: " + e.Message);
                     }
 
                     try
@@ -712,8 +721,8 @@ public class CPHInline
                     }
                     catch(System.NullReferenceException e)
                     {
-                        debug("Caught null reference in scene switch: " + e.Message);
-                        debug("Reinitialising to fix the issue");
+                        error("Caught null reference in scene switch: " + e.Message);
+                        error("Reinitialising to fix the issue");
                         Init();
                     }
 
