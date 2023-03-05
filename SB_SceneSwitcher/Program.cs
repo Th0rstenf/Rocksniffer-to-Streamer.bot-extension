@@ -293,6 +293,7 @@ public class CPHInline
         accuracyThisStream = 0;
         highestStreakSinceLaunch= 0;
         currentSectionIndex = -1;
+        currentSongSceneIndex= 0;
         lastSectionType = currentSectionType = SectionType.Default;
         lastGameStage = currentGameStage = GameStage.Menu;
         sameTimeCounter= 0;
