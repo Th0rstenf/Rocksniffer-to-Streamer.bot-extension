@@ -27,7 +27,7 @@
         string value = "";
         if (key.Equals("snifferIP")) value = "192.168.1.37";
         if (key.Equals("snifferPort")) value = "9938";
-        if (key.Equals("songScene")) value = "RocksmithBigCamInGame";
+        if (key.Equals("songScenes")) value = "RocksmithBigCamInGame";
         if (key.Equals("menuScene")) value = "RocksmithBigCam";
         if (key.Equals("pauseScene")) value = "RocksmithPause";
         if (key.Equals("sectionDetection")) value = "True";

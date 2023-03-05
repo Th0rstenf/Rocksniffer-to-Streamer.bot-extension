@@ -122,6 +122,7 @@ public class CPHInline
 
     private Arrangement? currentArrangement = null!;
     private int currentSectionIndex;
+    private int currentSongSceneIndex;
    
     private Response currentResponse = null!;
     private NoteData lastNoteData = null!;
@@ -133,7 +134,7 @@ public class CPHInline
     private UInt32 highestStreakSinceLaunch;
 
     private string menuScene = null!;
-    private string songScene = null!;
+    private string[] songScenes = null!;
     private string songPausedScene = null!;
 	private string currentScene = null!;
 	
@@ -156,7 +157,6 @@ public class CPHInline
         CPH.LogDebug(str);
     }
 
-
     private string formatTime(int totalSeconds)
     {
         TimeSpan timeSpan= TimeSpan.FromSeconds(totalSeconds);
@@ -166,30 +166,22 @@ public class CPHInline
 
     private void switchToScene(string scene) 
     {
-        try
+        switch (itsBroadcastingSoftware)
         {
-            switch (itsBroadcastingSoftware)
+            case BroadcastingSoftware.OBS:
             {
-                case BroadcastingSoftware.OBS:
-                    {
-                        CPH.ObsSetScene(scene); break;
-                    }
-                case BroadcastingSoftware.SLOBS:
-                    {
-                        CPH.SlobsSetScene(scene);
-                        break;
-                    }
-                default:
-                    {
-                        debug("No stream program defined");
-                        break;
-                    }
+                CPH.ObsSetScene(scene); break;
             }
-        }
-        catch(Exception e)
-        {
-            debug("Caught exception when trying to change scene ");
-            debug(e.ToString());
+            case BroadcastingSoftware.SLOBS:
+            {
+                CPH.SlobsSetScene(scene);
+                break;
+            }
+            default:
+            {
+                debug("No stream program defined");
+                break;
+            }
         }
     }
 
@@ -306,6 +298,21 @@ public class CPHInline
         sameTimeCounter= 0;
     }
 
+    private bool isSongScene(string scene)
+    {
+        bool isSongScene = false;
+        foreach (string s in songScenes)
+        {
+            if(scene.Equals(s))
+            {
+                isSongScene = true;
+                break;
+            }
+        }
+
+        return isSongScene;
+    }
+
     private void determineConnectedBroadcastingSoftware()
     {
         if (CPH.ObsIsConnected())
@@ -336,7 +343,7 @@ public class CPHInline
         }
         catch (HttpRequestException e)
         {
-            //debug("error in response");
+            debug("Error in response");
             debug(string.Format("Caught exception trying to get response from sniffer: {0}", e.Message));
             success = false;
         }
@@ -365,7 +372,7 @@ public class CPHInline
                 if (currentScene != null)
                 {
                     if (currentScene.Equals(menuScene)
-                    || currentScene.Equals(songScene)
+                    || isSongScene(currentScene)
                     || currentScene.Equals(songPausedScene))
                     {
                         isRelevant = true;
@@ -508,7 +515,7 @@ public class CPHInline
                     CPH.SetGlobalVar("accuracySinceLaunch", accuracyThisStream, false);            
 
                     lastNoteData = currentResponse.MemoryReadout.NoteData;
-                }
+                }/{1}. Accuracy: {2}",totalNotesHitThisStream,totalNotesThisStream, accuracyThisStream));
             }
         }
         catch ( ObjectDisposedException e)
@@ -533,6 +540,8 @@ public class CPHInline
             if (currentResponse.SongDetails != null) 
             { 
                 foreach (Arrangement arr in currentResponse.SongDetails.Arrangements)
+            {
+                if (arr.ArrangementID == currentResponse.MemoryReadout.ArrangementId)
                 {
                     if (arr.ArrangementID == currentResponse.MemoryReadout.ArrangementId)
                     {
@@ -700,8 +709,9 @@ public class CPHInline
         {
             CPH.RunAction("leaveTuner");
         }
+        lastGameStage = currentGameStage;
+        lastSongTimer = currentResponse.MemoryReadout.SongTimer;
     }
-
     private void checkSectionActions()
     {
         if (currentArrangement != null)
@@ -736,7 +746,19 @@ public class CPHInline
             }
         }
     }
-
+    private void invalidateGlobalVariables()
+    {
+        CPH.UnsetGlobalVar("SongName");
+        CPH.UnsetGlobalVar("ArtistName");
+        CPH.UnsetGlobalVar("AlbumName");
+        CPH.UnsetGlobalVar("Tuning");
+        CPH.UnsetGlobalVar("Accuracy");
+        CPH.UnsetGlobalVar("CurrentHitStreak");
+        CPH.UnsetGlobalVar("CurrentMissStreak");
+        CPH.UnsetGlobalVar("TotalNotes");
+        CPH.UnsetGlobalVar("TotalNotesHit");
+        CPH.UnsetGlobalVar("TotalNotesMissed");
+    }
     public bool Execute()
     {
         determineConnectedBroadcastingSoftware();
