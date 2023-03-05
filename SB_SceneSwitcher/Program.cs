@@ -170,22 +170,30 @@ public class CPHInline
 
     private void switchToScene(string scene) 
     {
-        switch (itsBroadcastingSoftware)
+        try
         {
-            case BroadcastingSoftware.OBS:
+            switch (itsBroadcastingSoftware)
             {
-                CPH.ObsSetScene(scene); break;
+                case BroadcastingSoftware.OBS:
+                    {
+                        CPH.ObsSetScene(scene); break;
+                    }
+                case BroadcastingSoftware.SLOBS:
+                    {
+                        CPH.SlobsSetScene(scene);
+                        break;
+                    }
+                default:
+                    {
+                        debug("No stream program defined");
+                        break;
+                    }
             }
-            case BroadcastingSoftware.SLOBS:
-            {
-                CPH.SlobsSetScene(scene);
-                break;
-            }
-            default:
-            {
-                debug("No stream program defined");
-                break;
-            }
+        }
+        catch(Exception e)
+        {
+            error("Caught exception when trying to change scene ");
+            error(e.ToString());
         }
     }
 
@@ -681,12 +689,10 @@ public class CPHInline
         if (lastGameStage == GameStage.InSong)
         {
             isArrangementIdentified = false;
-            invalidateGlobalVariables();
             lastNoteData = null;
             CPH.RunAction("SongEnd");
         }
     }
-
 
     private void checkTunerActions()
     {
@@ -734,19 +740,7 @@ public class CPHInline
             }
         }
     }
-    private void invalidateGlobalVariables()
-    {
-        CPH.UnsetGlobalVar("SongName");
-        CPH.UnsetGlobalVar("ArtistName");
-        CPH.UnsetGlobalVar("AlbumName");
-        CPH.UnsetGlobalVar("Tuning");
-        CPH.UnsetGlobalVar("Accuracy");
-        CPH.UnsetGlobalVar("CurrentHitStreak");
-        CPH.UnsetGlobalVar("CurrentMissStreak");
-        CPH.UnsetGlobalVar("TotalNotes");
-        CPH.UnsetGlobalVar("TotalNotesHit");
-        CPH.UnsetGlobalVar("TotalNotesMissed");
-    }
+
     public bool Execute()
     {
         determineConnectedBroadcastingSoftware();
