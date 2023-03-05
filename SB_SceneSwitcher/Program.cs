@@ -331,7 +331,7 @@ public class CPHInline
         }
         catch (HttpRequestException e)
         {
-            error("Error in response");
+            //error("Error in response");
             error(string.Format("Caught exception trying to get response from sniffer: {0}", e.Message));
             success = false;
         }
@@ -339,6 +339,11 @@ public class CPHInline
         {
             error("HttpClient was disposed. Exception: " + e.Message + " Reinitialising.");
             Init();
+            success = false;
+        }
+        catch (Exception e)
+        {
+            error("Caught unknown exception trying to read from HttpClient: " + e.Message);
             success = false;
         }
         if (!success) error("Failed fetching response");
@@ -516,34 +521,49 @@ public class CPHInline
     }
     private bool identifyArrangement()
     {
-        currentArrangement = null;
-        currentSectionIndex = -1;
-        if (currentResponse.SongDetails != null) 
-        { 
-            foreach (Arrangement arr in currentResponse.SongDetails.Arrangements)
-            {
-                if (arr.ArrangementID == currentResponse.MemoryReadout.ArrangementId)
+        try
+        {
+            currentArrangement = null;
+            currentSectionIndex = -1;
+            if (currentResponse.SongDetails != null) 
+            { 
+                foreach (Arrangement arr in currentResponse.SongDetails.Arrangements)
                 {
-					currentArrangement = arr;
-                    break;
+                    if (arr.ArrangementID == currentResponse.MemoryReadout.ArrangementId)
+                    {
+                        currentArrangement = arr;
+                        break;
+                    }
                 }
             }
         }
-		return (currentArrangement != null);
+        catch(Exception e)
+        {
+            error("Caught exception trying to identify the arrangement: " + e.Message);
+        }	
+        return (currentArrangement != null);
     }
     private void identifySection()
     {
         if (currentArrangement != null)
         {
-            string name = currentArrangement.Sections[currentSectionIndex].Name;
-            if (name.ToLower().Contains("solo")) { currentSectionType = SectionType.Solo; }
-            else if (name.ToLower().Contains("noguitar")) { currentSectionType = SectionType.NoGuitar; }
-            else if (name.ToLower().Contains("riff")) { currentSectionType = SectionType.Riff; }
-            else if (name.ToLower().Contains("bridge")) { currentSectionType = SectionType.Bridge; }
-            else if (name.ToLower().Contains("breakdown")) { currentSectionType = SectionType.Breakdown; }
-            else if (name.ToLower().Contains("chorus")) { currentSectionType = SectionType.Chorus; }
-            else if (name.ToLower().Contains("verse")) { currentSectionType = SectionType.Verse; }
-            else { currentSectionType = SectionType.Default; }
+            try
+            {
+                string name = currentArrangement.Sections[currentSectionIndex].Name;
+                if (name.ToLower().Contains("solo")) { currentSectionType = SectionType.Solo; }
+                else if (name.ToLower().Contains("noguitar")) { currentSectionType = SectionType.NoGuitar; }
+                else if (name.ToLower().Contains("riff")) { currentSectionType = SectionType.Riff; }
+                else if (name.ToLower().Contains("bridge")) { currentSectionType = SectionType.Bridge; }
+                else if (name.ToLower().Contains("breakdown")) { currentSectionType = SectionType.Breakdown; }
+                else if (name.ToLower().Contains("chorus")) { currentSectionType = SectionType.Chorus; }
+                else if (name.ToLower().Contains("verse")) { currentSectionType = SectionType.Verse; }
+                else { currentSectionType = SectionType.Default; }
+            }
+            catch ( Exception e)
+            {
+                error("Caught unknown exception trying to identify the section: " + e.Message);
+            }
+
         }
         else
         { 
