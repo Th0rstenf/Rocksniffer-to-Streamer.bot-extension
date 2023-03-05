@@ -408,77 +408,110 @@ public class CPHInline
         {
             error("Caught exception when trying to deserialize response string");
             error("Exception: " + e.Message);
+            error("Trying to reinitialize to solve the issue");
+            Init();
         }
         return success;
     }
     private void saveSongMetaData()
     {
-        CPH.SetGlobalVar("songName", currentResponse.SongDetails.SongName, false);
-        CPH.SetGlobalVar("artistName", currentResponse.SongDetails.ArtistName, false);
-        CPH.SetGlobalVar("albumName", currentResponse.SongDetails.AlbumName, false);
-        CPH.SetGlobalVar("songLength", (int)currentResponse.SongDetails.SongLength, false);
-        string formatted = formatTime((int)currentResponse.SongDetails.SongLength);
-        CPH.SetGlobalVar("songLengthFormatted",formatted, false);
-        if (currentArrangement != null)
+        try
         {
-            CPH.SetGlobalVar("arrangement", currentArrangement.Name, false);
-            CPH.SetGlobalVar("arrangementType", currentArrangement.type, false);
-            CPH.SetGlobalVar("tuning", currentArrangement.Tuning.TuningName, false);
+            CPH.SetGlobalVar("songName", currentResponse.SongDetails.SongName, false);
+            CPH.SetGlobalVar("artistName", currentResponse.SongDetails.ArtistName, false);
+            CPH.SetGlobalVar("albumName", currentResponse.SongDetails.AlbumName, false);
+            CPH.SetGlobalVar("songLength", (int)currentResponse.SongDetails.SongLength, false);
+            string formatted = formatTime((int)currentResponse.SongDetails.SongLength);
+            CPH.SetGlobalVar("songLengthFormatted",formatted, false);
+            if (currentArrangement != null)
+            {
+                CPH.SetGlobalVar("arrangement", currentArrangement.Name, false);
+                CPH.SetGlobalVar("arrangementType", currentArrangement.type, false);
+                CPH.SetGlobalVar("tuning", currentArrangement.Tuning.TuningName, false);
+            }
+        }
+        catch ( ObjectDisposedException e)
+        {
+            debug("Caught object disposed exception when trying to save meta data: " + e.Message);
+            debug("Trying to reinitialize");
+            Init();
+        }
+        catch(Exception e)
+        {
+            error("Caught exception trying to save song meta data");
+            error("Exception: " + e.Message);
+            error("Trying to reinitialize to recover");
+            Init();
         }
     }
     private void saveNoteDataIfNecessary()
     {
-        if (currentGameStage == GameStage.InSong)
+        try
         {
-            CPH.SetGlobalVar("songTimer", (int)currentResponse.MemoryReadout.SongTimer, false);
-            string formatted = formatTime((int)currentResponse.MemoryReadout.SongTimer);
-            CPH.SetGlobalVar("songTimerFormatted", formatted,false);
-            if (lastNoteData != currentResponse.MemoryReadout.NoteData)
+            if (currentGameStage == GameStage.InSong)
             {
-                CPH.SetGlobalVar("accuracy", currentResponse.MemoryReadout.NoteData.Accuracy, false);
-                CPH.SetGlobalVar("currentHitStreak", currentResponse.MemoryReadout.NoteData.CurrentHitStreak, false);
-                CPH.SetGlobalVar("currentMissStreak", currentResponse.MemoryReadout.NoteData.CurrentMissStreak, false);
-                CPH.SetGlobalVar("totalNotes", currentResponse.MemoryReadout.NoteData.TotalNotes, false);
-                CPH.SetGlobalVar("totalNotesHit", currentResponse.MemoryReadout.NoteData.TotalNotesHit, false);
-                CPH.SetGlobalVar("totalNotesMissed", currentResponse.MemoryReadout.NoteData.TotalNotesMissed, false);
+                CPH.SetGlobalVar("songTimer", (int)currentResponse.MemoryReadout.SongTimer, false);
+                string formatted = formatTime((int)currentResponse.MemoryReadout.SongTimer);
+                CPH.SetGlobalVar("songTimerFormatted", formatted,false);
+                if (lastNoteData != currentResponse.MemoryReadout.NoteData)
+                {
+                    CPH.SetGlobalVar("accuracy", currentResponse.MemoryReadout.NoteData.Accuracy, false);
+                    CPH.SetGlobalVar("currentHitStreak", currentResponse.MemoryReadout.NoteData.CurrentHitStreak, false);
+                    CPH.SetGlobalVar("currentMissStreak", currentResponse.MemoryReadout.NoteData.CurrentMissStreak, false);
+                    CPH.SetGlobalVar("totalNotes", currentResponse.MemoryReadout.NoteData.TotalNotes, false);
+                    CPH.SetGlobalVar("totalNotesHit", currentResponse.MemoryReadout.NoteData.TotalNotesHit, false);
+                    CPH.SetGlobalVar("totalNotesMissed", currentResponse.MemoryReadout.NoteData.TotalNotesMissed, false);
 
-                UInt32 highestHitStreak = (UInt32)currentResponse.MemoryReadout.NoteData.HighestHitStreak;
-                CPH.SetGlobalVar("highestHitStreak", highestHitStreak, false);
-                if (highestHitStreak > highestStreakSinceLaunch)
-                {
-                    highestStreakSinceLaunch = highestHitStreak;
-                    CPH.SetGlobalVar("highestHitStreakSinceLaunch", highestStreakSinceLaunch, false);
-                }
-                
-                UInt32 additionalNotesHit;
-                UInt32 additionalNotesMissed;
-                UInt32 additionalNotes;
-                if (lastNoteData != null)
-                {
-                    additionalNotesHit = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesHit - lastNoteData.TotalNotesHit);
-                    additionalNotesMissed = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesMissed - lastNoteData.TotalNotesMissed);
-                    additionalNotes = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotes - lastNoteData.TotalNotes);
-                }
-                else
-                {
-                    additionalNotesHit = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesHit);
-                    additionalNotesMissed = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesMissed);
-                    additionalNotes = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotes);
-                }
-                totalNotesHitThisStream += additionalNotesHit;
-                totalNotesMissedThisStream += additionalNotesMissed;
-                totalNotesThisStream += additionalNotes;
-                CPH.SetGlobalVar("totalNotesSinceLaunch", totalNotesThisStream, false);
-                CPH.SetGlobalVar("totalNotesHitSinceLaunch", totalNotesHitThisStream, false);
-                CPH.SetGlobalVar("totalNotesMissedSinceLaunch", totalNotesMissedThisStream, false);
-                if (totalNotesThisStream > 0)
-                {
-                    accuracyThisStream = 100.0 * ((double)(totalNotesHitThisStream) / totalNotesThisStream);
-                }
-                CPH.SetGlobalVar("accuracySinceLaunch", accuracyThisStream, false);            
+                    UInt32 highestHitStreak = (UInt32)currentResponse.MemoryReadout.NoteData.HighestHitStreak;
+                    CPH.SetGlobalVar("highestHitStreak", highestHitStreak, false);
+                    if (highestHitStreak > highestStreakSinceLaunch)
+                    {
+                        highestStreakSinceLaunch = highestHitStreak;
+                        CPH.SetGlobalVar("highestHitStreakSinceLaunch", highestStreakSinceLaunch, false);
+                    }
+                    
+                    UInt32 additionalNotesHit;
+                    UInt32 additionalNotesMissed;
+                    UInt32 additionalNotes;
+                    if (lastNoteData != null)
+                    {
+                        additionalNotesHit = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesHit - lastNoteData.TotalNotesHit);
+                        additionalNotesMissed = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesMissed - lastNoteData.TotalNotesMissed);
+                        additionalNotes = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotes - lastNoteData.TotalNotes);
+                    }
+                    else
+                    {
+                        additionalNotesHit = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesHit);
+                        additionalNotesMissed = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesMissed);
+                        additionalNotes = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotes);
+                    }
+                    totalNotesHitThisStream += additionalNotesHit;
+                    totalNotesMissedThisStream += additionalNotesMissed;
+                    totalNotesThisStream += additionalNotes;
+                    CPH.SetGlobalVar("totalNotesSinceLaunch", totalNotesThisStream, false);
+                    CPH.SetGlobalVar("totalNotesHitSinceLaunch", totalNotesHitThisStream, false);
+                    CPH.SetGlobalVar("totalNotesMissedSinceLaunch", totalNotesMissedThisStream, false);
+                    if (totalNotesThisStream > 0)
+                    {
+                        accuracyThisStream = 100.0 * ((double)(totalNotesHitThisStream) / totalNotesThisStream);
+                    }
+                    CPH.SetGlobalVar("accuracySinceLaunch", accuracyThisStream, false);            
 
-                lastNoteData = currentResponse.MemoryReadout.NoteData;
+                    lastNoteData = currentResponse.MemoryReadout.NoteData;
+                }
             }
+        }
+        catch ( ObjectDisposedException e)
+        {
+            debug("Caught object disposed exception when trying to save note data: " + e.Message);
+            debug("Trying to reinitialize");
+            Init();
+        }
+        catch (Exception e)
+        {
+           error("Caught exception: " + e.Message);
+           error("Trying to reinitialize");
+           Init(); 
         }
     }
     private bool identifyArrangement()
@@ -563,20 +596,7 @@ public class CPHInline
 			if (!isArrangementIdentified)
 			{
 				isArrangementIdentified = identifyArrangement();
-                try
-                {
-                    saveSongMetaData();
-                }
-                catch ( ObjectDisposedException e)
-                {
-                    debug("Caught object disposed exception when trying to save meta data: " + e.Message);
-                    debug("Trying to reinitialize");
-                    Init();
-                }
-                catch (Exception e )
-                {
-                    debug("Caugt unknown exception when trying to write song meta data: " + e.Message);
-                }
+                saveSongMetaData();
             }
             if (!currentScene.Equals(songScene))
             {
