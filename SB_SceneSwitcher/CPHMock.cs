@@ -3,7 +3,6 @@
     private string currentScene = "RocksmithBigCam";
     public void LogDebug(string str) { Console.WriteLine(str); }
     public void LogInfo(string str) { Console.WriteLine(str); }
-    public void LogError(string str) { Console.WriteLine(str); }
 
     public void LogVerbose(string str) { Console.WriteLine(str); }
 

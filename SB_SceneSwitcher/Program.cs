@@ -230,16 +230,22 @@ public class CPHInline
     }
     public void Init()
     {
+        debug("Initialising Rocksniffer to SB plugin");
         //Init happens before arguments are passed, therefore temporary globals are used.
         snifferIp = CPH.GetGlobalVar<string>("snifferIP").Replace('"',' ').Trim();
         snifferPort = "9938";
+        debug(string.Format("Sniffer ip configured as {0}:{1}",snifferIp,snifferPort));
 		menuScene = CPH.GetGlobalVar<string>("menuScene");
-		songScenes = CPH.GetGlobalVar<string>("songScenes").Split(',');
+        debug("Menu scene: " + menuScene);
+		songScenes = CPH.GetGlobalVar<string>("songScene").Split(',');
+        debug("Song scene: " + songScenes);
 		songPausedScene = CPH.GetGlobalVar<string>("pauseScene");
+        debug("Song paused scene: " + songPausedScene);
 
         isSwitchingScenes = CPH.GetGlobalVar<string>("switchScenes").ToLower().Contains("true");
+        debug("Switching scenes configured to " + isSwitchingScenes.ToString());
         isReactingToSections = CPH.GetGlobalVar<string>("sectionActions").ToLower().Contains("true");
-		
+		debug("Section actions are configured to " + isReactingToSections.ToString());
         lastSceneChange = DateTime.Now;
         minDelay = 3;
         client = new HttpClient();
@@ -247,7 +253,7 @@ public class CPHInline
 		currentScene = "";
 
         string behaviorString = CPH.GetGlobalVar<string>("behavior");
-        if (behaviorString!= null)
+        if (behaviorString != null)
         {
             if (behaviorString.ToLower().Contains("whitelist")) itsBehavior = ActivityBehavior.WhiteList;
             else if (behaviorString.ToLower().Contains("blacklist")) itsBehavior = ActivityBehavior.BlackList;
@@ -257,12 +263,22 @@ public class CPHInline
                 itsBehavior = ActivityBehavior.WhiteList;
                 debug("Behavior not configured, setting to whitelist as default");
             }
+            debug("Behavior configured as " + itsBehavior.ToString());
+        }
+        else
+        {
+            
         }
 
         if (itsBehavior == ActivityBehavior.BlackList)
         {
             string temp = CPH.GetGlobalVar<string>("blackList");
             blackListedScenes = temp.Split(',');
+            debug("The following scenes are blacklisted:");
+            foreach (string str in blackListedScenes)
+            {
+                debug(str);
+            }
         }
         else
         {
@@ -338,6 +354,11 @@ public class CPHInline
             Init();
             success = false;
         }
+        catch (Exception e)
+        {
+            debug("Caught unknown exception trying to read from HttpClient: " + e.Message);
+            success = false;
+        }
         if (!success) debug("Failed fetching response");
         return success;
     }
@@ -401,109 +422,164 @@ public class CPHInline
         {
             debug("Error parsing response: " + ex.Message);
         }
+        catch (Exception e)
+        {
+            debug("Caught exception when trying to deserialize response string");
+            debug("Exception: " + e.Message);
+            debug("Trying to reinitialize to solve the issue");
+            Init();
+        }
         return success;
     }
     private void saveSongMetaData()
     {
-        CPH.SetGlobalVar("songName", currentResponse.SongDetails.SongName, false);
-        CPH.SetGlobalVar("artistName", currentResponse.SongDetails.ArtistName, false);
-        CPH.SetGlobalVar("albumName", currentResponse.SongDetails.AlbumName, false);
-        CPH.SetGlobalVar("songLength", (int)currentResponse.SongDetails.SongLength, false);
-        string formatted = formatTime((int)currentResponse.SongDetails.SongLength);
-        CPH.SetGlobalVar("songLengthFormatted",formatted, false);
-        if (currentArrangement != null)
+        try
         {
-            CPH.SetGlobalVar("arrangement", currentArrangement.Name, false);
-            CPH.SetGlobalVar("arrangementType", currentArrangement.type, false);
-            CPH.SetGlobalVar("tuning", currentArrangement.Tuning.TuningName, false);
+            CPH.SetGlobalVar("songName", currentResponse.SongDetails.SongName, false);
+            CPH.SetGlobalVar("artistName", currentResponse.SongDetails.ArtistName, false);
+            CPH.SetGlobalVar("albumName", currentResponse.SongDetails.AlbumName, false);
+            CPH.SetGlobalVar("songLength", (int)currentResponse.SongDetails.SongLength, false);
+            string formatted = formatTime((int)currentResponse.SongDetails.SongLength);
+            CPH.SetGlobalVar("songLengthFormatted",formatted, false);
+            if (currentArrangement != null)
+            {
+                CPH.SetGlobalVar("arrangement", currentArrangement.Name, false);
+                CPH.SetGlobalVar("arrangementType", currentArrangement.type, false);
+                CPH.SetGlobalVar("tuning", currentArrangement.Tuning.TuningName, false);
+            }
+        }
+        catch ( ObjectDisposedException e)
+        {
+            debug("Caught object disposed exception when trying to save meta data: " + e.Message);
+            debug("Trying to reinitialize");
+            Init();
+        }
+        catch(Exception e)
+        {
+            debug("Caught exception trying to save song meta data");
+            debug("Exception: " + e.Message);
+            debug("Trying to reinitialize to recover");
+            Init();
         }
     }
     private void saveNoteDataIfNecessary()
     {
-        if (currentGameStage == GameStage.InSong)
+        try
         {
-            CPH.SetGlobalVar("songTimer", (int)currentResponse.MemoryReadout.SongTimer, false);
-            string formatted = formatTime((int)currentResponse.MemoryReadout.SongTimer);
-            CPH.SetGlobalVar("songTimerFormatted", formatted,false);
-            if (lastNoteData != currentResponse.MemoryReadout.NoteData)
+            if (currentGameStage == GameStage.InSong)
             {
-                CPH.SetGlobalVar("accuracy", currentResponse.MemoryReadout.NoteData.Accuracy, false);
-                CPH.SetGlobalVar("currentHitStreak", currentResponse.MemoryReadout.NoteData.CurrentHitStreak, false);
-                CPH.SetGlobalVar("currentMissStreak", currentResponse.MemoryReadout.NoteData.CurrentMissStreak, false);
-                CPH.SetGlobalVar("totalNotes", currentResponse.MemoryReadout.NoteData.TotalNotes, false);
-                CPH.SetGlobalVar("totalNotesHit", currentResponse.MemoryReadout.NoteData.TotalNotesHit, false);
-                CPH.SetGlobalVar("totalNotesMissed", currentResponse.MemoryReadout.NoteData.TotalNotesMissed, false);
+                CPH.SetGlobalVar("songTimer", (int)currentResponse.MemoryReadout.SongTimer, false);
+                string formatted = formatTime((int)currentResponse.MemoryReadout.SongTimer);
+                CPH.SetGlobalVar("songTimerFormatted", formatted,false);
+                if (lastNoteData != currentResponse.MemoryReadout.NoteData)
+                {
+                    CPH.SetGlobalVar("accuracy", currentResponse.MemoryReadout.NoteData.Accuracy, false);
+                    CPH.SetGlobalVar("currentHitStreak", currentResponse.MemoryReadout.NoteData.CurrentHitStreak, false);
+                    CPH.SetGlobalVar("currentMissStreak", currentResponse.MemoryReadout.NoteData.CurrentMissStreak, false);
+                    CPH.SetGlobalVar("totalNotes", currentResponse.MemoryReadout.NoteData.TotalNotes, false);
+                    CPH.SetGlobalVar("totalNotesHit", currentResponse.MemoryReadout.NoteData.TotalNotesHit, false);
+                    CPH.SetGlobalVar("totalNotesMissed", currentResponse.MemoryReadout.NoteData.TotalNotesMissed, false);
 
-                UInt32 highestHitStreak = (UInt32)currentResponse.MemoryReadout.NoteData.HighestHitStreak;
-                CPH.SetGlobalVar("highestHitStreak", highestHitStreak, false);
-                if (highestHitStreak > highestStreakSinceLaunch)
-                {
-                    highestStreakSinceLaunch = highestHitStreak;
-                    CPH.SetGlobalVar("highestHitStreakSinceLaunch", highestStreakSinceLaunch, false);
-                }
-                
-                UInt32 additionalNotesHit;
-                UInt32 additionalNotesMissed;
-                UInt32 additionalNotes;
-                if (lastNoteData != null)
-                {
-                    additionalNotesHit = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesHit - lastNoteData.TotalNotesHit);
-                    additionalNotesMissed = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesMissed - lastNoteData.TotalNotesMissed);
-                    additionalNotes = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotes - lastNoteData.TotalNotes);
-                }
-                else
-                {
-                    additionalNotesHit = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesHit);
-                    additionalNotesMissed = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesMissed);
-                    additionalNotes = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotes);
-                }
-                totalNotesHitThisStream += additionalNotesHit;
-                totalNotesMissedThisStream += additionalNotesMissed;
-                totalNotesThisStream += additionalNotes;
-                CPH.SetGlobalVar("totalNotesSinceLaunch", totalNotesThisStream, false);
-                CPH.SetGlobalVar("totalNotesHitSinceLaunch", totalNotesHitThisStream, false);
-                CPH.SetGlobalVar("totalNotesMissedSinceLaunch", totalNotesMissedThisStream, false);
-                if (totalNotesThisStream > 0)
-                {
-                    accuracyThisStream = 100.0 * ((double)(totalNotesHitThisStream) / totalNotesThisStream);
-                }
-                CPH.SetGlobalVar("accuracySinceLaunch", accuracyThisStream, false);            
+                    UInt32 highestHitStreak = (UInt32)currentResponse.MemoryReadout.NoteData.HighestHitStreak;
+                    CPH.SetGlobalVar("highestHitStreak", highestHitStreak, false);
+                    if (highestHitStreak > highestStreakSinceLaunch)
+                    {
+                        highestStreakSinceLaunch = highestHitStreak;
+                        CPH.SetGlobalVar("highestHitStreakSinceLaunch", highestStreakSinceLaunch, false);
+                    }
+                    
+                    UInt32 additionalNotesHit;
+                    UInt32 additionalNotesMissed;
+                    UInt32 additionalNotes;
+                    if (lastNoteData != null)
+                    {
+                        additionalNotesHit = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesHit - lastNoteData.TotalNotesHit);
+                        additionalNotesMissed = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesMissed - lastNoteData.TotalNotesMissed);
+                        additionalNotes = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotes - lastNoteData.TotalNotes);
+                    }
+                    else
+                    {
+                        additionalNotesHit = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesHit);
+                        additionalNotesMissed = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesMissed);
+                        additionalNotes = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotes);
+                    }
+                    totalNotesHitThisStream += additionalNotesHit;
+                    totalNotesMissedThisStream += additionalNotesMissed;
+                    totalNotesThisStream += additionalNotes;
+                    CPH.SetGlobalVar("totalNotesSinceLaunch", totalNotesThisStream, false);
+                    CPH.SetGlobalVar("totalNotesHitSinceLaunch", totalNotesHitThisStream, false);
+                    CPH.SetGlobalVar("totalNotesMissedSinceLaunch", totalNotesMissedThisStream, false);
+                    if (totalNotesThisStream > 0)
+                    {
+                        accuracyThisStream = 100.0 * ((double)(totalNotesHitThisStream) / totalNotesThisStream);
+                    }
+                    CPH.SetGlobalVar("accuracySinceLaunch", accuracyThisStream, false);            
 
-                lastNoteData = currentResponse.MemoryReadout.NoteData;
-                //Console.WriteLine(string.Format("Notes this stream: {0}/{1}. Accuracy: {2}",totalNotesHitThisStream,totalNotesThisStream, accuracyThisStream));
+                    lastNoteData = currentResponse.MemoryReadout.NoteData;
+                }
             }
+        }
+        catch ( ObjectDisposedException e)
+        {
+            debug("Caught object disposed exception when trying to save note data: " + e.Message);
+            debug("Trying to reinitialize");
+            Init();
+        }
+        catch (Exception e)
+        {
+           debug("Caught exception: " + e.Message);
+           debug("Trying to reinitialize");
+           Init(); 
         }
     }
     private bool identifyArrangement()
     {
-        currentArrangement = null;
-        currentSectionIndex = -1;
-        if (currentResponse.SongDetails != null) 
-        { 
-            foreach (Arrangement arr in currentResponse.SongDetails.Arrangements)
+        try
+        {
+            currentArrangement = null;
+            currentSectionIndex = -1;
+            if (currentResponse.SongDetails != null)
             {
-                if (arr.ArrangementID == currentResponse.MemoryReadout.ArrangementId)
+                foreach (Arrangement arr in currentResponse.SongDetails.Arrangements)
                 {
-					currentArrangement = arr;
-                    break;
+                   if (arr.ArrangementID == currentResponse.MemoryReadout.ArrangementId)
+                   {
+                        if (arr.ArrangementID == currentResponse.MemoryReadout.ArrangementId)
+                        {
+                            currentArrangement = arr;
+                            break;
+                        }
+                   }
                 }
             }
         }
-		return (currentArrangement != null);
+        catch(Exception e)
+        {
+            debug("Caught exception trying to identify the arrangement: " + e.Message);
+        }	
+        return (currentArrangement != null);
     }
     private void identifySection()
     {
         if (currentArrangement != null)
         {
-            string name = currentArrangement.Sections[currentSectionIndex].Name;
-            if (name.ToLower().Contains("solo")) { currentSectionType = SectionType.Solo; }
-            else if (name.ToLower().Contains("noguitar")) { currentSectionType = SectionType.NoGuitar; }
-            else if (name.ToLower().Contains("riff")) { currentSectionType = SectionType.Riff; }
-            else if (name.ToLower().Contains("bridge")) { currentSectionType = SectionType.Bridge; }
-            else if (name.ToLower().Contains("breakdown")) { currentSectionType = SectionType.Breakdown; }
-            else if (name.ToLower().Contains("chorus")) { currentSectionType = SectionType.Chorus; }
-            else if (name.ToLower().Contains("verse")) { currentSectionType = SectionType.Verse; }
-            else { currentSectionType = SectionType.Default; }
+            try
+            {
+                string name = currentArrangement.Sections[currentSectionIndex].Name;
+                if (name.ToLower().Contains("solo")) { currentSectionType = SectionType.Solo; }
+                else if (name.ToLower().Contains("noguitar")) { currentSectionType = SectionType.NoGuitar; }
+                else if (name.ToLower().Contains("riff")) { currentSectionType = SectionType.Riff; }
+                else if (name.ToLower().Contains("bridge")) { currentSectionType = SectionType.Bridge; }
+                else if (name.ToLower().Contains("breakdown")) { currentSectionType = SectionType.Breakdown; }
+                else if (name.ToLower().Contains("chorus")) { currentSectionType = SectionType.Chorus; }
+                else if (name.ToLower().Contains("verse")) { currentSectionType = SectionType.Verse; }
+                else { currentSectionType = SectionType.Default; }
+            }
+            catch ( Exception e)
+            {
+                debug("Caught unknown exception trying to identify the section: " + e.Message);
+            }
+
         }
         else
         { 
@@ -537,101 +613,103 @@ public class CPHInline
     }
     private void performSceneSwitchIfNecessary()
     {
+        checkTunerActions();
+
+        if (currentGameStage == GameStage.InSong)
+        {
+            checkGameStageSong();
+        }
+        else if (currentGameStage == GameStage.Menu)
+        {
+            checkGameStageMenu();
+        }
+        if (currentGameStage != lastGameStage)
+        {
+            CPH.SetGlobalVar("gameState", currentGameStage.ToString());
+        }
+        lastGameStage = currentGameStage;
+        lastSongTimer = currentResponse.MemoryReadout.SongTimer;
+    }
+    private void checkGameStageSong()
+    {
+        if (lastGameStage != GameStage.InSong)
+        {
+            CPH.RunAction("SongStart");
+        }
+
+        if (!isArrangementIdentified)
+        {
+            isArrangementIdentified = identifyArrangement();
+            saveSongMetaData();
+        }
+        if (isSongScene(currentScene))
+        {
+            if (!currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
+            {
+                sameTimeCounter = 0;
+                if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
+                {
+                    if (currentScene.Equals(songPausedScene))
+                    {
+                        CPH.RunAction("leavePause");
+                    }
+                    if (isSwitchingScenes)
+                    {
+                        switchToScene(songScenes[currentSongSceneIndex]);
+                        lastSceneChange = DateTime.Now;
+                    }
+                }
+            }
+            else
+            {
+                //Already in correct scene
+            }
+        }
+        else if (isSongScene(currentScene))
+        {
+            if (isInPause())
+            {
+                CPH.RunAction("enterPause");
+                if (isSwitchingScenes)
+                {
+                    if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
+                    {
+                        switchToScene(songPausedScene);
+                        lastSceneChange = DateTime.Now;
+                    }
+                }
+            }
+
+        }
+    }
+
+    private void checkGameStageMenu()
+    {
+        if (!currentScene.Equals(menuScene) && isSwitchingScenes)
+        {
+            if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
+            {
+                switchToScene(menuScene);
+                lastSceneChange = DateTime.Now;
+            }
+        }
+        if (lastGameStage == GameStage.InSong)
+        {
+            isArrangementIdentified = false;
+            lastNoteData = null;
+            CPH.RunAction("SongEnd");
+        }
+    }
+
+    private void checkTunerActions()
+    {
         if ((currentGameStage == GameStage.InTuner) && (lastGameStage != GameStage.InTuner))
-        { 
+        {
             CPH.RunAction("enterTuner");
         }
         if ((currentGameStage != GameStage.InTuner) && (lastGameStage == GameStage.InTuner))
         {
             CPH.RunAction("leaveTuner");
-        }
-
-        if (currentGameStage == GameStage.InSong)
-        {
-            if (lastGameStage != GameStage.InSong)
-            {
-                CPH.RunAction("SongStart");
-            }
-
-            if (!isArrangementIdentified)
-            {
-                isArrangementIdentified = identifyArrangement();
-                try
-                {
-                    saveSongMetaData();
-                }
-                catch (ObjectDisposedException e)
-                {
-                    debug("Caught object disposed exception when trying to save meta data: " + e.Message);
-                    debug("Trying to reinitialize");
-                    Init();
-                }
-                catch (Exception e)
-                {
-                    debug("Caugt unknown exception when trying to write song meta data: " + e.Message);
-                }
-            }
-            if (!isSongScene(currentScene))
-            {
-                if (!currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
-                {
-                    sameTimeCounter = 0;
-                    if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
-                    {
-                        if (currentScene.Equals(songPausedScene))
-                        {
-                            CPH.RunAction("leavePause");
-                        }
-                        if (isSwitchingScenes)
-                        {
-                            switchToScene(songScenes[currentSongSceneIndex]);
-                            lastSceneChange = DateTime.Now;
-                        }
-                    }
-                }
-                else
-                {
-                    //Already in correct scene
-                }
-            }
-            else if (isSongScene(currentScene))
-            {
-                if (isInPause())
-                {
-                    CPH.RunAction("enterPause");
-                    if (isSwitchingScenes)
-                    {
-                        if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
-                        {
-                            switchToScene(songPausedScene);
-                            lastSceneChange = DateTime.Now;
-                        }
-                    }
-                }
-               
-            }
-        }
-        else if (currentGameStage == GameStage.Menu)
-        {
-            if (!currentScene.Equals(menuScene) && isSwitchingScenes)
-            {
-                if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
-                {
-                    switchToScene(menuScene);
-                    lastSceneChange = DateTime.Now;
-                }
-            }
-            if (lastGameStage == GameStage.InSong)
-            {
-                isArrangementIdentified = false;
-				invalidateGlobalVariables();
-                lastNoteData = null;
-                CPH.RunAction("SongEnd");
-            }
-        }
-        if (currentGameStage != lastGameStage)
-        {
-            CPH.SetGlobalVar("gameState",currentGameStage.ToString());
         }
         lastGameStage = currentGameStage;
         lastSongTimer = currentResponse.MemoryReadout.SongTimer;
@@ -707,7 +785,19 @@ public class CPHInline
                     {
                         debug("Caugt unknown exception when trying to write song meta data: " + e.Message);
                     }
-                    performSceneSwitchIfNecessary();
+
+                    try
+                    {
+                        performSceneSwitchIfNecessary();
+                    }
+                    catch(System.NullReferenceException e)
+                    {
+                        debug("Caught null reference in scene switch: " + e.Message);
+                        debug("Reinitialising to fix the issue");
+                        Init();
+                    }
+
+
                     if (isReactingToSections)
                     {
                         checkSectionActions();
