@@ -257,7 +257,7 @@ public class CPHInline
 		currentScene = "";
 
         string behaviorString = CPH.GetGlobalVar<string>("behavior");
-        if (behaviorString!= null)
+        if (behaviorString != null)
         {
             if (behaviorString.ToLower().Contains("whitelist")) itsBehavior = ActivityBehavior.WhiteList;
             else if (behaviorString.ToLower().Contains("blacklist")) itsBehavior = ActivityBehavior.BlackList;
@@ -267,10 +267,11 @@ public class CPHInline
                 itsBehavior = ActivityBehavior.WhiteList;
                 debug("Behavior not configured, setting to whitelist as default");
             }
+            debug("Behavior configured as " + itsBehavior.ToString());
         }
         else
         {
-            debug("Behavior configured as " + itsBehavior.ToString());
+            
         }
 
         if (itsBehavior == ActivityBehavior.BlackList)
@@ -597,92 +598,108 @@ public class CPHInline
     }
     private void performSceneSwitchIfNecessary()
     {
+        checkTunerActions();
+
+        if (currentGameStage == GameStage.InSong)
+        {
+            checkGameStageSong();
+        }
+        else if (currentGameStage == GameStage.Menu)
+        {
+            checkGameStageMenu();
+        }
+        if (currentGameStage != lastGameStage)
+        {
+            CPH.SetGlobalVar("gameState", currentGameStage.ToString());
+        }
+        lastGameStage = currentGameStage;
+        lastSongTimer = currentResponse.MemoryReadout.SongTimer;
+    }
+    private void checkGameStageSong()
+    {
+        if (lastGameStage != GameStage.InSong)
+        {
+            CPH.RunAction("SongStart");
+        }
+
+        if (!isArrangementIdentified)
+        {
+            isArrangementIdentified = identifyArrangement();
+            saveSongMetaData();
+        }
+        if (!currentScene.Equals(songScene))
+        {
+            if (!currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
+            {
+                sameTimeCounter = 0;
+                if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
+                {
+                    if (currentScene.Equals(songPausedScene))
+                    {
+                        CPH.RunAction("leavePause");
+                    }
+                    if (isSwitchingScenes)
+                    {
+                        switchToScene(songScene);
+                        lastSceneChange = DateTime.Now;
+                    }
+                }
+            }
+            else
+            {
+                //Already in correct scene
+            }
+        }
+        else if (currentScene.Equals(songScene))
+        {
+            if (isInPause())
+            {
+                CPH.RunAction("enterPause");
+                if (isSwitchingScenes)
+                {
+                    if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
+                    {
+                        switchToScene(songPausedScene);
+                        lastSceneChange = DateTime.Now;
+                    }
+                }
+            }
+
+        }
+    }
+
+    private void checkGameStageMenu()
+    {
+        if (!currentScene.Equals(menuScene) && isSwitchingScenes)
+        {
+            if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
+            {
+                switchToScene(menuScene);
+                lastSceneChange = DateTime.Now;
+            }
+        }
+        if (lastGameStage == GameStage.InSong)
+        {
+            isArrangementIdentified = false;
+            invalidateGlobalVariables();
+            lastNoteData = null;
+            CPH.RunAction("SongEnd");
+        }
+    }
+
+
+    private void checkTunerActions()
+    {
         if ((currentGameStage == GameStage.InTuner) && (lastGameStage != GameStage.InTuner))
-        { 
+        {
             CPH.RunAction("enterTuner");
         }
         if ((currentGameStage != GameStage.InTuner) && (lastGameStage == GameStage.InTuner))
         {
             CPH.RunAction("leaveTuner");
         }
-
-        if (currentGameStage == GameStage.InSong)
-        {	
-            if (lastGameStage != GameStage.InSong)
-            {	
-                CPH.RunAction("SongStart");
-            }
-
-			if (!isArrangementIdentified)
-			{
-				isArrangementIdentified = identifyArrangement();
-                saveSongMetaData();
-            }
-            if (!currentScene.Equals(songScene))
-            {
-                if (!currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
-                {
-                    sameTimeCounter = 0;
-                    if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
-                    {
-                        if (currentScene.Equals(songPausedScene))
-                        {
-                            CPH.RunAction("leavePause");
-                        }
-                        if (isSwitchingScenes)
-                        {
-                            switchToScene(songScene);
-                            lastSceneChange = DateTime.Now;
-                        }
-                    }
-                }
-                else
-                {
-                    //Already in correct scene
-                }
-            }
-            else if (currentScene.Equals(songScene))
-            {
-                if (isInPause())
-                {
-                    CPH.RunAction("enterPause");
-                    if (isSwitchingScenes)
-                    {
-                        if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
-                        {
-                            switchToScene(songPausedScene);
-                            lastSceneChange = DateTime.Now;
-                        }
-                    }
-                }
-               
-            }
-        }
-        else if (currentGameStage == GameStage.Menu)
-        {
-            if (!currentScene.Equals(menuScene) && isSwitchingScenes)
-            {
-                if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
-                {
-                    switchToScene(menuScene);
-                    lastSceneChange = DateTime.Now;
-                }
-            }
-            if (lastGameStage == GameStage.InSong)
-            {
-                isArrangementIdentified = false;
-				invalidateGlobalVariables();
-                lastNoteData = null;
-                CPH.RunAction("SongEnd");
-            }
-        }
-        if (currentGameStage != lastGameStage)
-        {
-            CPH.SetGlobalVar("gameState",currentGameStage.ToString());
-        }
-        lastGameStage = currentGameStage;
-        lastSongTimer = currentResponse.MemoryReadout.SongTimer;
     }
+
     private void checkSectionActions()
     {
         if (currentArrangement != null)
