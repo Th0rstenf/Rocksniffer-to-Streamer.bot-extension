@@ -104,7 +104,7 @@ public class CPHInline
     }
 
     //Needs to be commented out in streamer bot.
-    private CPHmock CPH = new CPHmock();
+    //private CPHmock CPH = new CPHmock();
 
 
     private string snifferIp = null!;
@@ -155,11 +155,7 @@ public class CPHInline
         if (doLogToChat) CPH.SendMessage(str);
         CPH.LogDebug(str);
     }
-    void error(string str)
-    {
-        if (doLogToChat) CPH.SendMessage(str);
-        CPH.LogError(str);
-    }
+
 
     private string formatTime(int totalSeconds)
     {
@@ -192,8 +188,8 @@ public class CPHInline
         }
         catch(Exception e)
         {
-            error("Caught exception when trying to change scene ");
-            error(e.ToString());
+            debug("Caught exception when trying to change scene ");
+            debug(e.ToString());
         }
     }
 
@@ -335,27 +331,27 @@ public class CPHInline
             else
             {
                 success = false;
-                error("Response is null");
+                debug("Response is null");
             }
         }
         catch (HttpRequestException e)
         {
-            //error("Error in response");
-            error(string.Format("Caught exception trying to get response from sniffer: {0}", e.Message));
+            //debug("error in response");
+            debug(string.Format("Caught exception trying to get response from sniffer: {0}", e.Message));
             success = false;
         }
         catch (ObjectDisposedException e)
         {
-            error("HttpClient was disposed. Exception: " + e.Message + " Reinitialising.");
+            debug("HttpClient was disposed. Exception: " + e.Message + " Reinitialising.");
             Init();
             success = false;
         }
         catch (Exception e)
         {
-            error("Caught unknown exception trying to read from HttpClient: " + e.Message);
+            debug("Caught unknown exception trying to read from HttpClient: " + e.Message);
             success = false;
         }
-        if (!success) error("Failed fetching response");
+        if (!success) debug("Failed fetching response");
         return success;
     }
     private bool isRelevantScene()
@@ -416,13 +412,13 @@ public class CPHInline
         }
         catch (JsonException ex)
         {
-            error("Error parsing response: " + ex.Message);
+            debug("Error parsing response: " + ex.Message);
         }
         catch (Exception e)
         {
-            error("Caught exception when trying to deserialize response string");
-            error("Exception: " + e.Message);
-            error("Trying to reinitialize to solve the issue");
+            debug("Caught exception when trying to deserialize response string");
+            debug("Exception: " + e.Message);
+            debug("Trying to reinitialize to solve the issue");
             Init();
         }
         return success;
@@ -452,9 +448,9 @@ public class CPHInline
         }
         catch(Exception e)
         {
-            error("Caught exception trying to save song meta data");
-            error("Exception: " + e.Message);
-            error("Trying to reinitialize to recover");
+            debug("Caught exception trying to save song meta data");
+            debug("Exception: " + e.Message);
+            debug("Trying to reinitialize to recover");
             Init();
         }
     }
@@ -523,8 +519,8 @@ public class CPHInline
         }
         catch (Exception e)
         {
-           error("Caught exception: " + e.Message);
-           error("Trying to reinitialize");
+           debug("Caught exception: " + e.Message);
+           debug("Trying to reinitialize");
            Init(); 
         }
     }
@@ -548,7 +544,7 @@ public class CPHInline
         }
         catch(Exception e)
         {
-            error("Caught exception trying to identify the arrangement: " + e.Message);
+            debug("Caught exception trying to identify the arrangement: " + e.Message);
         }	
         return (currentArrangement != null);
     }
@@ -570,7 +566,7 @@ public class CPHInline
             }
             catch ( Exception e)
             {
-                error("Caught unknown exception trying to identify the section: " + e.Message);
+                debug("Caught unknown exception trying to identify the section: " + e.Message);
             }
 
         }
@@ -757,13 +753,13 @@ public class CPHInline
                     }
                     catch (ObjectDisposedException e)
                     {
-                        error("Caught object disposed exception when trying to save note data: " + e.Message);
-                        error("Trying to reinitialize");
+                        debug("Caught object disposed exception when trying to save note data: " + e.Message);
+                        debug("Trying to reinitialize");
                         Init();
                     }
                     catch (Exception e)
                     {
-                        error("Caugt unknown exception when trying to write song meta data: " + e.Message);
+                        debug("Caugt unknown exception when trying to write song meta data: " + e.Message);
                     }
 
                     try
@@ -772,8 +768,8 @@ public class CPHInline
                     }
                     catch(System.NullReferenceException e)
                     {
-                        error("Caught null reference in scene switch: " + e.Message);
-                        error("Reinitialising to fix the issue");
+                        debug("Caught null reference in scene switch: " + e.Message);
+                        debug("Reinitialising to fix the issue");
                         Init();
                     }
 
