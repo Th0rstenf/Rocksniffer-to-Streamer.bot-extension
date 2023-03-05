@@ -104,7 +104,7 @@ public class CPHInline
     }
 
     //Needs to be commented out in streamer bot.
-    //private CPHmock CPH = new CPHmock();
+    private CPHmock CPH = new CPHmock();
 
 
     private string snifferIp = null!;
@@ -237,8 +237,8 @@ public class CPHInline
         debug(string.Format("Sniffer ip configured as {0}:{1}",snifferIp,snifferPort));
 		menuScene = CPH.GetGlobalVar<string>("menuScene");
         debug("Menu scene: " + menuScene);
-		songScene = CPH.GetGlobalVar<string>("songScene");
-        debug("Song scene: " + songScene);
+		songScenes = CPH.GetGlobalVar<string>("songScene").Split(',');
+        debug("Song scene: " + songScenes);
 		songPausedScene = CPH.GetGlobalVar<string>("pauseScene");
         debug("Song paused scene: " + songPausedScene);
 
@@ -515,7 +515,7 @@ public class CPHInline
                     CPH.SetGlobalVar("accuracySinceLaunch", accuracyThisStream, false);            
 
                     lastNoteData = currentResponse.MemoryReadout.NoteData;
-                }/{1}. Accuracy: {2}",totalNotesHitThisStream,totalNotesThisStream, accuracyThisStream));
+                }
             }
         }
         catch ( ObjectDisposedException e)
@@ -537,17 +537,18 @@ public class CPHInline
         {
             currentArrangement = null;
             currentSectionIndex = -1;
-            if (currentResponse.SongDetails != null) 
-            { 
-                foreach (Arrangement arr in currentResponse.SongDetails.Arrangements)
+            if (currentResponse.SongDetails != null)
             {
-                if (arr.ArrangementID == currentResponse.MemoryReadout.ArrangementId)
+                foreach (Arrangement arr in currentResponse.SongDetails.Arrangements)
                 {
-                    if (arr.ArrangementID == currentResponse.MemoryReadout.ArrangementId)
-                    {
-                        currentArrangement = arr;
-                        break;
-                    }
+                   if (arr.ArrangementID == currentResponse.MemoryReadout.ArrangementId)
+                   {
+                        if (arr.ArrangementID == currentResponse.MemoryReadout.ArrangementId)
+                        {
+                            currentArrangement = arr;
+                            break;
+                        }
+                   }
                 }
             }
         }
@@ -640,7 +641,7 @@ public class CPHInline
             isArrangementIdentified = identifyArrangement();
             saveSongMetaData();
         }
-        if (!currentScene.Equals(songScene))
+        if (isSongScene(currentScene))
         {
             if (!currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
             {
@@ -653,7 +654,7 @@ public class CPHInline
                     }
                     if (isSwitchingScenes)
                     {
-                        switchToScene(songScene);
+                        switchToScene(songScenes[currentSongSceneIndex]);
                         lastSceneChange = DateTime.Now;
                     }
                 }
@@ -663,7 +664,7 @@ public class CPHInline
                 //Already in correct scene
             }
         }
-        else if (currentScene.Equals(songScene))
+        else if (isSongScene(currentScene))
         {
             if (isInPause())
             {
