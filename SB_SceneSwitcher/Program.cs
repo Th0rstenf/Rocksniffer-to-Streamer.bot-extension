@@ -391,6 +391,7 @@ public class CPHInline
             }
             case ActivityBehavior.BlackList:
             {
+		isRelevant = true;    
                 foreach (string str in blackListedScenes)
                 {
                     if (str.Trim().ToLower().Equals(currentScene.ToLower()))
@@ -398,9 +399,7 @@ public class CPHInline
                         isRelevant = false;
                         break;
                     }
-                }
-
-                isRelevant = true;
+                }                
                 break;
             }
             case ActivityBehavior.AlwaysOn:
@@ -655,7 +654,7 @@ public class CPHInline
             isArrangementIdentified = identifyArrangement();
             saveSongMetaData();
         }
-        if (isSongScene(currentScene))
+        if (!isSongScene(currentScene))
         {
             if (!currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
             {
@@ -724,8 +723,6 @@ public class CPHInline
         {
             CPH.RunAction("leaveTuner");
         }
-        lastGameStage = currentGameStage;
-        lastSongTimer = currentResponse.MemoryReadout.SongTimer;
     }
     private void checkSectionActions()
     {
