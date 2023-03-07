@@ -1,4 +1,4 @@
-﻿public class CPHmock
+﻿public class CPHmock : IInlineInvokeProxy
 {
     private string currentScene = "RocksmithBigCam";
     public void LogDebug(string str) { Console.WriteLine(str); }
@@ -12,7 +12,7 @@
     public string ObsGetCurrentScene() { return currentScene; }
 
 
-    public bool SlobsIsConnected(int connectiot = 0) { return false; }
+    public bool SlobsIsConnected(int connection = 0) { return false; }
     public void SlobsSetScene(string str) { Console.WriteLine(string.Format("Setting SLOBS scene to {0}", str)); }
 
     public string SlobsGetCurrentScene() { return currentScene; }
@@ -55,7 +55,7 @@
 
         obj.Init();
         obj.SetLogDebug(true);
-            
+
         while (true)
         {
             obj.Execute();
