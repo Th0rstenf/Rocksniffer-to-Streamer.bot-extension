@@ -193,30 +193,34 @@ public class CPHInline
     private void UpdateCurrentScene()
     {
         currentScene = GetCurrentScene();
-        LogCurrentScene();
     }
     
     private string GetCurrentScene()
     {
+        string scene = "";
         switch (itsBroadcastingSoftware)
         {
             case BroadcastingSoftware.OBS:
             {
-                return CPH.ObsGetCurrentScene(); 
+                scene = CPH.ObsGetCurrentScene();
+                break;
             }
             case BroadcastingSoftware.SLOBS:
             {
-                return CPH.SlobsGetCurrentScene();
+                scene = CPH.SlobsGetCurrentScene();
+                    break;
             }
             case BroadcastingSoftware.NONE:
             default:
             {
                 debug("No stream program defined! Please connect either to OBS or SLOBS!");
-                return "";
+                scene = "";
+                break;
             }
         }
+        return scene;
     }
-    private GameStage evalGameStage(string stage)
+    private GameStage EvalGameStage(string stage)
     {
         GameStage currentStage = GameStage.Menu;
         // Other potential values are: MainMenu las_SongList las_SongOptions las_tuner
@@ -243,25 +247,24 @@ public class CPHInline
         // TODO snifferPort should be also configurable
         snifferPort = "9938"; 
         debug(string.Format("Sniffer ip configured as {0}:{1}",snifferIp,snifferPort));
-		menuScene = GetGlobalVar("menuScene");
+		menuScene = CPH.GetGlobalVar<string>("menuScene");
         debug("Menu scene: " + menuScene);
-        songScenes = GetGlobalVar("songScenes").Split(',');
+        songScenes = CPH.GetGlobalVar<string>("songScenes").Split(',');
         debug("Song scene: " + string.Join(", ", songScenes));
-		songPausedScene = GetGlobalVar("pauseScene");
+		songPausedScene = CPH.GetGlobalVar<string>("pauseScene");
         debug("Song paused scene: " + songPausedScene);
 
-        isSwitchingScenes = GetGlobalVar("switchScenes").ToLower().Contains("true");
+        isSwitchingScenes = CPH.GetGlobalVar<string>("switchScenes").ToLower().Contains("true");
         debug("Switching scenes configured to " + isSwitchingScenes.ToString());
-        isReactingToSections = GetGlobalVar("sectionActions").ToLower().Contains("true");
+        isReactingToSections = CPH.GetGlobalVar<string>("sectionActions").ToLower().Contains("true");
 		debug("Section actions are configured to " + isReactingToSections.ToString());
         lastSceneChange = DateTime.Now;
         minDelay = 3;
         client = new HttpClient();
-        // TODO I think this is always false, so it will never write out a debug message.
         if (client == null) debug("Failed instantiating HttpClient");
         UpdateCurrentScene();
 
-        string behaviorString = GetGlobalVar("behavior");
+        string behaviorString = CPH.GetGlobalVar<string>("behavior");
         if (behaviorString != null)
         {
             if (behaviorString.ToLower().Contains("whitelist")) itsBehavior = ActivityBehavior.WhiteList;
@@ -277,7 +280,7 @@ public class CPHInline
 
         if (itsBehavior == ActivityBehavior.BlackList)
         {
-            string temp = GetGlobalVar("blackList");
+            string temp = CPH.GetGlobalVar<string>("blackList");
             blackListedScenes = temp.Split(',');
             debug("The following scenes are blacklisted:");
             foreach (string str in blackListedScenes)
@@ -306,15 +309,10 @@ public class CPHInline
 
     private string GetSnifferIp()
     {
-        return GetGlobalVar("snifferIP").Replace('"',' ').Trim();
+        return CPH.GetGlobalVar<string>("snifferIP").Replace('"',' ').Trim();
     }
 
-    private string GetGlobalVar(string behavior)
-    {
-        return CPH.GetGlobalVar<string>(behavior);
-    }
-
-    private bool isSongScene(string scene)
+    private bool IsSongScene(string scene)
     {
         foreach (var s in songScenes)
         {
@@ -378,19 +376,23 @@ public class CPHInline
 
     private bool IsRelevantScene()
     {
-        bool isRelevant;
+        bool isRelevant = false;
 
         switch (itsBehavior)
         {
             case ActivityBehavior.WhiteList:
-            {
-                isRelevant = currentScene.Equals(menuScene)
-                             || isSongScene(currentScene)
-                             || currentScene.Equals(songPausedScene);
-                break;
+              {
+                    if (currentScene.Equals(menuScene)
+                    || IsSongScene(currentScene)
+                    || currentScene.Equals(songPausedScene))
+                    {
+                        isRelevant = true;
+                    }
+                    break;
             }
             case ActivityBehavior.BlackList:
             {
+                isRelevant = true;
                 foreach (string str in blackListedScenes)
                 {
                     if (str.Trim().ToLower().Equals(currentScene.ToLower()))
@@ -399,8 +401,6 @@ public class CPHInline
                         break;
                     }
                 }
-
-                isRelevant = true;
                 break;
             }
             case ActivityBehavior.AlwaysOn:
@@ -414,11 +414,10 @@ public class CPHInline
                 break;
         }
         
-        debug($"isRelevant={isRelevant}");
         return isRelevant;
     }
 
-    private bool parseLatestResponse()
+    private bool ParseLatestResponse()
     {
         bool success = false;
         try
@@ -426,7 +425,7 @@ public class CPHInline
             currentResponse = JsonConvert.DeserializeObject<Response>(responseString) ?? throw new Exception("Is never supposed to be zero");
             if (currentResponse != null)
             {
-                currentGameStage = evalGameStage(currentResponse.MemoryReadout.GameStage);
+                currentGameStage = EvalGameStage(currentResponse.MemoryReadout.GameStage);
                 currentSongTimer = currentResponse.MemoryReadout.SongTimer;
                 success = true;
             }
@@ -444,7 +443,7 @@ public class CPHInline
         }
         return success;
     }
-    private void saveSongMetaData()
+    private void SaveSongMetaData()
     {
         try
         {
@@ -475,7 +474,7 @@ public class CPHInline
             Init();
         }
     }
-    private void saveNoteDataIfNecessary()
+    private void SaveNoteDataIfNecessary()
     {
         try
         {
@@ -545,7 +544,7 @@ public class CPHInline
            Init(); 
         }
     }
-    private bool identifyArrangement()
+    private bool IdentifyArrangement()
     {
         try
         {
@@ -630,11 +629,11 @@ public class CPHInline
 
         if (currentGameStage == GameStage.InSong)
         {
-            checkGameStageSong();
+            CheckGameStageSong();
         }
         else if (currentGameStage == GameStage.Menu)
         {
-            checkGameStageMenu();
+            CheckGameStageMenu();
         }
         if (currentGameStage != lastGameStage)
         {
@@ -643,7 +642,7 @@ public class CPHInline
         lastGameStage = currentGameStage;
         lastSongTimer = currentResponse.MemoryReadout.SongTimer;
     }
-    private void checkGameStageSong()
+    private void CheckGameStageSong()
     {
         if (lastGameStage != GameStage.InSong)
         {
@@ -652,10 +651,10 @@ public class CPHInline
 
         if (!isArrangementIdentified)
         {
-            isArrangementIdentified = identifyArrangement();
-            saveSongMetaData();
+            isArrangementIdentified = IdentifyArrangement();
+            SaveSongMetaData();
         }
-        if (isSongScene(currentScene))
+        if (!IsSongScene(currentScene))
         {
             if (!currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
             {
@@ -678,7 +677,7 @@ public class CPHInline
                 // Already in correct scene
             }
         }
-        else if (isSongScene(currentScene))
+        else if (IsSongScene(currentScene))
         {
             if (isInPause())
             {
@@ -696,7 +695,7 @@ public class CPHInline
         }
     }
 
-    private void checkGameStageMenu()
+    private void CheckGameStageMenu()
     {
         if (!currentScene.Equals(menuScene) && isSwitchingScenes)
         {
@@ -724,8 +723,6 @@ public class CPHInline
         {
             CPH.RunAction("leaveTuner");
         }
-        lastGameStage = currentGameStage;
-        lastSongTimer = currentResponse.MemoryReadout.SongTimer;
     }
     private void checkSectionActions()
     {
@@ -785,11 +782,11 @@ public class CPHInline
         {
             if (getLatestResponse())
             {
-                if (parseLatestResponse())
+                if (ParseLatestResponse())
                 {
                     try
                     {
-                        saveNoteDataIfNecessary();
+                        SaveNoteDataIfNecessary();
                     }
                     catch (ObjectDisposedException e)
                     {
@@ -840,9 +837,6 @@ public class CPHInline
         debug(GetStatus());
     }
 
-    private void LogCurrentScene()
-    {
-        debug($"currentScene={currentScene}");
-    }
+
 
 }
