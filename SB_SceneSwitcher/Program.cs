@@ -103,9 +103,71 @@ public class CPHInline
         ,NONE
     }
 
+    public class ResponseFetcher
+    {
+        private IInlineInvokeProxy CPH;
+        private readonly string ip;
+        private readonly string port;
+        private HttpResponseMessage response = null!;
+        
+
+        private HttpClient client = null!;
+        public ResponseFetcher(IInlineInvokeProxy  cph, string ip, string port)
+        {
+            CPH = cph;
+            this.ip = ip;
+            this.port = port;
+
+            client = new HttpClient();
+        }
+
+        public string Fetch()
+        {
+            string responseString = string.Empty;
+            try
+            {
+                string address = string.Format("http://{0}:{1}", ip, port);
+                response = client.GetAsync(address).GetAwaiter().GetResult();
+                if (response != null)
+                {
+                    response.EnsureSuccessStatusCode();
+                    responseString = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                }
+                else
+                {
+
+                    CPH.LogDebug("Response is null");
+                }
+            }
+            catch (HttpRequestException e)
+            {
+                CPH.LogDebug("Error in response");
+                CPH.LogDebug(string.Format("Caught exception trying to get response from sniffer: {0}", e.Message));
+            }
+            catch (ObjectDisposedException e)
+            {
+                CPH.LogDebug("HttpClient was disposed. Exception: " + e.Message + " Reinitialising.");
+                throw e;
+            }
+            catch (Exception e)
+            {
+                CPH.LogDebug("Caught unknown exception trying to read from HttpClient: " + e.Message);
+            }
+            
+            return responseString;
+        }
+    }
+    public class ResponseParser
+    {
+        private IInlineInvokeProxy CPH;
+        public ResponseParser(IInlineInvokeProxy cph) 
+        {
+            CPH = cph;
+        }
+    }
     //Needs to be commented out in streamer bot.
     private CPHmock CPH = new CPHmock();
-
+    private ResponseFetcher itsFetcher;
 
     private string snifferIp = null!;
     private string snifferPort = null!;
@@ -138,10 +200,6 @@ public class CPHInline
     private string songPausedScene = null!;
 	private string currentScene = null!;
 	
-    private HttpClient client = null!;
-    private HttpResponseMessage response = null!;
-    private string responseString = null!;
-
     private DateTime lastSceneChange;
     private int minDelay;
     private int sameTimeCounter;
@@ -156,20 +214,20 @@ public class CPHInline
         logDebug = value;
     }
     
-    void debug(string str)
+    void Debug(string str)
     {
         if (doLogToChat) CPH.SendMessage(str);
         if (logDebug) CPH.LogDebug(str);
     }
 
-    private string formatTime(int totalSeconds)
+    private string FormatTime(int totalSeconds)
     {
         TimeSpan timeSpan= TimeSpan.FromSeconds(totalSeconds);
         
         return timeSpan.ToString();
     }
 
-    private void switchToScene(string scene) 
+    private void SwitchToScene(string scene) 
     {
         switch (itsBroadcastingSoftware)
         {
@@ -184,7 +242,7 @@ public class CPHInline
             }
             default:
             {
-                debug("No stream program defined");
+                Debug("No stream program defined");
                 break;
             }
         }
@@ -213,7 +271,7 @@ public class CPHInline
             case BroadcastingSoftware.NONE:
             default:
             {
-                debug("No stream program defined! Please connect either to OBS or SLOBS!");
+                Debug("No stream program defined! Please connect either to OBS or SLOBS!");
                 scene = "";
                 break;
             }
@@ -241,28 +299,29 @@ public class CPHInline
     }
     public void Init()
     {
-        debug("Initialising RockSniffer to SB plugin");
+        
+        Debug("Initialising RockSniffer to SB plugin");
         //Init happens before arguments are passed, therefore temporary globals are used.
         snifferIp = GetSnifferIp();
         // TODO snifferPort should be also configurable
         snifferPort = "9938"; 
-        debug(string.Format("Sniffer ip configured as {0}:{1}",snifferIp,snifferPort));
+        Debug(string.Format("Sniffer ip configured as {0}:{1}",snifferIp,snifferPort));
+        itsFetcher = new ResponseFetcher(CPH,snifferIp,snifferPort);
+
 		menuScene = CPH.GetGlobalVar<string>("menuScene");
-        debug("Menu scene: " + menuScene);
+        Debug("Menu scene: " + menuScene);
         songScenes = CPH.GetGlobalVar<string>("songScenes").Split(',');
-        debug("Song scene: " + string.Join(", ", songScenes));
+        Debug("Song scene: " + string.Join(", ", songScenes));
 		songPausedScene = CPH.GetGlobalVar<string>("pauseScene");
-        debug("Song paused scene: " + songPausedScene);
+        Debug("Song paused scene: " + songPausedScene);
 
         isSwitchingScenes = CPH.GetGlobalVar<string>("switchScenes").ToLower().Contains("true");
-        debug("Switching scenes configured to " + isSwitchingScenes.ToString());
+        Debug("Switching scenes configured to " + isSwitchingScenes.ToString());
         isReactingToSections = CPH.GetGlobalVar<string>("sectionActions").ToLower().Contains("true");
-		debug("Section actions are configured to " + isReactingToSections.ToString());
+		Debug("Section actions are configured to " + isReactingToSections.ToString());
         lastSceneChange = DateTime.Now;
         minDelay = 3;
-        client = new HttpClient();
-        if (client == null) debug("Failed instantiating HttpClient");
-        UpdateCurrentScene();
+        currentScene = "";
 
         string behaviorString = CPH.GetGlobalVar<string>("behavior");
         if (behaviorString != null)
@@ -273,19 +332,19 @@ public class CPHInline
             else
             {
                 itsBehavior = ActivityBehavior.WhiteList;
-                debug("Behavior not configured, setting to whitelist as default");
+                Debug("Behavior not configured, setting to whitelist as default");
             }
-            debug("Behavior configured as " + itsBehavior.ToString());
+            Debug("Behavior configured as " + itsBehavior.ToString());
         }
 
         if (itsBehavior == ActivityBehavior.BlackList)
         {
             string temp = CPH.GetGlobalVar<string>("blackList");
             blackListedScenes = temp.Split(',');
-            debug("The following scenes are blacklisted:");
+            Debug("The following scenes are blacklisted:");
             foreach (string str in blackListedScenes)
             {
-                debug(str);
+                Debug(str);
             }
         }
         else
@@ -334,45 +393,7 @@ public class CPHInline
         else
             itsBroadcastingSoftware= BroadcastingSoftware.NONE;
     }
-    private bool getLatestResponse()
-    {
-        bool success;
-        try
-        {
-            string address = string.Format("http://{0}:{1}", snifferIp, snifferPort);
-            response = client.GetAsync(address).GetAwaiter().GetResult();
-            if (response != null)
-            {
-                response.EnsureSuccessStatusCode();
-                responseString = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-                success = true;
-            }
-            else
-            {
-                success = false;
-                debug("Response is null");
-            }
-        }
-        catch (HttpRequestException e)
-        {
-            debug("Error in response");
-            debug(string.Format("Caught exception trying to get response from sniffer: {0}", e.Message));
-            success = false;
-        }
-        catch (ObjectDisposedException e)
-        {
-            debug("HttpClient was disposed. Exception: " + e.Message + " Reinitialising.");
-            Init();
-            success = false;
-        }
-        catch (Exception e)
-        {
-            debug("Caught unknown exception trying to read from HttpClient: " + e.Message);
-            success = false;
-        }
-        if (!success) debug("Failed fetching response");
-        return success;
-    }
+    
 
     private bool IsRelevantScene()
     {
@@ -417,7 +438,7 @@ public class CPHInline
         return isRelevant;
     }
 
-    private bool ParseLatestResponse()
+    private bool ParseLatestResponse(string responseString)
     {
         bool success = false;
         try
@@ -432,13 +453,13 @@ public class CPHInline
         }
         catch (JsonException ex)
         {
-            debug("Error parsing response: " + ex.Message);
+            Debug("Error parsing response: " + ex.Message);
         }
         catch (Exception e)
         {
-            debug("Caught exception when trying to deserialize response string");
-            debug("Exception: " + e.Message);
-            debug("Trying to reinitialize to solve the issue");
+            Debug("Caught exception when trying to deserialize response string");
+            Debug("Exception: " + e.Message);
+            Debug("Trying to reinitialize to solve the issue");
             Init();
         }
         return success;
@@ -451,7 +472,7 @@ public class CPHInline
             CPH.SetGlobalVar("artistName", currentResponse.SongDetails.ArtistName, false);
             CPH.SetGlobalVar("albumName", currentResponse.SongDetails.AlbumName, false);
             CPH.SetGlobalVar("songLength", (int)currentResponse.SongDetails.SongLength, false);
-            string formatted = formatTime((int)currentResponse.SongDetails.SongLength);
+            string formatted = FormatTime((int)currentResponse.SongDetails.SongLength);
             CPH.SetGlobalVar("songLengthFormatted",formatted, false);
             if (currentArrangement != null)
             {
@@ -462,15 +483,15 @@ public class CPHInline
         }
         catch ( ObjectDisposedException e)
         {
-            debug("Caught object disposed exception when trying to save meta data: " + e.Message);
-            debug("Trying to reinitialize");
+            Debug("Caught object disposed exception when trying to save meta data: " + e.Message);
+            Debug("Trying to reinitialize");
             Init();
         }
         catch(Exception e)
         {
-            debug("Caught exception trying to save song meta data");
-            debug("Exception: " + e.Message);
-            debug("Trying to reinitialize to recover");
+            Debug("Caught exception trying to save song meta data");
+            Debug("Exception: " + e.Message);
+            Debug("Trying to reinitialize to recover");
             Init();
         }
     }
@@ -481,7 +502,7 @@ public class CPHInline
             if (currentGameStage == GameStage.InSong)
             {
                 CPH.SetGlobalVar("songTimer", (int)currentResponse.MemoryReadout.SongTimer, false);
-                string formatted = formatTime((int)currentResponse.MemoryReadout.SongTimer);
+                string formatted = FormatTime((int)currentResponse.MemoryReadout.SongTimer);
                 CPH.SetGlobalVar("songTimerFormatted", formatted,false);
                 if (lastNoteData != currentResponse.MemoryReadout.NoteData)
                 {
@@ -533,14 +554,14 @@ public class CPHInline
         }
         catch ( ObjectDisposedException e)
         {
-            debug("Caught object disposed exception when trying to save note data: " + e.Message);
-            debug("Trying to reinitialize");
+            Debug("Caught object disposed exception when trying to save note data: " + e.Message);
+            Debug("Trying to reinitialize");
             Init();
         }
         catch (Exception e)
         {
-           debug("Caught exception: " + e.Message);
-           debug("Trying to reinitialize");
+           Debug("Caught exception: " + e.Message);
+           Debug("Trying to reinitialize");
            Init(); 
         }
     }
@@ -567,11 +588,11 @@ public class CPHInline
         }
         catch(Exception e)
         {
-            debug("Caught exception trying to identify the arrangement: " + e.Message);
+            Debug("Caught exception trying to identify the arrangement: " + e.Message);
         }	
         return (currentArrangement != null);
     }
-    private void identifySection()
+    private void IdentifySection()
     {
         if (currentArrangement != null)
         {
@@ -589,7 +610,7 @@ public class CPHInline
             }
             catch ( Exception e)
             {
-                debug("Caught unknown exception trying to identify the section: " + e.Message);
+                Debug("Caught unknown exception trying to identify the section: " + e.Message);
             }
 
         }
@@ -598,7 +619,7 @@ public class CPHInline
             currentSectionType = SectionType.Default; 
         }
     }
-    private bool isInPause()
+    private bool IsInPause()
     {
         bool isPause = false;
         if (currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer)) 
@@ -623,9 +644,9 @@ public class CPHInline
         }
         return isPause;
     }
-    private void performSceneSwitchIfNecessary()
+    private void PerformSceneSwitchIfNecessary()
     {
-        checkTunerActions();
+        CheckTunerActions();
 
         if (currentGameStage == GameStage.InSong)
         {
@@ -667,7 +688,7 @@ public class CPHInline
                     }
                     if (isSwitchingScenes)
                     {
-                        switchToScene(songScenes[currentSongSceneIndex]);
+                        SwitchToScene(songScenes[currentSongSceneIndex]);
                         lastSceneChange = DateTime.Now;
                     }
                 }
@@ -679,14 +700,14 @@ public class CPHInline
         }
         else if (IsSongScene(currentScene))
         {
-            if (isInPause())
+            if (IsInPause())
             {
                 CPH.RunAction("enterPause");
                 if (isSwitchingScenes)
                 {
                     if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
                     {
-                        switchToScene(songPausedScene);
+                        SwitchToScene(songPausedScene);
                         lastSceneChange = DateTime.Now;
                     }
                 }
@@ -701,7 +722,7 @@ public class CPHInline
         {
             if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
             {
-                switchToScene(menuScene);
+                SwitchToScene(menuScene);
                 lastSceneChange = DateTime.Now;
             }
         }
@@ -713,7 +734,7 @@ public class CPHInline
         }
     }
 
-    private void checkTunerActions()
+    private void CheckTunerActions()
     {
         if ((currentGameStage == GameStage.InTuner) && (lastGameStage != GameStage.InTuner))
         {
@@ -724,7 +745,7 @@ public class CPHInline
             CPH.RunAction("leaveTuner");
         }
     }
-    private void checkSectionActions()
+    private void CheckSectionActions()
     {
         if (currentArrangement != null)
         {
@@ -748,7 +769,7 @@ public class CPHInline
             }
             if (hasSectionChanged)
             {
-				identifySection();
+				IdentifySection();
 				if (currentSectionType != lastSectionType)
                 {
                     CPH.RunAction(string.Format("leave{0}", Enum.GetName(typeof(SectionType),lastSectionType)));
@@ -780,9 +801,11 @@ public class CPHInline
 
         if (IsRelevantScene())
         {
-            if (getLatestResponse())
-            {
-                if (ParseLatestResponse())
+            string response = itsFetcher.Fetch();
+            
+            if (response != string.Empty)
+            { 
+                if (ParseLatestResponse(response))
                 {
                     try
                     {
@@ -790,35 +813,35 @@ public class CPHInline
                     }
                     catch (ObjectDisposedException e)
                     {
-                        debug("Caught object disposed exception when trying to save note data: " + e.Message);
-                        debug("Trying to reinitialize");
+                        Debug("Caught object disposed exception when trying to save note data: " + e.Message);
+                        Debug("Trying to reinitialize");
                         Init();
                     }
                     catch (Exception e)
                     {
-                        debug("Caught unknown exception when trying to write song meta data: " + e.Message);
+                        Debug("Caught unknown exception when trying to write song meta data: " + e.Message);
                     }
 
                     try
                     {
-                        performSceneSwitchIfNecessary();
+                        PerformSceneSwitchIfNecessary();
                     }
                     catch (NullReferenceException e)
                     {
-                        debug("Caught null reference in scene switch: " + e.Message);
-                        debug("Reinitialising to fix the issue");
+                        Debug("Caught null reference in scene switch: " + e.Message);
+                        Debug("Reinitialising to fix the issue");
                         Init();
                     }
 
                     if (isReactingToSections)
                     {
-                        checkSectionActions();
+                        CheckSectionActions();
                     }
                 }
             }
             else
             {
-                debug("Fetching response failed, exiting action.");
+                Debug("Fetching response failed, exiting action.");
                 return false;
             }
         }
@@ -834,7 +857,7 @@ public class CPHInline
     // TODO needed?
     private void LogStatus()
     {
-        debug(GetStatus());
+        Debug(GetStatus());
     }
 
 
