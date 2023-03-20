@@ -2,7 +2,7 @@
 
 public class CPHmock
 {
-    private static Config? _config = readConfig();
+    private static readonly Config? _config = readConfig();
 
     private string? currentScene;
 
