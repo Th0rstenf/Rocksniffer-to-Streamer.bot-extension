@@ -1,44 +1,50 @@
-﻿public class CPHmock
+﻿using YamlDotNet.Serialization;
+
+public class CPHmock
 {
-    private string currentScene = "RocksmithBigCam";
+    private static Config? _config = readConfig();
+
+    private string? currentScene;
+
     public void LogDebug(string str) { Console.WriteLine(str); }
     public void LogInfo(string str) { Console.WriteLine(str); }
 
     public void LogVerbose(string str) { Console.WriteLine(str); }
 
     public bool ObsIsConnected(int connection = 0) { return true; }
+
     public void ObsSetScene(string str) { Console.WriteLine(string.Format("Setting OBS scene to {0}", str)); currentScene = str; }
 
-    public string ObsGetCurrentScene() { return currentScene; }
+    public string ObsGetCurrentScene() { return currentScene ??= _config?.menuScene ?? ""; }
 
+    public bool SlobsIsConnected(int connection = 0) { return false; }
 
-    public bool SlobsIsConnected(int connectiot = 0) { return false; }
     public void SlobsSetScene(string str) { Console.WriteLine(string.Format("Setting SLOBS scene to {0}", str)); }
 
     public string SlobsGetCurrentScene() { return currentScene; }
+
     public void SendMessage(string str) { Console.WriteLine(str); }
 
     public void RunAction(string str) { Console.WriteLine(string.Format("Running action: {0}", str)); }
 
-
-
-    public string GetGlobalVar<Type>(string key)
+    public string? GetGlobalVar<Type>(string key)
     {
-        string value = "";
-        if (key.Equals("snifferIP")) value = "192.168.1.37";
-        if (key.Equals("snifferPort")) value = "9938";
-        if (key.Equals("songScenes")) value = "RocksmithBigCamInGame";
-        if (key.Equals("menuScene")) value = "RocksmithBigCam";
-        if (key.Equals("pauseScene")) value = "RocksmithPause";
-        if (key.Equals("sectionDetection")) value = "True";
-        if (key.Equals("behavior")) value = "WhiteList";
-        if (key.Equals("switchScenes")) value = "True";
-        if (key.Equals("sectionActions")) value = "True";
-        if (key.Equals("blackList")) value = "Scenex,sceney,RocksmithBigCam";
-
-        return value;
-
+        return key switch
+        {
+            "snifferIP" => _config?.snifferIp,
+            "snifferPort" => _config?.snifferPort,
+            "songScenes" => _config?.songScenes,
+            "menuScene" => _config?.menuScene,
+            "pauseScene" => _config?.pauseScene,
+            "sectionDetection" => _config?.sectionDetection,
+            "behavior" => _config?.behavior,
+            "switchScenes" => _config?.switchScenes,
+            "sectionActions" => _config?.sectionActions,
+            "blackList" => _config?.blackList,
+            _ => throw new InvalidOperationException("Key " + key + " is not found!")
+        };
     }
+
     public void SetGlobalVar(string varName, object value, bool persisted = true)
     {
         //   Console.WriteLine(string.Format("Writing value {1} to variable {0}",varName,value));
@@ -69,5 +75,40 @@
             Thread.Sleep(1000);
         }
     }
-}
 
+    private static Config readConfig()
+    {
+        var json = File.ReadAllText("config.yml");
+        var config = new DeserializerBuilder().Build().Deserialize<Config>(json);
+
+        Console.WriteLine("----------- CONFIG ------------------------------------");
+        Console.WriteLine("sniffIP=" + config.snifferIp);
+        Console.WriteLine("sniffPort=" + config.snifferPort);
+        Console.WriteLine("songScenes=" + config.songScenes);
+        Console.WriteLine("menuScene=" + config.menuScene);
+        Console.WriteLine("pauseScene=" + config.pauseScene);
+        Console.WriteLine("sectionDetection=" + config.sectionDetection);
+        Console.WriteLine("behavior=" + config.behavior);
+        Console.WriteLine("switchScenes=" + config.switchScenes);
+        Console.WriteLine("sectionActions=" + config.sectionActions);
+        Console.WriteLine("blackList=" + config.blackList);
+        Console.WriteLine("-------------------------------------------------------");
+
+        return config;
+    }
+
+    private record Config
+    {
+        public string? snifferIp { get; set; }
+        public string? snifferPort { get; set; }
+        public string? songScenes { get; set; }
+        public string? menuScene { get; set; }
+        public string? pauseScene { get; set; }
+        public string? sectionDetection { get; set; }
+        public string? behavior { get; set; }
+        public string? switchScenes { get; set; }
+        public string? sectionActions { get; set; }
+        public string? blackList { get; set; }
+    }
+
+}

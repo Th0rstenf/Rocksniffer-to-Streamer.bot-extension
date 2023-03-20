@@ -158,8 +158,9 @@ public class CPHInline
     
     void debug(string str)
     {
-        if (doLogToChat) CPH.SendMessage(str);
-        if (logDebug) CPH.LogDebug(str);
+        var message = "RS2SB :: " + str;
+        if (doLogToChat) CPH.SendMessage(message);
+        if (logDebug) CPH.LogDebug(message);
     }
 
     private string formatTime(int totalSeconds)
@@ -311,7 +312,7 @@ public class CPHInline
 
     private string GetGlobalVar(string behavior)
     {
-        return CPH.GetGlobalVar<string>(behavior);
+        return CPH.GetGlobalVar<string>(behavior) ?? "";
     }
 
     private bool isSongScene(string scene)
@@ -391,7 +392,7 @@ public class CPHInline
             }
             case ActivityBehavior.BlackList:
             {
-		isRelevant = true;    
+		        isRelevant = true;    
                 foreach (string str in blackListedScenes)
                 {
                     if (str.Trim().ToLower().Equals(currentScene.ToLower()))
@@ -412,8 +413,8 @@ public class CPHInline
                 isRelevant = false;
                 break;
         }
-        
-        debug($"isRelevant={isRelevant}");
+
+        debug($"itsBehavior={itsBehavior} isRelevant={isRelevant}");
         return isRelevant;
     }
 
