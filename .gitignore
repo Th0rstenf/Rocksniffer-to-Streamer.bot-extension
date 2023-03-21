@@ -367,3 +367,4 @@ ImportCode.txt
 .vscode
 /.idea/
 *.iml
+config.yml
