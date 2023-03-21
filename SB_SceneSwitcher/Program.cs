@@ -294,11 +294,13 @@ public class CPHInline
             itsSceneInterActor = interactor;
         }
 
-        public void SetContext(Response response, string scene)
+        public void SetResponse(Response response)
         {
             currentResponse = response;
+        }
+        public void setCurrentScene(string scene)
+        {
             currentScene = scene;
-
         }
 
         public void Init()
@@ -799,6 +801,7 @@ public class CPHInline
     public string UpdateCurrentScene()
     {
         currentScene = itsSceneInteractor.GetCurrent();
+        itsParser.setCurrentScene(currentScene);
         return currentScene;
     }
     
@@ -843,7 +846,7 @@ public class CPHInline
 
                 if (currentResponse != null)
                 {
-                    itsParser.SetContext(currentResponse, currentScene);
+                    itsParser.SetResponse(currentResponse);
                     itsParser.UpdateStageAndTimer();
 
                     try
