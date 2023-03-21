@@ -50,8 +50,6 @@
     public static void Main(string[] args)
     {
         CPHInline obj = new CPHInline();
-        string status;
-        string oldStatus = "";
 
         obj.Init();
         obj.SetLogDebug(true);
@@ -59,13 +57,6 @@
         while (true)
         {
             obj.Execute();
-            status = obj.GetStatus();
-            if (status != oldStatus)
-            {
-                Console.WriteLine("Status Changed: {0}", status);
-                oldStatus = status;
-            }
-
             Thread.Sleep(1000);
         }
     }
