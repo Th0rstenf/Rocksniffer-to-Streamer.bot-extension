@@ -1,5 +1,6 @@
 using System;
 using System.Net.Http;
+using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 
 
@@ -158,8 +159,9 @@ public class CPHInline
     
     void debug(string str)
     {
-        if (doLogToChat) CPH.SendMessage(str);
-        if (logDebug) CPH.LogDebug(str);
+        var message = "RS2SB :: " + str;
+        if (doLogToChat) CPH.SendMessage(message);
+        if (logDebug) CPH.LogDebug(message);
     }
 
     private string formatTime(int totalSeconds)
@@ -245,8 +247,8 @@ public class CPHInline
         debug(string.Format("Sniffer ip configured as {0}:{1}",snifferIp,snifferPort));
 		menuScene = GetGlobalVar("menuScene");
         debug("Menu scene: " + menuScene);
-        songScenes = GetGlobalVar("songScenes").Split(',');
-        debug("Song scene: " + string.Join(", ", songScenes));
+        songScenes = Regex.Split(GetGlobalVar("songScenes").Trim(), @"\s*[,;]\s*");
+        debug("Song scenes: " + string.Join(", ", songScenes));
 		songPausedScene = GetGlobalVar("pauseScene");
         debug("Song paused scene: " + songPausedScene);
 
@@ -277,13 +279,8 @@ public class CPHInline
 
         if (itsBehavior == ActivityBehavior.BlackList)
         {
-            string temp = GetGlobalVar("blackList");
-            blackListedScenes = temp.Split(',');
-            debug("The following scenes are blacklisted:");
-            foreach (string str in blackListedScenes)
-            {
-                debug(str);
-            }
+            blackListedScenes = Regex.Split(GetGlobalVar("blackList").Trim(), @"\s*[,;]\s*");
+            debug("Blacklisted scenes:" + string.Join(", ", blackListedScenes));
         }
         else
         {
@@ -311,7 +308,7 @@ public class CPHInline
 
     private string GetGlobalVar(string behavior)
     {
-        return CPH.GetGlobalVar<string>(behavior);
+        return CPH.GetGlobalVar<string>(behavior) ?? "";
     }
 
     private bool isSongScene(string scene)
@@ -391,7 +388,7 @@ public class CPHInline
             }
             case ActivityBehavior.BlackList:
             {
-		isRelevant = true;    
+		        isRelevant = true;    
                 foreach (string str in blackListedScenes)
                 {
                     if (str.Trim().ToLower().Equals(currentScene.ToLower()))
@@ -412,8 +409,8 @@ public class CPHInline
                 isRelevant = false;
                 break;
         }
-        
-        debug($"isRelevant={isRelevant}");
+
+        debug($"itsBehavior={itsBehavior} isRelevant={isRelevant}");
         return isRelevant;
     }
 
