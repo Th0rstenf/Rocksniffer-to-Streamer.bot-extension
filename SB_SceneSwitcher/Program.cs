@@ -236,14 +236,13 @@ public class CPHInline
             catch (JsonException ex)
             {
                 CPH.LogDebug("Error parsing response: " + ex.Message);
+                currentResponse= null;
             }
             catch (Exception e)
             {
                 CPH.LogDebug("Caught exception when trying to deserialize response string");
                 CPH.LogDebug("Exception: " + e.Message);
-                CPH.LogDebug("Trying to reinitialize to solve the issue");
-                //TODO: Restructure program flow to initialize outside of subclass
-                //Init();
+                currentResponse = null;
             }
             return currentResponse;
         }
@@ -441,7 +440,6 @@ public class CPHInline
             return false;
         }
 
-
         public void SaveSongMetaData()
         {
             try
@@ -462,15 +460,13 @@ public class CPHInline
             catch (ObjectDisposedException e)
             {
                 CPH.LogDebug("Caught object disposed exception when trying to save meta data: " + e.Message);
-                CPH.LogDebug("Trying to reinitialize");
-                Init();
+                throw e;
             }
             catch (Exception e)
             {
                 CPH.LogDebug("Caught exception trying to save song meta data");
                 CPH.LogDebug("Exception: " + e.Message);
-                CPH.LogDebug("Trying to reinitialize to recover");
-                Init();
+                throw;
             }
         }
         public void SaveNoteDataIfNecessary()
@@ -533,14 +529,12 @@ public class CPHInline
             catch (ObjectDisposedException e)
             {
                 CPH.LogDebug("Caught object disposed exception when trying to save note data: " + e.Message);
-                CPH.LogDebug("Trying to reinitialize");
-                Init();
+                throw;
             }
             catch (Exception e)
             {
                 CPH.LogDebug("Caught exception: " + e.Message);
-                CPH.LogDebug("Trying to reinitialize");
-                Init();
+                throw;
             }
         }
         public bool IdentifyArrangement()
@@ -767,9 +761,6 @@ public class CPHInline
 
     }
 
-
-
-
     //Needs to be commented out in streamer bot.
     private CPHmock CPH = new CPHmock();
     private SceneInteractor itsSceneInteractor = null!;
@@ -819,8 +810,6 @@ public class CPHInline
         itsFetcher = new ResponseFetcher(CPH,snifferIp,snifferPort);
         itsParser = new ResponseParser(CPH, itsSceneInteractor);
         itsParser.Init();
-
-
 
         currentScene = "";
         
