@@ -307,7 +307,7 @@ public class CPHInline
         {
             menuScene = CPH.GetGlobalVar<string>("menuScene");
             CPH.LogDebug("Menu scene: " + menuScene);
-            songScenes = CPH.GetGlobalVar<string>("songScenes").Split(',');
+            songScenes = Regex.Split(CPH.GetGlobalVar<string>("songScenes").Trim(), @"\s*[,;]\s*");
             CPH.LogDebug("Song scene: " + string.Join(", ", songScenes));
             songPausedScene = CPH.GetGlobalVar<string>("pauseScene");
             CPH.LogDebug("Song paused scene: " + songPausedScene);
@@ -335,8 +335,7 @@ public class CPHInline
 
             if (itsBehavior == ActivityBehavior.BlackList)
             {
-                string temp = CPH.GetGlobalVar<string>("blackList");
-                blackListedScenes = temp.Split(',');
+                blackListedScenes = Regex.Split(CPH.GetGlobalVar<string>("blackList").Trim(), @"\s*[,;]\s*");
                 CPH.LogDebug("The following scenes are blacklisted:");
                 foreach (string str in blackListedScenes)
                 {

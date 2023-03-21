@@ -1,6 +1,6 @@
 ﻿using YamlDotNet.Serialization;
 
-public class CPHmock
+public class CPHmock : IInlineInvokeProxy
 {
     private static readonly Config? _config = readConfig();
 
