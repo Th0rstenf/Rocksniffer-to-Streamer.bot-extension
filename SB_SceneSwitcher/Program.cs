@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 // Objects for parsing the song data
 // 
 
-record MemoryReadout
+public record MemoryReadout
 {
     [JsonRequired]
     public string SongId { get; set; } = null!;
@@ -18,7 +18,7 @@ record MemoryReadout
     public double SongTimer { get; set; }
     public NoteData NoteData { get; set; } = null!;
 }
-record NoteData
+public record NoteData
 {
     public double Accuracy { get; set; }
     public int TotalNotes { get; set; }
@@ -29,7 +29,7 @@ record NoteData
     public int TotalNotesMissed { get; set; }
     public int CurrentMissStreak { get; set; }
 }
-record SongDetails
+public record SongDetails
 {
     public string SongName { get; set; } = null!;
     public string ArtistName { get; set; } = null!;
@@ -41,7 +41,7 @@ record SongDetails
 }
 
 
-record Arrangement
+public record Arrangement
 {
     public string Name { get; set; } = null!;
     public string ArrangementID { get; set; } = null!;
@@ -50,18 +50,18 @@ record Arrangement
 
     public Section[] Sections { get; set; } = null!;
 }
-record Tuning
+public record Tuning
 {
     public string TuningName { get; set; } = null!;
 }
 
-record Section
+public record Section
 {
     public string Name { get; set; } = null!;
     public double StartTime { get; set; }
     public double EndTime { get; set; }
 }
-record Response
+public record Response
 {
     //It does not give any performance boost to parse only partially, due to the way the parser works.
     //However parsing the full song takes roughly 0.2 micro seconds, so it's pretty neglectable
@@ -155,6 +155,28 @@ public class CPHInline
             }
             
             return responseString;
+        }
+
+        public Response extractResponse(string responseString)
+        {
+            Response? currentResponse = null;
+            try
+            {
+                currentResponse = JsonConvert.DeserializeObject<Response>(responseString) ?? throw new Exception("Is never supposed to be zero");                
+            }
+            catch (JsonException ex)
+            {
+                CPH.LogDebug("Error parsing response: " + ex.Message);
+            }
+            catch (Exception e)
+            {
+                CPH.LogDebug("Caught exception when trying to deserialize response string");
+                CPH.LogDebug("Exception: " + e.Message);
+                CPH.LogDebug("Trying to reinitialize to solve the issue");
+                //TODO: Restructure program flow to initialize outside of subclass
+                //Init();
+            }
+            return currentResponse;
         }
     }
     public class ResponseParser
@@ -438,32 +460,7 @@ public class CPHInline
         return isRelevant;
     }
 
-    private bool ParseLatestResponse(string responseString)
-    {
-        bool success = false;
-        try
-        {             
-            currentResponse = JsonConvert.DeserializeObject<Response>(responseString) ?? throw new Exception("Is never supposed to be zero");
-            if (currentResponse != null)
-            {
-                currentGameStage = EvalGameStage(currentResponse.MemoryReadout.GameStage);
-                currentSongTimer = currentResponse.MemoryReadout.SongTimer;
-                success = true;
-            }
-        }
-        catch (JsonException ex)
-        {
-            Debug("Error parsing response: " + ex.Message);
-        }
-        catch (Exception e)
-        {
-            Debug("Caught exception when trying to deserialize response string");
-            Debug("Exception: " + e.Message);
-            Debug("Trying to reinitialize to solve the issue");
-            Init();
-        }
-        return success;
-    }
+
     private void SaveSongMetaData()
     {
         try
@@ -791,8 +788,14 @@ public class CPHInline
             
             if (response != string.Empty)
             { 
-                if (ParseLatestResponse(response))
+                currentResponse = itsFetcher.extractResponse(response);
+
+                if (currentResponse != null)
                 {
+
+                    currentGameStage = EvalGameStage(currentResponse.MemoryReadout.GameStage);
+                    currentSongTimer = currentResponse.MemoryReadout.SongTimer;
+
                     try
                     {
                         SaveNoteDataIfNecessary();
