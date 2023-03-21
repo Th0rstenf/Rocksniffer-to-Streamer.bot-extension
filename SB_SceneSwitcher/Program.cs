@@ -780,20 +780,6 @@ public class CPHInline
         }
     }
     
-    // TODO needed?
-    private void invalidateGlobalVariables()
-    {
-        CPH.UnsetGlobalVar("SongName");
-        CPH.UnsetGlobalVar("ArtistName");
-        CPH.UnsetGlobalVar("AlbumName");
-        CPH.UnsetGlobalVar("Tuning");
-        CPH.UnsetGlobalVar("Accuracy");
-        CPH.UnsetGlobalVar("CurrentHitStreak");
-        CPH.UnsetGlobalVar("CurrentMissStreak");
-        CPH.UnsetGlobalVar("TotalNotes");
-        CPH.UnsetGlobalVar("TotalNotesHit");
-        CPH.UnsetGlobalVar("TotalNotesMissed");
-    }
     public bool Execute()
     {
         DetermineConnectedBroadcastingSoftware();
