@@ -6,26 +6,28 @@ public class CPHmock
 
     private string? currentScene;
 
-    public void LogDebug(string str) { Console.WriteLine(str); }
-    public void LogInfo(string str) { Console.WriteLine(str); }
+    public void LogError(string str) { Console.WriteLine("[ " + DateTime.Now + " ERR] " + str); }
+    public void LogWarn(string str) { Console.WriteLine("[ " + DateTime.Now + " WRN] " + str); }
+    public void LogInfo(string str) { Console.WriteLine("[ " + DateTime.Now + " INF] " + str); }
 
-    public void LogVerbose(string str) { Console.WriteLine(str); }
+    public void LogDebug(string str) { Console.WriteLine("[ " + DateTime.Now + " DBG] " + str); }
+    public void LogVerbose(string str) { Console.WriteLine("[ " + DateTime.Now + " VER] " + str); }
 
     public bool ObsIsConnected(int connection = 0) { return true; }
 
-    public void ObsSetScene(string str) { Console.WriteLine(string.Format("Setting OBS scene to {0}", str)); currentScene = str; }
+    public void ObsSetScene(string str) { Console.WriteLine($"Setting OBS scene to {str}"); currentScene = str; }
 
     public string ObsGetCurrentScene() { return currentScene ??= _config?.menuScene ?? ""; }
 
     public bool SlobsIsConnected(int connection = 0) { return false; }
 
-    public void SlobsSetScene(string str) { Console.WriteLine(string.Format("Setting SLOBS scene to {0}", str)); }
+    public void SlobsSetScene(string str) { Console.WriteLine($"Setting SLOBS scene to {str}"); }
 
     public string SlobsGetCurrentScene() { return currentScene; }
 
     public void SendMessage(string str) { Console.WriteLine(str); }
 
-    public void RunAction(string str) { Console.WriteLine(string.Format("Running action: {0}", str)); }
+    public void RunAction(string str) { Console.WriteLine($"Running action: {str}"); }
 
     public string? GetGlobalVar<Type>(string key)
     {
@@ -60,8 +62,8 @@ public class CPHmock
         string oldStatus = "";
 
         obj.Init();
-        obj.SetLogDebug(true);
-            
+        // obj.SetLoglevel(CPHInline.LogLevel.VERBOSE); // TODO read this from config?
+
         while (true)
         {
             obj.Execute();

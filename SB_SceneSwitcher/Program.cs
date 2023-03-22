@@ -74,6 +74,8 @@ record Response
 
 public class CPHInline
 {
+    private const string LogPrefix = "RS2SB :: ";
+
     enum GameStage
     {
         Menu
@@ -102,6 +104,15 @@ public class CPHInline
         OBS
         ,SLOBS
         ,NONE
+    }
+
+    public enum LogLevel
+    {
+        VERBOSE,
+        DEBUG,
+        INFO,
+        WARN,
+        ERROR
     }
 
     //Needs to be commented out in streamer bot.
@@ -146,24 +157,42 @@ public class CPHInline
     private DateTime lastSceneChange;
     private int minDelay;
     private int sameTimeCounter;
-	private bool doLogToChat = false;
-	private bool logDebug = true;
+	private LogLevel _logLevel = LogLevel.INFO;
     private bool isSwitchingScenes = true;
     private bool isReactingToSections =true;
 	private bool isArrangementIdentified = false;
 
-    public void SetLogDebug(bool value)
+    public void SetLoglevel(LogLevel logLevel)
     {
-        logDebug = value;
-    }
-    
-    void debug(string str)
-    {
-        var message = "RS2SB :: " + str;
-        if (doLogToChat) CPH.SendMessage(message);
-        if (logDebug) CPH.LogDebug(message);
+        _logLevel = logLevel;
     }
 
+    private void LogError(string message, params object?[] args)
+    {
+        if (_logLevel <= LogLevel.ERROR)
+            throw new Exception(string.Format(LogPrefix + message, args));
+    }
+
+    private void LogWarn(string message, params object?[] args)
+    {
+        if (_logLevel <= LogLevel.WARN) CPH.LogWarn(string.Format(LogPrefix + message, args));
+    }
+
+    private void LogInfo(string message, params object?[] args)
+    {
+        if (_logLevel <= LogLevel.INFO) CPH.LogInfo(string.Format(LogPrefix + message, args));
+    }
+
+    private void LogDebug(string message, params object?[] args)
+    {
+        if (_logLevel <= LogLevel.DEBUG) CPH.LogDebug(string.Format(LogPrefix + message, args));
+    }
+
+    private void LogVerbose(string message, params object?[] args)
+    {
+        if (_logLevel <= LogLevel.VERBOSE) CPH.LogVerbose(string.Format(LogPrefix + message, args));
+    }
+    
     private string formatTime(int totalSeconds)
     {
         TimeSpan timeSpan= TimeSpan.FromSeconds(totalSeconds);
@@ -171,22 +200,24 @@ public class CPHInline
         return timeSpan.ToString();
     }
 
-    private void switchToScene(string scene) 
+    private void switchToScene(string scene)
     {
         switch (itsBroadcastingSoftware)
         {
             case BroadcastingSoftware.OBS:
             {
-                CPH.ObsSetScene(scene); break;
+                CPH.ObsSetScene(scene);
+                break;
             }
             case BroadcastingSoftware.SLOBS:
             {
                 CPH.SlobsSetScene(scene);
                 break;
             }
+            case BroadcastingSoftware.NONE:
             default:
             {
-                debug("No stream program defined");
+                LogWarn("No stream program defined! Please connect either to OBS or SLOBS!");
                 break;
             }
         }
@@ -197,14 +228,14 @@ public class CPHInline
         currentScene = GetCurrentScene();
         LogCurrentScene();
     }
-    
+
     private string GetCurrentScene()
     {
         switch (itsBroadcastingSoftware)
         {
             case BroadcastingSoftware.OBS:
             {
-                return CPH.ObsGetCurrentScene(); 
+                return CPH.ObsGetCurrentScene();
             }
             case BroadcastingSoftware.SLOBS:
             {
@@ -213,11 +244,12 @@ public class CPHInline
             case BroadcastingSoftware.NONE:
             default:
             {
-                debug("No stream program defined! Please connect either to OBS or SLOBS!");
+                LogWarn("No stream program defined! Please connect either to OBS or SLOBS!");
                 return "";
             }
         }
     }
+
     private GameStage evalGameStage(string stage)
     {
         GameStage currentStage = GameStage.Menu;
@@ -239,28 +271,29 @@ public class CPHInline
     }
     public void Init()
     {
-        debug("Initialising RockSniffer to SB plugin");
-        //Init happens before arguments are passed, therefore temporary globals are used.
+        LogInfo("Initialising RockSniffer to SB plugin");
+        // Init happens before arguments are passed, therefore temporary globals are used.
         snifferIp = GetSnifferIp();
         // TODO snifferPort should be also configurable
-        snifferPort = "9938"; 
-        debug(string.Format("Sniffer ip configured as {0}:{1}",snifferIp,snifferPort));
+        snifferPort = "9938";
+        LogInfo("Sniffer ip configured as {0}:{1}", snifferIp, snifferPort);
+        // Log(string.Format("Sniffer ip configured as {0}:{1}",snifferIp,snifferPort));
 		menuScene = GetGlobalVar("menuScene");
-        debug("Menu scene: " + menuScene);
+        LogInfo("Menu scene: " + menuScene);
         songScenes = Regex.Split(GetGlobalVar("songScenes").Trim(), @"\s*[,;]\s*");
-        debug("Song scenes: " + string.Join(", ", songScenes));
+        LogInfo("Song scenes: " + string.Join(", ", songScenes));
 		songPausedScene = GetGlobalVar("pauseScene");
-        debug("Song paused scene: " + songPausedScene);
+        LogInfo("Song paused scene: " + songPausedScene);
 
         isSwitchingScenes = GetGlobalVar("switchScenes").ToLower().Contains("true");
-        debug("Switching scenes configured to " + isSwitchingScenes.ToString());
+        LogInfo("Switching scenes configured to " + isSwitchingScenes.ToString());
         isReactingToSections = GetGlobalVar("sectionActions").ToLower().Contains("true");
-		debug("Section actions are configured to " + isReactingToSections.ToString());
+		LogInfo("Section actions are configured to " + isReactingToSections.ToString());
         lastSceneChange = DateTime.Now;
         minDelay = 3;
         client = new HttpClient();
         // TODO I think this is always false, so it will never write out a debug message.
-        if (client == null) debug("Failed instantiating HttpClient");
+        if (client == null) LogWarn("Failed instantiating HttpClient");
         UpdateCurrentScene();
 
         string behaviorString = GetGlobalVar("behavior");
@@ -272,15 +305,15 @@ public class CPHInline
             else
             {
                 itsBehavior = ActivityBehavior.WhiteList;
-                debug("Behavior not configured, setting to whitelist as default");
+                LogInfo("Behavior not configured, setting to whitelist as default");
             }
-            debug("Behavior configured as " + itsBehavior.ToString());
+            LogInfo("Behavior configured as " + itsBehavior);
         }
 
         if (itsBehavior == ActivityBehavior.BlackList)
         {
             blackListedScenes = Regex.Split(GetGlobalVar("blackList").Trim(), @"\s*[,;]\s*");
-            debug("Blacklisted scenes:" + string.Join(", ", blackListedScenes));
+            LogInfo("Blacklisted scenes:" + string.Join(", ", blackListedScenes));
         }
         else
         {
@@ -340,36 +373,35 @@ public class CPHInline
         {
             string address = string.Format("http://{0}:{1}", snifferIp, snifferPort);
             response = client.GetAsync(address).GetAwaiter().GetResult();
-            if (response != null)
+            if (response == null)
+            {
+                success = false;
+                LogWarn("Response is null");
+            }
+            else
             {
                 response.EnsureSuccessStatusCode();
                 responseString = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
                 success = true;
             }
-            else
-            {
-                success = false;
-                debug("Response is null");
-            }
         }
         catch (HttpRequestException e)
         {
-            debug("Error in response");
-            debug(string.Format("Caught exception trying to get response from sniffer: {0}", e.Message));
+            LogError(string.Format("Exception, when trying to get response from sniffer: {0}", e.Message));
             success = false;
         }
         catch (ObjectDisposedException e)
         {
-            debug("HttpClient was disposed. Exception: " + e.Message + " Reinitialising.");
+            LogWarn("HttpClient was disposed. Exception: " + e.Message + " Reinitialising.");
             Init();
             success = false;
         }
         catch (Exception e)
         {
-            debug("Caught unknown exception trying to read from HttpClient: " + e.Message);
+            LogError("Caught an Exception, when trying to read from HttpClient: " + e.Message);
             success = false;
         }
-        if (!success) debug("Failed fetching response");
+        if (!success) LogError("Failed fetching response");
         return success;
     }
 
@@ -410,7 +442,7 @@ public class CPHInline
                 break;
         }
 
-        debug($"itsBehavior={itsBehavior} isRelevant={isRelevant}");
+        LogVerbose($"itsBehavior={itsBehavior} isRelevant={isRelevant}");
         return isRelevant;
     }
 
@@ -429,13 +461,12 @@ public class CPHInline
         }
         catch (JsonException ex)
         {
-            debug("Error parsing response: " + ex.Message);
+            LogError("Error parsing response: " + ex.Message);
         }
         catch (Exception e)
         {
-            debug("Caught exception when trying to deserialize response string");
-            debug("Exception: " + e.Message);
-            debug("Trying to reinitialize to solve the issue");
+            LogError("Caught exception when trying to deserialize response string! Exception: " + e.Message);
+            LogWarn("Trying to reinitialize to solve the issue");
             Init();
         }
         return success;
@@ -459,15 +490,14 @@ public class CPHInline
         }
         catch ( ObjectDisposedException e)
         {
-            debug("Caught object disposed exception when trying to save meta data: " + e.Message);
-            debug("Trying to reinitialize");
+            LogError("Caught object disposed exception when trying to save meta data: " + e.Message);
+            LogWarn("Trying to reinitialize");
             Init();
         }
         catch(Exception e)
         {
-            debug("Caught exception trying to save song meta data");
-            debug("Exception: " + e.Message);
-            debug("Trying to reinitialize to recover");
+            LogError("Caught exception trying to save song meta data! Exception: " + e.Message);
+            LogWarn("Trying to reinitialize to recover");
             Init();
         }
     }
@@ -528,17 +558,17 @@ public class CPHInline
                 }
             }
         }
-        catch ( ObjectDisposedException e)
+        catch (ObjectDisposedException e)
         {
-            debug("Caught object disposed exception when trying to save note data: " + e.Message);
-            debug("Trying to reinitialize");
+            LogError("Caught object disposed exception when trying to save note data: " + e.Message);
+            LogWarn("Trying to reinitialize");
             Init();
         }
         catch (Exception e)
         {
-           debug("Caught exception: " + e.Message);
-           debug("Trying to reinitialize");
-           Init(); 
+            LogError("Caught exception: " + e.Message);
+            LogWarn("Trying to reinitialize");
+            Init();
         }
     }
     private bool identifyArrangement()
@@ -564,7 +594,7 @@ public class CPHInline
         }
         catch(Exception e)
         {
-            debug("Caught exception trying to identify the arrangement: " + e.Message);
+            LogError("Caught exception trying to identify the arrangement: " + e.Message);
         }	
         return (currentArrangement != null);
     }
@@ -586,7 +616,7 @@ public class CPHInline
             }
             catch ( Exception e)
             {
-                debug("Caught unknown exception trying to identify the section: " + e.Message);
+                LogError("Caught unknown exception trying to identify the section: " + e.Message);
             }
 
         }
@@ -787,13 +817,13 @@ public class CPHInline
                     }
                     catch (ObjectDisposedException e)
                     {
-                        debug("Caught object disposed exception when trying to save note data: " + e.Message);
-                        debug("Trying to reinitialize");
+                        LogError("Caught object disposed exception when trying to save note data: " + e.Message);
+                        LogWarn("Trying to reinitialize");
                         Init();
                     }
                     catch (Exception e)
                     {
-                        debug("Caught unknown exception when trying to write song meta data: " + e.Message);
+                        LogError("Caught unknown exception when trying to write song meta data: " + e.Message);
                     }
 
                     try
@@ -802,8 +832,8 @@ public class CPHInline
                     }
                     catch (NullReferenceException e)
                     {
-                        debug("Caught null reference in scene switch: " + e.Message);
-                        debug("Reinitialising to fix the issue");
+                        LogError("Caught null reference in scene switch: " + e.Message);
+                        LogWarn("Reinitialising to fix the issue");
                         Init();
                     }
 
@@ -815,7 +845,7 @@ public class CPHInline
             }
             else
             {
-                debug("Fetching response failed, exiting action.");
+                LogWarn("Fetching response failed, exiting action.");
                 return false;
             }
         }
@@ -831,12 +861,12 @@ public class CPHInline
     // TODO needed?
     private void LogStatus()
     {
-        debug(GetStatus());
+        LogVerbose(GetStatus());
     }
 
     private void LogCurrentScene()
     {
-        debug($"currentScene={currentScene}");
+        LogVerbose($"currentScene={currentScene}");
     }
 
 }
