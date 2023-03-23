@@ -306,16 +306,16 @@ public class CPHInline
         public void Init()
         {
             menuScene = CPH.GetGlobalVar<string>("menuScene");
-            CPH.LogDebug("Menu scene: " + menuScene);
+            CPH.LogInfo("Menu scene: " + menuScene);
             songScenes = Regex.Split(CPH.GetGlobalVar<string>("songScenes").Trim(), @"\s*[,;]\s*");
-            CPH.LogDebug("Song scene: " + string.Join(", ", songScenes));
+            CPH.LogInfo("Song scene: " + string.Join(", ", songScenes));
             songPausedScene = CPH.GetGlobalVar<string>("pauseScene");
-            CPH.LogDebug("Song paused scene: " + songPausedScene);
+            CPH.LogInfo("Song paused scene: " + songPausedScene);
 
             isSwitchingScenes = CPH.GetGlobalVar<string>("switchScenes").ToLower().Contains("true");
-            CPH.LogDebug("Switching scenes configured to " + isSwitchingScenes.ToString());
+            CPH.LogInfo("Switching scenes configured to " + isSwitchingScenes.ToString());
             isReactingToSections = CPH.GetGlobalVar<string>("sectionActions").ToLower().Contains("true");
-            CPH.LogDebug("Section actions are configured to " + isReactingToSections.ToString());
+            CPH.LogInfo("Section actions are configured to " + isReactingToSections.ToString());
             lastSceneChange = DateTime.Now;
             minDelay = 3;
 
@@ -330,16 +330,16 @@ public class CPHInline
                     itsBehavior = ActivityBehavior.WhiteList;
                     CPH.LogDebug("Behavior not configured, setting to whitelist as default");
                 }
-                CPH.LogDebug("Behavior configured as " + itsBehavior.ToString());
+                CPH.LogInfo("Behavior configured as " + itsBehavior.ToString());
             }
 
             if (itsBehavior == ActivityBehavior.BlackList)
             {
                 blackListedScenes = Regex.Split(CPH.GetGlobalVar<string>("blackList").Trim(), @"\s*[,;]\s*");
-                CPH.LogDebug("The following scenes are blacklisted:");
+                CPH.LogInfo("The following scenes are blacklisted:");
                 foreach (string str in blackListedScenes)
                 {
-                    CPH.LogDebug(str);
+                    CPH.LogInfo(str);
                 }
             }
             else
@@ -772,22 +772,7 @@ public class CPHInline
 
     private string currentScene = null!;
 
-
-    private bool logDebug = true;
-
-
-    public void SetLogDebug(bool value)
-    {
-        logDebug = value;
-    }
-    
-    void Debug(string str)
-    {
-
-        if (logDebug) CPH.LogDebug(str);
-    }
-
-   
+       
 
     public string UpdateCurrentScene()
     {
@@ -800,12 +785,12 @@ public class CPHInline
     public void Init()
     {
         
-        Debug("Initialising RockSniffer to SB plugin");
+        CPH.LogInfo("Initialising RockSniffer to SB plugin");
         //Init happens before arguments are passed, therefore temporary globals are used.
         snifferIp = GetSnifferIp();
         // TODO snifferPort should be also configurable
         snifferPort = "9938"; 
-        Debug(string.Format("Sniffer ip configured as {0}:{1}",snifferIp,snifferPort));
+        CPH.LogInfo(string.Format("Sniffer ip configured as {0}:{1}",snifferIp,snifferPort));
         itsSceneInteractor = new SceneInteractor(CPH);
         itsFetcher = new ResponseFetcher(CPH,snifferIp,snifferPort);
         itsParser = new ResponseParser(CPH, itsSceneInteractor);
@@ -844,13 +829,13 @@ public class CPHInline
                     }
                     catch (ObjectDisposedException e)
                     {
-                        Debug("Caught object disposed exception when trying to save note data: " + e.Message);
-                        Debug("Trying to reinitialize");
+                        CPH.LogDebug("Caught object disposed exception when trying to save note data: " + e.Message);
+                        CPH.LogDebug("Trying to reinitialize");
                         Init();
                     }
                     catch (Exception e)
                     {
-                        Debug("Caught unknown exception when trying to write song meta data: " + e.Message);
+                        CPH.LogDebug("Caught unknown exception when trying to write song meta data: " + e.Message);
                     }
 
                     try
@@ -859,8 +844,8 @@ public class CPHInline
                     }
                     catch (NullReferenceException e)
                     {
-                        Debug("Caught null reference in scene switch: " + e.Message);
-                        Debug("Reinitialising to fix the issue");
+                        CPH.LogDebug("Caught null reference in scene switch: " + e.Message);
+                        CPH.LogDebug("Reinitialising to fix the issue");
                         Init();
                     }
 
@@ -871,7 +856,7 @@ public class CPHInline
             }
             else
             {
-                Debug("Fetching response failed, exiting action.");
+                CPH.LogDebug("Fetching response failed, exiting action.");
                 return false;
             }
         }

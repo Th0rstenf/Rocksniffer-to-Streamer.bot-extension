@@ -58,7 +58,6 @@ public class CPHmock : IInlineInvokeProxy
         CPHInline obj = new CPHInline();
 
         obj.Init();
-        obj.SetLogDebug(true);
 
         while (true)
         {
