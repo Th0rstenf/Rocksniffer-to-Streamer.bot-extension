@@ -4,21 +4,18 @@ using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 
 
-
 // Objects for parsing the song data
 // 
 
 record MemoryReadout
 {
-    [JsonRequired]
-    public string SongId { get; set; } = null!;
-    [JsonRequired]
-    public string ArrangementId { get; set; } = null!;
-    [JsonRequired]
-    public string GameStage { get; set; } = null!;
+    [JsonRequired] public string SongId { get; set; } = null!;
+    [JsonRequired] public string ArrangementId { get; set; } = null!;
+    [JsonRequired] public string GameStage { get; set; } = null!;
     public double SongTimer { get; set; }
     public NoteData NoteData { get; set; } = null!;
 }
+
 record NoteData
 {
     public double Accuracy { get; set; }
@@ -30,6 +27,7 @@ record NoteData
     public int TotalNotesMissed { get; set; }
     public int CurrentMissStreak { get; set; }
 }
+
 record SongDetails
 {
     public string SongName { get; set; } = null!;
@@ -38,7 +36,6 @@ record SongDetails
     public string AlbumName { get; set; } = null!;
     public int AlbumYear { get; set; }
     public Arrangement[] Arrangements { get; set; } = null!;
-
 }
 
 
@@ -51,6 +48,7 @@ record Arrangement
 
     public Section[] Sections { get; set; } = null!;
 }
+
 record Tuning
 {
     public string TuningName { get; set; } = null!;
@@ -62,6 +60,7 @@ record Section
     public double StartTime { get; set; }
     public double EndTime { get; set; }
 }
+
 record Response
 {
     //It does not give any performance boost to parse only partially, due to the way the parser works.
@@ -78,32 +77,35 @@ public class CPHInline
 
     enum GameStage
     {
-        Menu
-        , InSong
-        , InTuner
+        Menu,
+        InSong,
+        InTuner
     }
+
     enum SectionType
     {
-        Default
-		,NoGuitar
-        ,Riff
-        ,Solo
-        ,Verse
-        ,Chorus
-        ,Bridge
-        ,Breakdown
+        Default,
+        NoGuitar,
+        Riff,
+        Solo,
+        Verse,
+        Chorus,
+        Bridge,
+        Breakdown
     }
+
     enum ActivityBehavior
     {
-        WhiteList
-        ,BlackList
-        ,AlwaysOn
+        WhiteList,
+        BlackList,
+        AlwaysOn
     }
+
     enum BroadcastingSoftware
     {
-        OBS
-        ,SLOBS
-        ,NONE
+        OBS,
+        SLOBS,
+        NONE
     }
 
     public enum LogLevel
@@ -135,7 +137,7 @@ public class CPHInline
     private Arrangement? currentArrangement = null!;
     private int currentSectionIndex;
     private int currentSongSceneIndex;
-   
+
     private Response currentResponse = null!;
     private NoteData lastNoteData = null!;
 
@@ -148,8 +150,8 @@ public class CPHInline
     private string menuScene = null!;
     private string[] songScenes = null!;
     private string songPausedScene = null!;
-	private string currentScene = null!;
-	
+    private string currentScene = null!;
+
     private HttpClient client = null!;
     private HttpResponseMessage response = null!;
     private string responseString = null!;
@@ -157,10 +159,10 @@ public class CPHInline
     private DateTime lastSceneChange;
     private int minDelay;
     private int sameTimeCounter;
-	private LogLevel _logLevel = LogLevel.INFO;
+    private LogLevel _logLevel = LogLevel.INFO;
     private bool isSwitchingScenes = true;
-    private bool isReactingToSections =true;
-	private bool isArrangementIdentified = false;
+    private bool isReactingToSections = true;
+    private bool isArrangementIdentified = false;
 
     public void SetLoglevel(LogLevel logLevel)
     {
@@ -192,11 +194,11 @@ public class CPHInline
     {
         if (_logLevel <= LogLevel.VERBOSE) CPH.LogVerbose(string.Format(LogPrefix + message, args));
     }
-    
+
     private string formatTime(int totalSeconds)
     {
-        TimeSpan timeSpan= TimeSpan.FromSeconds(totalSeconds);
-        
+        TimeSpan timeSpan = TimeSpan.FromSeconds(totalSeconds);
+
         return timeSpan.ToString();
     }
 
@@ -269,6 +271,7 @@ public class CPHInline
 
         return currentStage;
     }
+
     public void Init()
     {
         LogInfo("Initialising RockSniffer to SB plugin");
@@ -278,17 +281,17 @@ public class CPHInline
         snifferPort = "9938";
         LogInfo("Sniffer ip configured as {0}:{1}", snifferIp, snifferPort);
         // Log(string.Format("Sniffer ip configured as {0}:{1}",snifferIp,snifferPort));
-		menuScene = GetGlobalVar("menuScene");
+        menuScene = GetGlobalVar("menuScene");
         LogInfo("Menu scene: " + menuScene);
         songScenes = Regex.Split(GetGlobalVar("songScenes").Trim(), @"\s*[,;]\s*");
         LogInfo("Song scenes: " + string.Join(", ", songScenes));
-		songPausedScene = GetGlobalVar("pauseScene");
+        songPausedScene = GetGlobalVar("pauseScene");
         LogInfo("Song paused scene: " + songPausedScene);
 
         isSwitchingScenes = GetGlobalVar("switchScenes").ToLower().Contains("true");
         LogInfo("Switching scenes configured to " + isSwitchingScenes.ToString());
         isReactingToSections = GetGlobalVar("sectionActions").ToLower().Contains("true");
-		LogInfo("Section actions are configured to " + isReactingToSections.ToString());
+        LogInfo("Section actions are configured to " + isReactingToSections.ToString());
         lastSceneChange = DateTime.Now;
         minDelay = 3;
         client = new HttpClient();
@@ -307,6 +310,7 @@ public class CPHInline
                 itsBehavior = ActivityBehavior.WhiteList;
                 LogInfo("Behavior not configured, setting to whitelist as default");
             }
+
             LogInfo("Behavior configured as " + itsBehavior);
         }
 
@@ -322,21 +326,21 @@ public class CPHInline
 
         itsBroadcastingSoftware = BroadcastingSoftware.NONE;
 
-        totalNotesThisStream= 0;
+        totalNotesThisStream = 0;
         totalNotesHitThisStream = 0;
         totalNotesMissedThisStream = 0;
         accuracyThisStream = 0;
-        highestStreakSinceLaunch= 0;
+        highestStreakSinceLaunch = 0;
         currentSectionIndex = -1;
-        currentSongSceneIndex= 0;
+        currentSongSceneIndex = 0;
         lastSectionType = currentSectionType = SectionType.Default;
         lastGameStage = currentGameStage = GameStage.Menu;
-        sameTimeCounter= 0;
+        sameTimeCounter = 0;
     }
 
     private string GetSnifferIp()
     {
-        return GetGlobalVar("snifferIP").Replace('"',' ').Trim();
+        return GetGlobalVar("snifferIP").Replace('"', ' ').Trim();
     }
 
     private string GetGlobalVar(string behavior)
@@ -348,7 +352,7 @@ public class CPHInline
     {
         foreach (var s in songScenes)
         {
-            if(scene.Equals(s))
+            if (scene.Equals(s))
             {
                 return true;
             }
@@ -364,8 +368,9 @@ public class CPHInline
         else if (CPH.SlobsIsConnected())
             itsBroadcastingSoftware = BroadcastingSoftware.SLOBS;
         else
-            itsBroadcastingSoftware= BroadcastingSoftware.NONE;
+            itsBroadcastingSoftware = BroadcastingSoftware.NONE;
     }
+
     private bool getLatestResponse()
     {
         bool success;
@@ -401,6 +406,7 @@ public class CPHInline
             LogError("Caught an Exception, when trying to read from HttpClient: " + e.Message);
             success = false;
         }
+
         if (!success) LogError("Failed fetching response");
         return success;
     }
@@ -420,7 +426,7 @@ public class CPHInline
             }
             case ActivityBehavior.BlackList:
             {
-		        isRelevant = true;    
+                isRelevant = true;
                 foreach (string str in blackListedScenes)
                 {
                     if (str.Trim().ToLower().Equals(currentScene.ToLower()))
@@ -428,7 +434,8 @@ public class CPHInline
                         isRelevant = false;
                         break;
                     }
-                }                
+                }
+
                 break;
             }
             case ActivityBehavior.AlwaysOn:
@@ -450,8 +457,9 @@ public class CPHInline
     {
         bool success = false;
         try
-        {             
-            currentResponse = JsonConvert.DeserializeObject<Response>(responseString) ?? throw new Exception("Is never supposed to be zero");
+        {
+            currentResponse = JsonConvert.DeserializeObject<Response>(responseString) ??
+                              throw new Exception("Is never supposed to be zero");
             if (currentResponse != null)
             {
                 currentGameStage = evalGameStage(currentResponse.MemoryReadout.GameStage);
@@ -469,8 +477,10 @@ public class CPHInline
             LogWarn("Trying to reinitialize to solve the issue");
             Init();
         }
+
         return success;
     }
+
     private void saveSongMetaData()
     {
         try
@@ -480,7 +490,7 @@ public class CPHInline
             CPH.SetGlobalVar("albumName", currentResponse.SongDetails.AlbumName, false);
             CPH.SetGlobalVar("songLength", (int)currentResponse.SongDetails.SongLength, false);
             string formatted = formatTime((int)currentResponse.SongDetails.SongLength);
-            CPH.SetGlobalVar("songLengthFormatted",formatted, false);
+            CPH.SetGlobalVar("songLengthFormatted", formatted, false);
             if (currentArrangement != null)
             {
                 CPH.SetGlobalVar("arrangement", currentArrangement.Name, false);
@@ -488,19 +498,20 @@ public class CPHInline
                 CPH.SetGlobalVar("tuning", currentArrangement.Tuning.TuningName, false);
             }
         }
-        catch ( ObjectDisposedException e)
+        catch (ObjectDisposedException e)
         {
             LogError("Caught object disposed exception when trying to save meta data: " + e.Message);
             LogWarn("Trying to reinitialize");
             Init();
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             LogError("Caught exception trying to save song meta data! Exception: " + e.Message);
             LogWarn("Trying to reinitialize to recover");
             Init();
         }
     }
+
     private void saveNoteDataIfNecessary()
     {
         try
@@ -509,15 +520,18 @@ public class CPHInline
             {
                 CPH.SetGlobalVar("songTimer", (int)currentResponse.MemoryReadout.SongTimer, false);
                 string formatted = formatTime((int)currentResponse.MemoryReadout.SongTimer);
-                CPH.SetGlobalVar("songTimerFormatted", formatted,false);
+                CPH.SetGlobalVar("songTimerFormatted", formatted, false);
                 if (lastNoteData != currentResponse.MemoryReadout.NoteData)
                 {
                     CPH.SetGlobalVar("accuracy", currentResponse.MemoryReadout.NoteData.Accuracy, false);
-                    CPH.SetGlobalVar("currentHitStreak", currentResponse.MemoryReadout.NoteData.CurrentHitStreak, false);
-                    CPH.SetGlobalVar("currentMissStreak", currentResponse.MemoryReadout.NoteData.CurrentMissStreak, false);
+                    CPH.SetGlobalVar("currentHitStreak", currentResponse.MemoryReadout.NoteData.CurrentHitStreak,
+                        false);
+                    CPH.SetGlobalVar("currentMissStreak", currentResponse.MemoryReadout.NoteData.CurrentMissStreak,
+                        false);
                     CPH.SetGlobalVar("totalNotes", currentResponse.MemoryReadout.NoteData.TotalNotes, false);
                     CPH.SetGlobalVar("totalNotesHit", currentResponse.MemoryReadout.NoteData.TotalNotesHit, false);
-                    CPH.SetGlobalVar("totalNotesMissed", currentResponse.MemoryReadout.NoteData.TotalNotesMissed, false);
+                    CPH.SetGlobalVar("totalNotesMissed", currentResponse.MemoryReadout.NoteData.TotalNotesMissed,
+                        false);
 
                     UInt32 highestHitStreak = (UInt32)currentResponse.MemoryReadout.NoteData.HighestHitStreak;
                     CPH.SetGlobalVar("highestHitStreak", highestHitStreak, false);
@@ -526,15 +540,18 @@ public class CPHInline
                         highestStreakSinceLaunch = highestHitStreak;
                         CPH.SetGlobalVar("highestHitStreakSinceLaunch", highestStreakSinceLaunch, false);
                     }
-                    
+
                     UInt32 additionalNotesHit;
                     UInt32 additionalNotesMissed;
                     UInt32 additionalNotes;
                     if (lastNoteData != null)
                     {
-                        additionalNotesHit = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesHit - lastNoteData.TotalNotesHit);
-                        additionalNotesMissed = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesMissed - lastNoteData.TotalNotesMissed);
-                        additionalNotes = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotes - lastNoteData.TotalNotes);
+                        additionalNotesHit = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesHit -
+                                                    lastNoteData.TotalNotesHit);
+                        additionalNotesMissed = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesMissed -
+                                                       lastNoteData.TotalNotesMissed);
+                        additionalNotes = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotes -
+                                                 lastNoteData.TotalNotes);
                     }
                     else
                     {
@@ -542,6 +559,7 @@ public class CPHInline
                         additionalNotesMissed = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesMissed);
                         additionalNotes = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotes);
                     }
+
                     totalNotesHitThisStream += additionalNotesHit;
                     totalNotesMissedThisStream += additionalNotesMissed;
                     totalNotesThisStream += additionalNotes;
@@ -552,7 +570,8 @@ public class CPHInline
                     {
                         accuracyThisStream = 100.0 * ((double)(totalNotesHitThisStream) / totalNotesThisStream);
                     }
-                    CPH.SetGlobalVar("accuracySinceLaunch", accuracyThisStream, false);            
+
+                    CPH.SetGlobalVar("accuracySinceLaunch", accuracyThisStream, false);
 
                     lastNoteData = currentResponse.MemoryReadout.NoteData;
                 }
@@ -571,6 +590,7 @@ public class CPHInline
             Init();
         }
     }
+
     private bool identifyArrangement()
     {
         try
@@ -581,23 +601,25 @@ public class CPHInline
             {
                 foreach (Arrangement arr in currentResponse.SongDetails.Arrangements)
                 {
-                   if (arr.ArrangementID == currentResponse.MemoryReadout.ArrangementId)
-                   {
+                    if (arr.ArrangementID == currentResponse.MemoryReadout.ArrangementId)
+                    {
                         if (arr.ArrangementID == currentResponse.MemoryReadout.ArrangementId)
                         {
                             currentArrangement = arr;
                             break;
                         }
-                   }
+                    }
                 }
             }
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             LogError("Caught exception trying to identify the arrangement: " + e.Message);
-        }	
+        }
+
         return (currentArrangement != null);
     }
+
     private void identifySection()
     {
         if (currentArrangement != null)
@@ -605,34 +627,59 @@ public class CPHInline
             try
             {
                 string name = currentArrangement.Sections[currentSectionIndex].Name;
-                if (name.ToLower().Contains("solo")) { currentSectionType = SectionType.Solo; }
-                else if (name.ToLower().Contains("noguitar")) { currentSectionType = SectionType.NoGuitar; }
-                else if (name.ToLower().Contains("riff")) { currentSectionType = SectionType.Riff; }
-                else if (name.ToLower().Contains("bridge")) { currentSectionType = SectionType.Bridge; }
-                else if (name.ToLower().Contains("breakdown")) { currentSectionType = SectionType.Breakdown; }
-                else if (name.ToLower().Contains("chorus")) { currentSectionType = SectionType.Chorus; }
-                else if (name.ToLower().Contains("verse")) { currentSectionType = SectionType.Verse; }
-                else { currentSectionType = SectionType.Default; }
+                if (name.ToLower().Contains("solo"))
+                {
+                    currentSectionType = SectionType.Solo;
+                }
+                else if (name.ToLower().Contains("noguitar"))
+                {
+                    currentSectionType = SectionType.NoGuitar;
+                }
+                else if (name.ToLower().Contains("riff"))
+                {
+                    currentSectionType = SectionType.Riff;
+                }
+                else if (name.ToLower().Contains("bridge"))
+                {
+                    currentSectionType = SectionType.Bridge;
+                }
+                else if (name.ToLower().Contains("breakdown"))
+                {
+                    currentSectionType = SectionType.Breakdown;
+                }
+                else if (name.ToLower().Contains("chorus"))
+                {
+                    currentSectionType = SectionType.Chorus;
+                }
+                else if (name.ToLower().Contains("verse"))
+                {
+                    currentSectionType = SectionType.Verse;
+                }
+                else
+                {
+                    currentSectionType = SectionType.Default;
+                }
             }
-            catch ( Exception e)
+            catch (Exception e)
             {
                 LogError("Caught unknown exception trying to identify the section: " + e.Message);
             }
-
         }
         else
-        { 
-            currentSectionType = SectionType.Default; 
+        {
+            currentSectionType = SectionType.Default;
         }
     }
+
     private bool isInPause()
     {
         bool isPause = false;
-        if (currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer)) 
-        {   //Checking for zero, as otherwise the start of the song can be mistakenly identified as pause
+        if (currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
+        {
+            //Checking for zero, as otherwise the start of the song can be mistakenly identified as pause
             //When ending the song, there are a few responses with the same time before game state switches. Not triggering a pause if it's less than 250ms to end of song.
             if (currentResponse.MemoryReadout.SongTimer.Equals(0)
-            || ((currentResponse.SongDetails.SongLength - currentResponse.MemoryReadout.SongTimer) < 0.25))
+                || ((currentResponse.SongDetails.SongLength - currentResponse.MemoryReadout.SongTimer) < 0.25))
             {
                 if ((sameTimeCounter++) >= minDelay)
                 {
@@ -640,16 +687,18 @@ public class CPHInline
                 }
             }
             else
-            { 
-                isPause = true; 
-            }        
+            {
+                isPause = true;
+            }
         }
         else
         {
             sameTimeCounter = 0;
         }
+
         return isPause;
     }
+
     private void performSceneSwitchIfNecessary()
     {
         checkTunerActions();
@@ -662,13 +711,16 @@ public class CPHInline
         {
             checkGameStageMenu();
         }
+
         if (currentGameStage != lastGameStage)
         {
             CPH.SetGlobalVar("gameState", currentGameStage.ToString());
         }
+
         lastGameStage = currentGameStage;
         lastSongTimer = currentResponse.MemoryReadout.SongTimer;
     }
+
     private void checkGameStageSong()
     {
         if (lastGameStage != GameStage.InSong)
@@ -681,6 +733,7 @@ public class CPHInline
             isArrangementIdentified = identifyArrangement();
             saveSongMetaData();
         }
+
         if (!isSongScene(currentScene))
         {
             if (!currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
@@ -692,6 +745,7 @@ public class CPHInline
                     {
                         CPH.RunAction("leavePause");
                     }
+
                     if (isSwitchingScenes)
                     {
                         switchToScene(songScenes[currentSongSceneIndex]);
@@ -718,7 +772,6 @@ public class CPHInline
                     }
                 }
             }
-
         }
     }
 
@@ -732,6 +785,7 @@ public class CPHInline
                 lastSceneChange = DateTime.Now;
             }
         }
+
         if (lastGameStage == GameStage.InSong)
         {
             isArrangementIdentified = false;
@@ -746,11 +800,13 @@ public class CPHInline
         {
             CPH.RunAction("enterTuner");
         }
+
         if ((currentGameStage != GameStage.InTuner) && (lastGameStage == GameStage.InTuner))
         {
             CPH.RunAction("leaveTuner");
         }
     }
+
     private void checkSectionActions()
     {
         if (currentArrangement != null)
@@ -773,19 +829,20 @@ public class CPHInline
                     hasSectionChanged = true;
                 }
             }
+
             if (hasSectionChanged)
             {
-				identifySection();
-				if (currentSectionType != lastSectionType)
+                identifySection();
+                if (currentSectionType != lastSectionType)
                 {
-                    CPH.RunAction(string.Format("leave{0}", Enum.GetName(typeof(SectionType),lastSectionType)));
-                    CPH.RunAction(string.Format("enter{0}", Enum.GetName(typeof(SectionType),currentSectionType)));
+                    CPH.RunAction(string.Format("leave{0}", Enum.GetName(typeof(SectionType), lastSectionType)));
+                    CPH.RunAction(string.Format("enter{0}", Enum.GetName(typeof(SectionType), currentSectionType)));
                     lastSectionType = currentSectionType;
                 }
             }
         }
     }
-    
+
     // TODO needed?
     private void invalidateGlobalVariables()
     {
@@ -800,6 +857,7 @@ public class CPHInline
         CPH.UnsetGlobalVar("TotalNotesHit");
         CPH.UnsetGlobalVar("TotalNotesMissed");
     }
+
     public bool Execute()
     {
         DetermineConnectedBroadcastingSoftware();
@@ -868,5 +926,4 @@ public class CPHInline
     {
         LogVerbose($"currentScene={currentScene}");
     }
-
 }

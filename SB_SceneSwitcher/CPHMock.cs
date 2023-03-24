@@ -5,31 +5,74 @@ public class CPHmock
     private static readonly Config? _config = readConfig();
 
     private string? currentScene;
-    
+
 
     // TODO add SB log level check to here!
-    public void LogError(string str) { Console.WriteLine("[ " + DateTime.Now + " ERR] " + str); }
-    public void LogWarn(string str) { Console.WriteLine("[ " + DateTime.Now + " WRN] " + str); }
-    public void LogInfo(string str) { Console.WriteLine("[ " + DateTime.Now + " INF] " + str); }
+    public void LogError(string str)
+    {
+        Console.WriteLine("[ " + DateTime.Now + " ERR] " + str);
+    }
 
-    public void LogDebug(string str) { Console.WriteLine("[ " + DateTime.Now + " DBG] " + str); }
-    public void LogVerbose(string str) { Console.WriteLine("[ " + DateTime.Now + " VER] " + str); }
+    public void LogWarn(string str)
+    {
+        Console.WriteLine("[ " + DateTime.Now + " WRN] " + str);
+    }
 
-    public bool ObsIsConnected(int connection = 0) { return true; }
+    public void LogInfo(string str)
+    {
+        Console.WriteLine("[ " + DateTime.Now + " INF] " + str);
+    }
 
-    public void ObsSetScene(string str) { Console.WriteLine($"Setting OBS scene to {str}"); currentScene = str; }
+    public void LogDebug(string str)
+    {
+        Console.WriteLine("[ " + DateTime.Now + " DBG] " + str);
+    }
 
-    public string ObsGetCurrentScene() { return currentScene ??= _config?.menuScene ?? ""; }
+    public void LogVerbose(string str)
+    {
+        Console.WriteLine("[ " + DateTime.Now + " VER] " + str);
+    }
 
-    public bool SlobsIsConnected(int connection = 0) { return false; }
+    public bool ObsIsConnected(int connection = 0)
+    {
+        return true;
+    }
 
-    public void SlobsSetScene(string str) { Console.WriteLine($"Setting SLOBS scene to {str}"); }
+    public void ObsSetScene(string str)
+    {
+        Console.WriteLine($"Setting OBS scene to {str}");
+        currentScene = str;
+    }
 
-    public string SlobsGetCurrentScene() { return currentScene; }
+    public string ObsGetCurrentScene()
+    {
+        return currentScene ??= _config?.menuScene ?? "";
+    }
 
-    public void SendMessage(string str) { Console.WriteLine(str); }
+    public bool SlobsIsConnected(int connection = 0)
+    {
+        return false;
+    }
 
-    public void RunAction(string str) { Console.WriteLine($"Running action: {str}"); }
+    public void SlobsSetScene(string str)
+    {
+        Console.WriteLine($"Setting SLOBS scene to {str}");
+    }
+
+    public string SlobsGetCurrentScene()
+    {
+        return currentScene;
+    }
+
+    public void SendMessage(string str)
+    {
+        Console.WriteLine(str);
+    }
+
+    public void RunAction(string str)
+    {
+        Console.WriteLine($"Running action: {str}");
+    }
 
     public string? GetGlobalVar<Type>(string key)
     {
@@ -53,10 +96,12 @@ public class CPHmock
     {
         //   Console.WriteLine(string.Format("Writing value {1} to variable {0}",varName,value));
     }
+
     public void UnsetGlobalVar(string varName, bool persisted = true)
     {
         Console.WriteLine("Invalidating var: " + varName);
     }
+
     public static void Main(string[] args)
     {
         CPHInline obj = new CPHInline();
@@ -115,5 +160,4 @@ public class CPHmock
         public string? sectionActions { get; set; }
         public string? blackList { get; set; }
     }
-
 }
