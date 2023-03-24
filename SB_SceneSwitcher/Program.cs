@@ -4,33 +4,30 @@ using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 
 
-
 // Objects for parsing the song data
 // 
 
-record MemoryReadout
+public record MemoryReadout
 {
-    [JsonRequired]
-    public string SongId { get; set; } = null!;
-    [JsonRequired]
-    public string ArrangementId { get; set; } = null!;
-    [JsonRequired]
-    public string GameStage { get; set; } = null!;
+    [JsonRequired] public string SongId { get; set; } = null!;
+    [JsonRequired] public string ArrangementId { get; set; } = null!;
+    [JsonRequired] public string GameStage { get; set; } = null!;
     public double SongTimer { get; set; }
     public NoteData NoteData { get; set; } = null!;
 }
-record NoteData
+
+public record NoteData
 {
     public double Accuracy { get; set; }
     public int TotalNotes { get; set; }
     public int TotalNotesHit { get; set; }
     public int CurrentHitStreak { get; set; }
-
     public int HighestHitStreak { get; set; }
     public int TotalNotesMissed { get; set; }
     public int CurrentMissStreak { get; set; }
 }
-record SongDetails
+
+public record SongDetails
 {
     public string SongName { get; set; } = null!;
     public string ArtistName { get; set; } = null!;
@@ -38,11 +35,10 @@ record SongDetails
     public string AlbumName { get; set; } = null!;
     public int AlbumYear { get; set; }
     public Arrangement[] Arrangements { get; set; } = null!;
-
 }
 
 
-record Arrangement
+public record Arrangement
 {
     public string Name { get; set; } = null!;
     public string ArrangementID { get; set; } = null!;
@@ -51,18 +47,20 @@ record Arrangement
 
     public Section[] Sections { get; set; } = null!;
 }
-record Tuning
+
+public record Tuning
 {
     public string TuningName { get; set; } = null!;
 }
 
-record Section
+public record Section
 {
     public string Name { get; set; } = null!;
     public double StartTime { get; set; }
     public double EndTime { get; set; }
 }
-record Response
+
+public record Response
 {
     //It does not give any performance boost to parse only partially, due to the way the parser works.
     //However parsing the full song takes roughly 0.2 micro seconds, so it's pretty neglectable
@@ -76,767 +74,836 @@ public class CPHInline
 {
     enum GameStage
     {
-        Menu
-        , InSong
-        , InTuner
+        Menu,
+        InSong,
+        InTuner
     }
+
     enum SectionType
     {
-        Default
-		,NoGuitar
-        ,Riff
-        ,Solo
-        ,Verse
-        ,Chorus
-        ,Bridge
-        ,Breakdown
+        Default,
+        NoGuitar,
+        Riff,
+        Solo,
+        Verse,
+        Chorus,
+        Bridge,
+        Breakdown
     }
+
     enum ActivityBehavior
     {
-        WhiteList
-        ,BlackList
-        ,AlwaysOn
-    }
-    enum BroadcastingSoftware
-    {
-        OBS
-        ,SLOBS
-        ,NONE
+        WhiteList,
+        BlackList,
+        AlwaysOn
     }
 
-    //Needs to be commented out in streamer bot.
-    private CPHmock CPH = new CPHmock();
 
-
-    private string snifferIp = null!;
-    private string snifferPort = null!;
-
-    private GameStage currentGameStage;
-    private GameStage lastGameStage;
-    private SectionType currentSectionType;
-    private SectionType lastSectionType;
-    private ActivityBehavior itsBehavior;
-    private BroadcastingSoftware itsBroadcastingSoftware;
-    private string[] blackListedScenes = null!;
-    private double currentSongTimer;
-    private double lastSongTimer;
-
-    private Arrangement? currentArrangement = null!;
-    private int currentSectionIndex;
-    private int currentSongSceneIndex;
-   
-    private Response currentResponse = null!;
-    private NoteData lastNoteData = null!;
-
-    private UInt32 totalNotesThisStream;
-    private UInt32 totalNotesHitThisStream;
-    private UInt32 totalNotesMissedThisStream;
-    private double accuracyThisStream;
-    private UInt32 highestStreakSinceLaunch;
-
-    private string menuScene = null!;
-    private string[] songScenes = null!;
-    private string songPausedScene = null!;
-	private string currentScene = null!;
-	
-    private HttpClient client = null!;
-    private HttpResponseMessage response = null!;
-    private string responseString = null!;
-
-    private DateTime lastSceneChange;
-    private int minDelay;
-    private int sameTimeCounter;
-	private bool doLogToChat = false;
-	private bool logDebug = true;
-    private bool isSwitchingScenes = true;
-    private bool isReactingToSections =true;
-	private bool isArrangementIdentified = false;
-
-    public void SetLogDebug(bool value)
+    public class SceneInteractor
     {
-        logDebug = value;
-    }
-    
-    void debug(string str)
-    {
-        var message = "RS2SB :: " + str;
-        if (doLogToChat) CPH.SendMessage(message);
-        if (logDebug) CPH.LogDebug(message);
-    }
-
-    private string formatTime(int totalSeconds)
-    {
-        TimeSpan timeSpan= TimeSpan.FromSeconds(totalSeconds);
-        
-        return timeSpan.ToString();
-    }
-
-    private void switchToScene(string scene) 
-    {
-        switch (itsBroadcastingSoftware)
+        enum BroadcastingSoftware
         {
-            case BroadcastingSoftware.OBS:
-            {
-                CPH.ObsSetScene(scene); break;
-            }
-            case BroadcastingSoftware.SLOBS:
-            {
-                CPH.SlobsSetScene(scene);
-                break;
-            }
-            default:
-            {
-                debug("No stream program defined");
-                break;
-            }
-        }
-    }
-
-    private void UpdateCurrentScene()
-    {
-        currentScene = GetCurrentScene();
-        LogCurrentScene();
-    }
-    
-    private string GetCurrentScene()
-    {
-        switch (itsBroadcastingSoftware)
-        {
-            case BroadcastingSoftware.OBS:
-            {
-                return CPH.ObsGetCurrentScene(); 
-            }
-            case BroadcastingSoftware.SLOBS:
-            {
-                return CPH.SlobsGetCurrentScene();
-            }
-            case BroadcastingSoftware.NONE:
-            default:
-            {
-                debug("No stream program defined! Please connect either to OBS or SLOBS!");
-                return "";
-            }
-        }
-    }
-    private GameStage evalGameStage(string stage)
-    {
-        GameStage currentStage = GameStage.Menu;
-        // Other potential values are: MainMenu las_SongList las_SongOptions las_tuner
-        if (stage.Equals("las_game") || stage.Equals("sa_game"))
-        {
-            currentStage = GameStage.InSong;
-        }
-        else if (stage.Contains("tuner"))
-        {
-            currentStage = GameStage.InTuner;
-        }
-        else
-        {
-            //Evaluated as Menu
+            OBS,
+            SLOBS,
+            NONE
         }
 
-        return currentStage;
-    }
-    public void Init()
-    {
-        debug("Initialising RockSniffer to SB plugin");
-        //Init happens before arguments are passed, therefore temporary globals are used.
-        snifferIp = GetSnifferIp();
-        // TODO snifferPort should be also configurable
-        snifferPort = "9938"; 
-        debug(string.Format("Sniffer ip configured as {0}:{1}",snifferIp,snifferPort));
-		menuScene = GetGlobalVar("menuScene");
-        debug("Menu scene: " + menuScene);
-        songScenes = Regex.Split(GetGlobalVar("songScenes").Trim(), @"\s*[,;]\s*");
-        debug("Song scenes: " + string.Join(", ", songScenes));
-		songPausedScene = GetGlobalVar("pauseScene");
-        debug("Song paused scene: " + songPausedScene);
+        private IInlineInvokeProxy CPH;
+        private BroadcastingSoftware itsBroadcastingSoftware;
 
-        isSwitchingScenes = GetGlobalVar("switchScenes").ToLower().Contains("true");
-        debug("Switching scenes configured to " + isSwitchingScenes.ToString());
-        isReactingToSections = GetGlobalVar("sectionActions").ToLower().Contains("true");
-		debug("Section actions are configured to " + isReactingToSections.ToString());
-        lastSceneChange = DateTime.Now;
-        minDelay = 3;
-        client = new HttpClient();
-        // TODO I think this is always false, so it will never write out a debug message.
-        if (client == null) debug("Failed instantiating HttpClient");
-        UpdateCurrentScene();
-
-        string behaviorString = GetGlobalVar("behavior");
-        if (behaviorString != null)
+        public SceneInteractor(IInlineInvokeProxy cph)
         {
-            if (behaviorString.ToLower().Contains("whitelist")) itsBehavior = ActivityBehavior.WhiteList;
-            else if (behaviorString.ToLower().Contains("blacklist")) itsBehavior = ActivityBehavior.BlackList;
-            else if (behaviorString.ToLower().Contains("always")) itsBehavior = ActivityBehavior.AlwaysOn;
+            CPH = cph;
+        }
+
+        private void DetermineConnectedBroadcastingSoftware()
+        {
+            if (CPH.ObsIsConnected())
+                itsBroadcastingSoftware = BroadcastingSoftware.OBS;
+            else if (CPH.SlobsIsConnected())
+                itsBroadcastingSoftware = BroadcastingSoftware.SLOBS;
             else
+                itsBroadcastingSoftware = BroadcastingSoftware.NONE;
+        }
+
+        public string GetCurrent()
+        {
+            DetermineConnectedBroadcastingSoftware();
+            string scene = "";
+            switch (itsBroadcastingSoftware)
             {
-                itsBehavior = ActivityBehavior.WhiteList;
-                debug("Behavior not configured, setting to whitelist as default");
+                case BroadcastingSoftware.OBS:
+                {
+                    scene = CPH.ObsGetCurrentScene();
+                    break;
+                }
+                case BroadcastingSoftware.SLOBS:
+                {
+                    scene = CPH.SlobsGetCurrentScene();
+                    break;
+                }
+                case BroadcastingSoftware.NONE:
+                default:
+                {
+                    scene = "";
+                    break;
+                }
             }
-            debug("Behavior configured as " + itsBehavior.ToString());
+
+            return scene;
         }
 
-        if (itsBehavior == ActivityBehavior.BlackList)
+        public void SwitchToScene(string scene)
         {
-            blackListedScenes = Regex.Split(GetGlobalVar("blackList").Trim(), @"\s*[,;]\s*");
-            debug("Blacklisted scenes:" + string.Join(", ", blackListedScenes));
-        }
-        else
-        {
-            blackListedScenes = new string[1];
-        }
-
-        itsBroadcastingSoftware = BroadcastingSoftware.NONE;
-
-        totalNotesThisStream= 0;
-        totalNotesHitThisStream = 0;
-        totalNotesMissedThisStream = 0;
-        accuracyThisStream = 0;
-        highestStreakSinceLaunch= 0;
-        currentSectionIndex = -1;
-        currentSongSceneIndex= 0;
-        lastSectionType = currentSectionType = SectionType.Default;
-        lastGameStage = currentGameStage = GameStage.Menu;
-        sameTimeCounter= 0;
-    }
-
-    private string GetSnifferIp()
-    {
-        return GetGlobalVar("snifferIP").Replace('"',' ').Trim();
-    }
-
-    private string GetGlobalVar(string behavior)
-    {
-        return CPH.GetGlobalVar<string>(behavior) ?? "";
-    }
-
-    private bool isSongScene(string scene)
-    {
-        foreach (var s in songScenes)
-        {
-            if(scene.Equals(s))
+            switch (itsBroadcastingSoftware)
             {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private void DetermineConnectedBroadcastingSoftware()
-    {
-        if (CPH.ObsIsConnected())
-            itsBroadcastingSoftware = BroadcastingSoftware.OBS;
-        else if (CPH.SlobsIsConnected())
-            itsBroadcastingSoftware = BroadcastingSoftware.SLOBS;
-        else
-            itsBroadcastingSoftware= BroadcastingSoftware.NONE;
-    }
-    private bool getLatestResponse()
-    {
-        bool success;
-        try
-        {
-            string address = string.Format("http://{0}:{1}", snifferIp, snifferPort);
-            response = client.GetAsync(address).GetAwaiter().GetResult();
-            if (response != null)
-            {
-                response.EnsureSuccessStatusCode();
-                responseString = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-                success = true;
-            }
-            else
-            {
-                success = false;
-                debug("Response is null");
+                case BroadcastingSoftware.OBS:
+                {
+                    CPH.ObsSetScene(scene);
+                    break;
+                }
+                case BroadcastingSoftware.SLOBS:
+                {
+                    CPH.SlobsSetScene(scene);
+                    break;
+                }
+                case BroadcastingSoftware.NONE:
+                default:
+                {
+                    CPH.LogDebug("No stream program defined");
+                    break;
+                }
             }
         }
-        catch (HttpRequestException e)
-        {
-            debug("Error in response");
-            debug(string.Format("Caught exception trying to get response from sniffer: {0}", e.Message));
-            success = false;
-        }
-        catch (ObjectDisposedException e)
-        {
-            debug("HttpClient was disposed. Exception: " + e.Message + " Reinitialising.");
-            Init();
-            success = false;
-        }
-        catch (Exception e)
-        {
-            debug("Caught unknown exception trying to read from HttpClient: " + e.Message);
-            success = false;
-        }
-        if (!success) debug("Failed fetching response");
-        return success;
     }
 
-    private bool IsRelevantScene()
+    public class ResponseFetcher
     {
-        bool isRelevant;
+        private IInlineInvokeProxy CPH;
+        private readonly string ip;
+        private readonly string port;
+        private HttpResponseMessage response = null!;
+        private HttpClient client = null!;
 
-        switch (itsBehavior)
+        public ResponseFetcher(IInlineInvokeProxy cph, string ip, string port)
         {
-            case ActivityBehavior.WhiteList:
+            CPH = cph;
+            this.ip = ip;
+            this.port = port;
+
+            client = new HttpClient();
+        }
+
+        public string Fetch()
+        {
+            string responseString = string.Empty;
+            try
             {
-                isRelevant = currentScene.Equals(menuScene)
-                             || isSongScene(currentScene)
-                             || currentScene.Equals(songPausedScene);
-                break;
+                string address = string.Format("http://{0}:{1}", ip, port);
+                response = client.GetAsync(address).GetAwaiter().GetResult();
+                if (response != null)
+                {
+                    response.EnsureSuccessStatusCode();
+                    responseString = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                }
+                else
+                {
+                    CPH.LogDebug("Response is null");
+                }
             }
-            case ActivityBehavior.BlackList:
+            catch (HttpRequestException e)
             {
-		        isRelevant = true;    
+                CPH.LogDebug("Error in response");
+                CPH.LogDebug(string.Format("Caught exception trying to get response from sniffer: {0}", e.Message));
+            }
+            catch (ObjectDisposedException e)
+            {
+                CPH.LogDebug("HttpClient was disposed. Exception: " + e.Message + " Reinitialising.");
+                throw e;
+            }
+            catch (Exception e)
+            {
+                CPH.LogDebug("Caught unknown exception trying to read from HttpClient: " + e.Message);
+            }
+
+            return responseString;
+        }
+
+        public Response ExtractResponse(string responseString)
+        {
+            Response? currentResponse = null;
+            try
+            {
+                currentResponse = JsonConvert.DeserializeObject<Response>(responseString) ??
+                                  throw new Exception("Is never supposed to be zero");
+            }
+            catch (JsonException ex)
+            {
+                CPH.LogDebug("Error parsing response: " + ex.Message);
+                currentResponse = null;
+            }
+            catch (Exception e)
+            {
+                CPH.LogDebug("Caught exception when trying to deserialize response string");
+                CPH.LogDebug("Exception: " + e.Message);
+                currentResponse = null;
+            }
+
+            return currentResponse;
+        }
+    }
+
+    public class ResponseParser
+    {
+        private GameStage currentGameStage;
+        private GameStage lastGameStage;
+        private SectionType currentSectionType;
+        private SectionType lastSectionType;
+        private ActivityBehavior itsBehavior;
+        private SceneInteractor itsSceneInterActor;
+
+        private string[] blackListedScenes = null!;
+        private double currentSongTimer;
+        private double lastSongTimer;
+
+        private Arrangement? currentArrangement = null!;
+        private int currentSectionIndex;
+        private int currentSongSceneIndex;
+
+        private Response currentResponse = null!;
+        private NoteData lastNoteData = null!;
+
+        private UInt32 totalNotesThisStream;
+        private UInt32 totalNotesHitThisStream;
+        private UInt32 totalNotesMissedThisStream;
+        private double accuracyThisStream;
+        private UInt32 highestStreakSinceLaunch;
+
+        private string menuScene = null!;
+        private string[] songScenes = null!;
+        private string songPausedScene = null!;
+
+        private DateTime lastSceneChange;
+        private int minDelay;
+        private int sameTimeCounter;
+        private string currentScene = null!;
+
+        private bool switchScenes = true;
+        private bool reactingToSections = true;
+        private bool arrangementIdentified = false;
+        private IInlineInvokeProxy CPH;
+
+        public ResponseParser(IInlineInvokeProxy cph, SceneInteractor interactor)
+        {
+            CPH = cph;
+            itsSceneInterActor = interactor;
+        }
+
+        public void SetResponse(Response response)
+        {
+            currentResponse = response;
+        }
+
+        public void setCurrentScene(string scene)
+        {
+            currentScene = scene;
+        }
+
+        public void Init()
+        {
+            menuScene = CPH.GetGlobalVar<string>("menuScene");
+            CPH.LogInfo("Menu scene: " + menuScene);
+            songScenes = Regex.Split(CPH.GetGlobalVar<string>("songScenes").Trim(), @"\s*[,;]\s*");
+            CPH.LogInfo("Song scene: " + string.Join(", ", songScenes));
+            songPausedScene = CPH.GetGlobalVar<string>("pauseScene");
+            CPH.LogInfo("Song paused scene: " + songPausedScene);
+
+            switchScenes = CPH.GetGlobalVar<string>("switchScenes").ToLower().Contains("true");
+            CPH.LogInfo("Switching scenes configured to " + switchScenes);
+            reactingToSections = CPH.GetGlobalVar<string>("sectionActions").ToLower().Contains("true");
+            CPH.LogInfo("Section actions are configured to " + reactingToSections);
+            lastSceneChange = DateTime.Now;
+            minDelay = 3;
+
+            string behaviorString = CPH.GetGlobalVar<string>("behavior");
+            if (behaviorString != null)
+            {
+                if (behaviorString.ToLower().Contains("whitelist")) itsBehavior = ActivityBehavior.WhiteList;
+                else if (behaviorString.ToLower().Contains("blacklist")) itsBehavior = ActivityBehavior.BlackList;
+                else if (behaviorString.ToLower().Contains("always")) itsBehavior = ActivityBehavior.AlwaysOn;
+                else
+                {
+                    itsBehavior = ActivityBehavior.WhiteList;
+                    CPH.LogDebug("Behavior not configured, setting to whitelist as default");
+                }
+
+                CPH.LogInfo("Behavior configured as " + itsBehavior);
+            }
+
+            if (itsBehavior == ActivityBehavior.BlackList)
+            {
+                blackListedScenes = Regex.Split(CPH.GetGlobalVar<string>("blackList").Trim(), @"\s*[,;]\s*");
+                CPH.LogInfo("The following scenes are blacklisted:");
                 foreach (string str in blackListedScenes)
                 {
-                    if (str.Trim().ToLower().Equals(currentScene.ToLower()))
+                    CPH.LogInfo(str);
+                }
+            }
+            else
+            {
+                blackListedScenes = new string[1];
+            }
+
+            totalNotesThisStream = 0;
+            totalNotesHitThisStream = 0;
+            totalNotesMissedThisStream = 0;
+            accuracyThisStream = 0;
+            highestStreakSinceLaunch = 0;
+            currentSectionIndex = -1;
+            currentSongSceneIndex = 0;
+            lastSectionType = currentSectionType = SectionType.Default;
+            lastGameStage = currentGameStage = GameStage.Menu;
+            sameTimeCounter = 0;
+        }
+
+        private GameStage EvalGameStage(string stage)
+        {
+            GameStage currentStage = GameStage.Menu;
+            // Other potential values are: MainMenu las_SongList las_SongOptions las_tuner
+            if (stage.Equals("las_game") || stage.Equals("sa_game"))
+            {
+                currentStage = GameStage.InSong;
+            }
+            else if (stage.Contains("tuner"))
+            {
+                currentStage = GameStage.InTuner;
+            }
+            else
+            {
+                //Evaluated as Menu
+            }
+
+            return currentStage;
+        }
+
+        public void UpdateStageAndTimer()
+        {
+            currentGameStage = EvalGameStage(currentResponse.MemoryReadout.GameStage);
+            currentSongTimer = currentResponse.MemoryReadout.SongTimer;
+        }
+
+        public bool IsRelevantScene()
+        {
+            bool isRelevant = false;
+
+            switch (itsBehavior)
+            {
+                case ActivityBehavior.WhiteList:
+                {
+                    if (currentScene.Equals(menuScene)
+                        || IsSongScene(currentScene)
+                        || currentScene.Equals(songPausedScene))
                     {
-                        isRelevant = false;
-                        break;
+                        isRelevant = true;
                     }
-                }                
-                break;
-            }
-            case ActivityBehavior.AlwaysOn:
-            {
-                isRelevant = true;
-                break;
+
+                    break;
+                }
+                case ActivityBehavior.BlackList:
+                {
+                    isRelevant = true;
+                    foreach (string str in blackListedScenes)
+                    {
+                        if (str.Trim().ToLower().Equals(currentScene.ToLower()))
+                        {
+                            isRelevant = false;
+                            break;
+                        }
+                    }
+
+                    break;
+                }
+                case ActivityBehavior.AlwaysOn:
+                {
+                    isRelevant = true;
+                    break;
+                }
+
+                default:
+                    isRelevant = false;
+                    break;
             }
 
-            default:
-                isRelevant = false;
-                break;
+            return isRelevant;
         }
 
-        debug($"itsBehavior={itsBehavior} isRelevant={isRelevant}");
-        return isRelevant;
-    }
-
-    private bool parseLatestResponse()
-    {
-        bool success = false;
-        try
-        {             
-            currentResponse = JsonConvert.DeserializeObject<Response>(responseString) ?? throw new Exception("Is never supposed to be zero");
-            if (currentResponse != null)
+        public bool IsSongScene(string scene)
+        {
+            foreach (var s in songScenes)
             {
-                currentGameStage = evalGameStage(currentResponse.MemoryReadout.GameStage);
-                currentSongTimer = currentResponse.MemoryReadout.SongTimer;
-                success = true;
+                if (scene.Equals(s))
+                {
+                    return true;
+                }
             }
+
+            return false;
         }
-        catch (JsonException ex)
+
+        public void SaveSongMetaData()
         {
-            debug("Error parsing response: " + ex.Message);
-        }
-        catch (Exception e)
-        {
-            debug("Caught exception when trying to deserialize response string");
-            debug("Exception: " + e.Message);
-            debug("Trying to reinitialize to solve the issue");
-            Init();
-        }
-        return success;
-    }
-    private void saveSongMetaData()
-    {
-        try
-        {
-            CPH.SetGlobalVar("songName", currentResponse.SongDetails.SongName, false);
-            CPH.SetGlobalVar("artistName", currentResponse.SongDetails.ArtistName, false);
-            CPH.SetGlobalVar("albumName", currentResponse.SongDetails.AlbumName, false);
-            CPH.SetGlobalVar("songLength", (int)currentResponse.SongDetails.SongLength, false);
-            string formatted = formatTime((int)currentResponse.SongDetails.SongLength);
-            CPH.SetGlobalVar("songLengthFormatted",formatted, false);
-            if (currentArrangement != null)
+            try
             {
+                CPH.SetGlobalVar("songName", currentResponse.SongDetails.SongName, false);
+                CPH.SetGlobalVar("artistName", currentResponse.SongDetails.ArtistName, false);
+                CPH.SetGlobalVar("albumName", currentResponse.SongDetails.AlbumName, false);
+                CPH.SetGlobalVar("songLength", (int)currentResponse.SongDetails.SongLength, false);
+                CPH.SetGlobalVar("songLengthFormatted", FormatTime((int)currentResponse.SongDetails.SongLength), false);
+                if (currentArrangement == null) return;
                 CPH.SetGlobalVar("arrangement", currentArrangement.Name, false);
                 CPH.SetGlobalVar("arrangementType", currentArrangement.type, false);
                 CPH.SetGlobalVar("tuning", currentArrangement.Tuning.TuningName, false);
             }
-        }
-        catch ( ObjectDisposedException e)
-        {
-            debug("Caught object disposed exception when trying to save meta data: " + e.Message);
-            debug("Trying to reinitialize");
-            Init();
-        }
-        catch(Exception e)
-        {
-            debug("Caught exception trying to save song meta data");
-            debug("Exception: " + e.Message);
-            debug("Trying to reinitialize to recover");
-            Init();
-        }
-    }
-    private void saveNoteDataIfNecessary()
-    {
-        try
-        {
-            if (currentGameStage == GameStage.InSong)
+            catch (ObjectDisposedException e)
             {
-                CPH.SetGlobalVar("songTimer", (int)currentResponse.MemoryReadout.SongTimer, false);
-                string formatted = formatTime((int)currentResponse.MemoryReadout.SongTimer);
-                CPH.SetGlobalVar("songTimerFormatted", formatted,false);
-                if (lastNoteData != currentResponse.MemoryReadout.NoteData)
-                {
-                    CPH.SetGlobalVar("accuracy", currentResponse.MemoryReadout.NoteData.Accuracy, false);
-                    CPH.SetGlobalVar("currentHitStreak", currentResponse.MemoryReadout.NoteData.CurrentHitStreak, false);
-                    CPH.SetGlobalVar("currentMissStreak", currentResponse.MemoryReadout.NoteData.CurrentMissStreak, false);
-                    CPH.SetGlobalVar("totalNotes", currentResponse.MemoryReadout.NoteData.TotalNotes, false);
-                    CPH.SetGlobalVar("totalNotesHit", currentResponse.MemoryReadout.NoteData.TotalNotesHit, false);
-                    CPH.SetGlobalVar("totalNotesMissed", currentResponse.MemoryReadout.NoteData.TotalNotesMissed, false);
-
-                    UInt32 highestHitStreak = (UInt32)currentResponse.MemoryReadout.NoteData.HighestHitStreak;
-                    CPH.SetGlobalVar("highestHitStreak", highestHitStreak, false);
-                    if (highestHitStreak > highestStreakSinceLaunch)
-                    {
-                        highestStreakSinceLaunch = highestHitStreak;
-                        CPH.SetGlobalVar("highestHitStreakSinceLaunch", highestStreakSinceLaunch, false);
-                    }
-                    
-                    UInt32 additionalNotesHit;
-                    UInt32 additionalNotesMissed;
-                    UInt32 additionalNotes;
-                    if (lastNoteData != null)
-                    {
-                        additionalNotesHit = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesHit - lastNoteData.TotalNotesHit);
-                        additionalNotesMissed = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesMissed - lastNoteData.TotalNotesMissed);
-                        additionalNotes = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotes - lastNoteData.TotalNotes);
-                    }
-                    else
-                    {
-                        additionalNotesHit = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesHit);
-                        additionalNotesMissed = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesMissed);
-                        additionalNotes = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotes);
-                    }
-                    totalNotesHitThisStream += additionalNotesHit;
-                    totalNotesMissedThisStream += additionalNotesMissed;
-                    totalNotesThisStream += additionalNotes;
-                    CPH.SetGlobalVar("totalNotesSinceLaunch", totalNotesThisStream, false);
-                    CPH.SetGlobalVar("totalNotesHitSinceLaunch", totalNotesHitThisStream, false);
-                    CPH.SetGlobalVar("totalNotesMissedSinceLaunch", totalNotesMissedThisStream, false);
-                    if (totalNotesThisStream > 0)
-                    {
-                        accuracyThisStream = 100.0 * ((double)(totalNotesHitThisStream) / totalNotesThisStream);
-                    }
-                    CPH.SetGlobalVar("accuracySinceLaunch", accuracyThisStream, false);            
-
-                    lastNoteData = currentResponse.MemoryReadout.NoteData;
-                }
+                CPH.LogDebug("Caught object disposed exception when trying to save meta data: " + e.Message);
+                throw e;
+            }
+            catch (Exception e)
+            {
+                CPH.LogDebug("Caught exception trying to save song meta data");
+                CPH.LogDebug("Exception: " + e.Message);
+                throw;
             }
         }
-        catch ( ObjectDisposedException e)
-        {
-            debug("Caught object disposed exception when trying to save note data: " + e.Message);
-            debug("Trying to reinitialize");
-            Init();
-        }
-        catch (Exception e)
-        {
-           debug("Caught exception: " + e.Message);
-           debug("Trying to reinitialize");
-           Init(); 
-        }
-    }
-    private bool identifyArrangement()
-    {
-        try
-        {
-            currentArrangement = null;
-            currentSectionIndex = -1;
-            if (currentResponse.SongDetails != null)
-            {
-                foreach (Arrangement arr in currentResponse.SongDetails.Arrangements)
-                {
-                   if (arr.ArrangementID == currentResponse.MemoryReadout.ArrangementId)
-                   {
-                        if (arr.ArrangementID == currentResponse.MemoryReadout.ArrangementId)
-                        {
-                            currentArrangement = arr;
-                            break;
-                        }
-                   }
-                }
-            }
-        }
-        catch(Exception e)
-        {
-            debug("Caught exception trying to identify the arrangement: " + e.Message);
-        }	
-        return (currentArrangement != null);
-    }
-    private void identifySection()
-    {
-        if (currentArrangement != null)
+
+        public void SaveNoteDataIfNecessary()
         {
             try
             {
-                string name = currentArrangement.Sections[currentSectionIndex].Name;
-                if (name.ToLower().Contains("solo")) { currentSectionType = SectionType.Solo; }
-                else if (name.ToLower().Contains("noguitar")) { currentSectionType = SectionType.NoGuitar; }
-                else if (name.ToLower().Contains("riff")) { currentSectionType = SectionType.Riff; }
-                else if (name.ToLower().Contains("bridge")) { currentSectionType = SectionType.Bridge; }
-                else if (name.ToLower().Contains("breakdown")) { currentSectionType = SectionType.Breakdown; }
-                else if (name.ToLower().Contains("chorus")) { currentSectionType = SectionType.Chorus; }
-                else if (name.ToLower().Contains("verse")) { currentSectionType = SectionType.Verse; }
-                else { currentSectionType = SectionType.Default; }
+                if (currentGameStage == GameStage.InSong)
+                {
+                    CPH.SetGlobalVar("songTimer", (int)currentResponse.MemoryReadout.SongTimer, false);
+                    string formatted = FormatTime((int)currentResponse.MemoryReadout.SongTimer);
+                    CPH.SetGlobalVar("songTimerFormatted", formatted, false);
+                    if (lastNoteData != currentResponse.MemoryReadout.NoteData)
+                    {
+                        CPH.SetGlobalVar("accuracy", currentResponse.MemoryReadout.NoteData.Accuracy, false);
+                        CPH.SetGlobalVar("currentHitStreak", currentResponse.MemoryReadout.NoteData.CurrentHitStreak,
+                            false);
+                        CPH.SetGlobalVar("currentMissStreak", currentResponse.MemoryReadout.NoteData.CurrentMissStreak,
+                            false);
+                        CPH.SetGlobalVar("totalNotes", currentResponse.MemoryReadout.NoteData.TotalNotes, false);
+                        CPH.SetGlobalVar("totalNotesHit", currentResponse.MemoryReadout.NoteData.TotalNotesHit, false);
+                        CPH.SetGlobalVar("totalNotesMissed", currentResponse.MemoryReadout.NoteData.TotalNotesMissed,
+                            false);
+
+                        UInt32 highestHitStreak = (UInt32)currentResponse.MemoryReadout.NoteData.HighestHitStreak;
+                        CPH.SetGlobalVar("highestHitStreak", highestHitStreak, false);
+                        if (highestHitStreak > highestStreakSinceLaunch)
+                        {
+                            highestStreakSinceLaunch = highestHitStreak;
+                            CPH.SetGlobalVar("highestHitStreakSinceLaunch", highestStreakSinceLaunch, false);
+                        }
+
+                        UInt32 additionalNotesHit;
+                        UInt32 additionalNotesMissed;
+                        UInt32 additionalNotes;
+                        if (lastNoteData != null)
+                        {
+                            additionalNotesHit = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesHit -
+                                                        lastNoteData.TotalNotesHit);
+                            additionalNotesMissed = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesMissed -
+                                                           lastNoteData.TotalNotesMissed);
+                            additionalNotes = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotes -
+                                                     lastNoteData.TotalNotes);
+                        }
+                        else
+                        {
+                            additionalNotesHit = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesHit);
+                            additionalNotesMissed = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesMissed);
+                            additionalNotes = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotes);
+                        }
+
+                        totalNotesHitThisStream += additionalNotesHit;
+                        totalNotesMissedThisStream += additionalNotesMissed;
+                        totalNotesThisStream += additionalNotes;
+                        CPH.SetGlobalVar("totalNotesSinceLaunch", totalNotesThisStream, false);
+                        CPH.SetGlobalVar("totalNotesHitSinceLaunch", totalNotesHitThisStream, false);
+                        CPH.SetGlobalVar("totalNotesMissedSinceLaunch", totalNotesMissedThisStream, false);
+                        if (totalNotesThisStream > 0)
+                        {
+                            accuracyThisStream = 100.0 * ((double)(totalNotesHitThisStream) / totalNotesThisStream);
+                        }
+
+                        CPH.SetGlobalVar("accuracySinceLaunch", accuracyThisStream, false);
+
+                        lastNoteData = currentResponse.MemoryReadout.NoteData;
+                    }
+                }
             }
-            catch ( Exception e)
+            catch (ObjectDisposedException e)
             {
-                debug("Caught unknown exception trying to identify the section: " + e.Message);
+                CPH.LogDebug("Caught object disposed exception when trying to save note data: " + e.Message);
+                throw;
+            }
+            catch (Exception e)
+            {
+                CPH.LogDebug("Caught exception: " + e.Message);
+                throw;
+            }
+        }
+
+        public bool IdentifyArrangement()
+        {
+            try
+            {
+                currentArrangement = null;
+                currentSectionIndex = -1;
+                if (currentResponse.SongDetails != null)
+                {
+                    foreach (Arrangement arr in currentResponse.SongDetails.Arrangements)
+                    {
+                        if (arr.ArrangementID == currentResponse.MemoryReadout.ArrangementId)
+                        {
+                            if (arr.ArrangementID == currentResponse.MemoryReadout.ArrangementId)
+                            {
+                                currentArrangement = arr;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                CPH.LogDebug("Caught exception trying to identify the arrangement: " + e.Message);
             }
 
+            return (currentArrangement != null);
         }
-        else
-        { 
-            currentSectionType = SectionType.Default; 
-        }
-    }
-    private bool isInPause()
-    {
-        bool isPause = false;
-        if (currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer)) 
-        {   //Checking for zero, as otherwise the start of the song can be mistakenly identified as pause
-            //When ending the song, there are a few responses with the same time before game state switches. Not triggering a pause if it's less than 250ms to end of song.
-            if (currentResponse.MemoryReadout.SongTimer.Equals(0)
-            || ((currentResponse.SongDetails.SongLength - currentResponse.MemoryReadout.SongTimer) < 0.25))
+
+        public void IdentifySection()
+        {
+            if (currentArrangement != null)
             {
-                if ((sameTimeCounter++) >= minDelay)
+                try
+                {
+                    string name = currentArrangement.Sections[currentSectionIndex].Name;
+                    if (name.ToLower().Contains("solo"))
+                    {
+                        currentSectionType = SectionType.Solo;
+                    }
+                    else if (name.ToLower().Contains("noguitar"))
+                    {
+                        currentSectionType = SectionType.NoGuitar;
+                    }
+                    else if (name.ToLower().Contains("riff"))
+                    {
+                        currentSectionType = SectionType.Riff;
+                    }
+                    else if (name.ToLower().Contains("bridge"))
+                    {
+                        currentSectionType = SectionType.Bridge;
+                    }
+                    else if (name.ToLower().Contains("breakdown"))
+                    {
+                        currentSectionType = SectionType.Breakdown;
+                    }
+                    else if (name.ToLower().Contains("chorus"))
+                    {
+                        currentSectionType = SectionType.Chorus;
+                    }
+                    else if (name.ToLower().Contains("verse"))
+                    {
+                        currentSectionType = SectionType.Verse;
+                    }
+                    else
+                    {
+                        currentSectionType = SectionType.Default;
+                    }
+                }
+                catch (Exception e)
+                {
+                    CPH.LogDebug("Caught unknown exception trying to identify the section: " + e.Message);
+                }
+            }
+            else
+            {
+                currentSectionType = SectionType.Default;
+            }
+        }
+
+        public bool IsInPause()
+        {
+            bool isPause = false;
+            if (currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
+            {
+                //Checking for zero, as otherwise the start of the song can be mistakenly identified as pause
+                //When ending the song, there are a few responses with the same time before game state switches. Not triggering a pause if it's less than 250ms to end of song.
+                if (currentResponse.MemoryReadout.SongTimer.Equals(0)
+                    || ((currentResponse.SongDetails.SongLength - currentResponse.MemoryReadout.SongTimer) < 0.25))
+                {
+                    if ((sameTimeCounter++) >= minDelay)
+                    {
+                        isPause = true;
+                    }
+                }
+                else
                 {
                     isPause = true;
                 }
             }
             else
-            { 
-                isPause = true; 
-            }        
-        }
-        else
-        {
-            sameTimeCounter = 0;
-        }
-        return isPause;
-    }
-    private void performSceneSwitchIfNecessary()
-    {
-        checkTunerActions();
-
-        if (currentGameStage == GameStage.InSong)
-        {
-            checkGameStageSong();
-        }
-        else if (currentGameStage == GameStage.Menu)
-        {
-            checkGameStageMenu();
-        }
-        if (currentGameStage != lastGameStage)
-        {
-            CPH.SetGlobalVar("gameState", currentGameStage.ToString());
-        }
-        lastGameStage = currentGameStage;
-        lastSongTimer = currentResponse.MemoryReadout.SongTimer;
-    }
-    private void checkGameStageSong()
-    {
-        if (lastGameStage != GameStage.InSong)
-        {
-            CPH.RunAction("SongStart");
-        }
-
-        if (!isArrangementIdentified)
-        {
-            isArrangementIdentified = identifyArrangement();
-            saveSongMetaData();
-        }
-        if (!isSongScene(currentScene))
-        {
-            if (!currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
             {
                 sameTimeCounter = 0;
-                if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
-                {
-                    if (currentScene.Equals(songPausedScene))
-                    {
-                        CPH.RunAction("leavePause");
-                    }
-                    if (isSwitchingScenes)
-                    {
-                        switchToScene(songScenes[currentSongSceneIndex]);
-                        lastSceneChange = DateTime.Now;
-                    }
-                }
             }
-            else
-            {
-                // Already in correct scene
-            }
+
+            return isPause;
         }
-        else if (isSongScene(currentScene))
+
+        public void PerformSceneSwitchIfNecessary()
         {
-            if (isInPause())
+            CheckTunerActions();
+
+            if (currentGameStage == GameStage.InSong)
             {
-                CPH.RunAction("enterPause");
-                if (isSwitchingScenes)
+                CheckGameStageSong();
+            }
+            else if (currentGameStage == GameStage.Menu)
+            {
+                CheckGameStageMenu();
+            }
+
+            if (currentGameStage != lastGameStage)
+            {
+                CPH.SetGlobalVar("gameState", currentGameStage.ToString());
+            }
+
+            lastGameStage = currentGameStage;
+            lastSongTimer = currentResponse.MemoryReadout.SongTimer;
+        }
+
+        public void CheckGameStageSong()
+        {
+            if (lastGameStage != GameStage.InSong)
+            {
+                CPH.RunAction("SongStart");
+            }
+
+            if (!arrangementIdentified)
+            {
+                arrangementIdentified = IdentifyArrangement();
+                SaveSongMetaData();
+            }
+
+            if (!IsSongScene(currentScene))
+            {
+                if (!currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
                 {
+                    sameTimeCounter = 0;
                     if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
                     {
-                        switchToScene(songPausedScene);
-                        lastSceneChange = DateTime.Now;
+                        if (currentScene.Equals(songPausedScene))
+                        {
+                            CPH.RunAction("leavePause");
+                        }
+
+                        if (switchScenes)
+                        {
+                            itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex]);
+                            lastSceneChange = DateTime.Now;
+                        }
+                    }
+                }
+                else
+                {
+                    // Already in correct scene
+                }
+            }
+            else if (IsSongScene(currentScene))
+            {
+                if (IsInPause())
+                {
+                    CPH.RunAction("enterPause");
+                    if (switchScenes)
+                    {
+                        if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
+                        {
+                            itsSceneInterActor.SwitchToScene(songPausedScene);
+                            lastSceneChange = DateTime.Now;
+                        }
                     }
                 }
             }
-
         }
-    }
 
-    private void checkGameStageMenu()
-    {
-        if (!currentScene.Equals(menuScene) && isSwitchingScenes)
+        public void CheckGameStageMenu()
         {
-            if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
+            if (!currentScene.Equals(menuScene) && switchScenes)
             {
-                switchToScene(menuScene);
-                lastSceneChange = DateTime.Now;
-            }
-        }
-        if (lastGameStage == GameStage.InSong)
-        {
-            isArrangementIdentified = false;
-            lastNoteData = null!;
-            CPH.RunAction("SongEnd");
-        }
-    }
-
-    private void checkTunerActions()
-    {
-        if ((currentGameStage == GameStage.InTuner) && (lastGameStage != GameStage.InTuner))
-        {
-            CPH.RunAction("enterTuner");
-        }
-        if ((currentGameStage != GameStage.InTuner) && (lastGameStage == GameStage.InTuner))
-        {
-            CPH.RunAction("leaveTuner");
-        }
-    }
-    private void checkSectionActions()
-    {
-        if (currentArrangement != null)
-        {
-            bool hasSectionChanged = false;
-            if (currentSectionIndex == -1)
-            {
-                if (currentSongTimer >= currentArrangement.Sections[0].StartTime)
+                if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
                 {
-                    currentSectionIndex = 0;
-                    hasSectionChanged = true;
+                    itsSceneInterActor.SwitchToScene(menuScene);
+                    lastSceneChange = DateTime.Now;
                 }
             }
-            else
+
+            if (lastGameStage == GameStage.InSong)
             {
-                // Check if entered a new section
-                if (currentSongTimer >= currentArrangement.Sections[currentSectionIndex].EndTime)
-                {
-                    ++currentSectionIndex;
-                    hasSectionChanged = true;
-                }
+                arrangementIdentified = false;
+                lastNoteData = null!;
+                CPH.RunAction("SongEnd");
             }
-            if (hasSectionChanged)
+        }
+
+        public void CheckTunerActions()
+        {
+            if ((currentGameStage == GameStage.InTuner) && (lastGameStage != GameStage.InTuner))
             {
-				identifySection();
-				if (currentSectionType != lastSectionType)
+                CPH.RunAction("enterTuner");
+            }
+
+            if ((currentGameStage != GameStage.InTuner) && (lastGameStage == GameStage.InTuner))
+            {
+                CPH.RunAction("leaveTuner");
+            }
+        }
+
+        public void CheckSectionActions()
+        {
+            if (currentArrangement != null && reactingToSections)
+            {
+                bool hasSectionChanged = false;
+                if (currentSectionIndex == -1)
                 {
-                    CPH.RunAction(string.Format("leave{0}", Enum.GetName(typeof(SectionType),lastSectionType)));
-                    CPH.RunAction(string.Format("enter{0}", Enum.GetName(typeof(SectionType),currentSectionType)));
-                    lastSectionType = currentSectionType;
+                    if (currentSongTimer >= currentArrangement.Sections[0].StartTime)
+                    {
+                        currentSectionIndex = 0;
+                        hasSectionChanged = true;
+                    }
+                }
+                else
+                {
+                    // Check if entered a new section
+                    if (currentSongTimer >= currentArrangement.Sections[currentSectionIndex].EndTime)
+                    {
+                        ++currentSectionIndex;
+                        hasSectionChanged = true;
+                    }
+                }
+
+                if (hasSectionChanged)
+                {
+                    IdentifySection();
+                    if (currentSectionType != lastSectionType)
+                    {
+                        CPH.RunAction(string.Format("leave{0}", Enum.GetName(typeof(SectionType), lastSectionType)));
+                        CPH.RunAction(string.Format("enter{0}", Enum.GetName(typeof(SectionType), currentSectionType)));
+                        lastSectionType = currentSectionType;
+                    }
                 }
             }
         }
+
+        private static string FormatTime(int totalSeconds)
+        {
+            return TimeSpan.FromSeconds(totalSeconds).ToString();
+        }
     }
-    
-    // TODO needed?
-    private void invalidateGlobalVariables()
+
+    //Needs to be commented out in streamer bot.
+    private CPHmock CPH = new CPHmock();
+    private SceneInteractor itsSceneInteractor = null!;
+    private ResponseFetcher itsFetcher = null!;
+    private ResponseParser itsParser = null!;
+
+    private string snifferIp = null!;
+    private string snifferPort = null!;
+
+    private string currentScene = null!;
+
+    private void UpdateCurrentScene()
     {
-        CPH.UnsetGlobalVar("SongName");
-        CPH.UnsetGlobalVar("ArtistName");
-        CPH.UnsetGlobalVar("AlbumName");
-        CPH.UnsetGlobalVar("Tuning");
-        CPH.UnsetGlobalVar("Accuracy");
-        CPH.UnsetGlobalVar("CurrentHitStreak");
-        CPH.UnsetGlobalVar("CurrentMissStreak");
-        CPH.UnsetGlobalVar("TotalNotes");
-        CPH.UnsetGlobalVar("TotalNotesHit");
-        CPH.UnsetGlobalVar("TotalNotesMissed");
+        currentScene = itsSceneInteractor.GetCurrent();
+        itsParser.setCurrentScene(currentScene);
     }
+
+    public void Init()
+    {
+        CPH.LogInfo("Initialising RockSniffer to SB plugin");
+        //Init happens before arguments are passed, therefore temporary globals are used.
+        snifferIp = GetSnifferIp();
+        // TODO snifferPort should be also configurable
+        snifferPort = "9938";
+        CPH.LogInfo(string.Format("Sniffer ip configured as {0}:{1}", snifferIp, snifferPort));
+        itsSceneInteractor = new SceneInteractor(CPH);
+        itsFetcher = new ResponseFetcher(CPH, snifferIp, snifferPort);
+        itsParser = new ResponseParser(CPH, itsSceneInteractor);
+        itsParser.Init();
+
+        currentScene = "";
+    }
+
+    private string GetSnifferIp()
+    {
+        return CPH.GetGlobalVar<string>("snifferIP").Replace('"', ' ').Trim();
+    }
+
+
     public bool Execute()
     {
-        DetermineConnectedBroadcastingSoftware();
         UpdateCurrentScene();
 
-        if (IsRelevantScene())
+        if (itsParser.IsRelevantScene())
         {
-            if (getLatestResponse())
+            string response = itsFetcher.Fetch();
+
+            if (response != string.Empty)
             {
-                if (parseLatestResponse())
+                Response currentResponse = itsFetcher.ExtractResponse(response);
+
+                if (currentResponse != null)
                 {
+                    itsParser.SetResponse(currentResponse);
+                    itsParser.UpdateStageAndTimer();
+
                     try
                     {
-                        saveNoteDataIfNecessary();
+                        itsParser.SaveNoteDataIfNecessary();
                     }
                     catch (ObjectDisposedException e)
                     {
-                        debug("Caught object disposed exception when trying to save note data: " + e.Message);
-                        debug("Trying to reinitialize");
+                        CPH.LogDebug("Caught object disposed exception when trying to save note data: " + e.Message);
+                        CPH.LogDebug("Trying to reinitialize");
                         Init();
                     }
                     catch (Exception e)
                     {
-                        debug("Caught unknown exception when trying to write song meta data: " + e.Message);
+                        CPH.LogDebug("Caught unknown exception when trying to write song meta data: " + e.Message);
                     }
 
                     try
                     {
-                        performSceneSwitchIfNecessary();
+                        itsParser.PerformSceneSwitchIfNecessary();
                     }
                     catch (NullReferenceException e)
                     {
-                        debug("Caught null reference in scene switch: " + e.Message);
-                        debug("Reinitialising to fix the issue");
+                        CPH.LogDebug("Caught null reference in scene switch: " + e.Message);
+                        CPH.LogDebug("Reinitialising to fix the issue");
                         Init();
                     }
 
-                    if (isReactingToSections)
-                    {
-                        checkSectionActions();
-                    }
+                    itsParser.CheckSectionActions();
                 }
             }
             else
             {
-                debug("Fetching response failed, exiting action.");
+                CPH.LogDebug("Fetching response failed, exiting action.");
                 return false;
             }
         }
 
         return true;
     }
-
-    public string GetStatus()
-    {
-        return $"currentScene={currentScene} currentSectionType={currentSectionType}";
-    }
-
-    // TODO needed?
-    private void LogStatus()
-    {
-        debug(GetStatus());
-    }
-
-    private void LogCurrentScene()
-    {
-        debug($"currentScene={currentScene}");
-    }
-
 }

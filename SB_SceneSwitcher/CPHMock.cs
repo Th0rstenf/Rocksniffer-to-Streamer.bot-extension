@@ -1,31 +1,66 @@
 ﻿using YamlDotNet.Serialization;
 
-public class CPHmock
+public class CPHmock : IInlineInvokeProxy
 {
     private static readonly Config? _config = readConfig();
 
     private string? currentScene;
 
-    public void LogDebug(string str) { Console.WriteLine(str); }
-    public void LogInfo(string str) { Console.WriteLine(str); }
+    public void LogDebug(string str)
+    {
+        Console.WriteLine(str);
+    }
 
-    public void LogVerbose(string str) { Console.WriteLine(str); }
+    public void LogInfo(string str)
+    {
+        Console.WriteLine(str);
+    }
 
-    public bool ObsIsConnected(int connection = 0) { return true; }
+    public void LogVerbose(string str)
+    {
+        Console.WriteLine(str);
+    }
 
-    public void ObsSetScene(string str) { Console.WriteLine(string.Format("Setting OBS scene to {0}", str)); currentScene = str; }
+    public bool ObsIsConnected(int connection = 0)
+    {
+        return true;
+    }
 
-    public string ObsGetCurrentScene() { return currentScene ??= _config?.menuScene ?? ""; }
+    public void ObsSetScene(string str)
+    {
+        Console.WriteLine(string.Format("Setting OBS scene to {0}", str));
+        currentScene = str;
+    }
 
-    public bool SlobsIsConnected(int connection = 0) { return false; }
+    public string ObsGetCurrentScene()
+    {
+        return currentScene ??= _config?.menuScene ?? "";
+    }
 
-    public void SlobsSetScene(string str) { Console.WriteLine(string.Format("Setting SLOBS scene to {0}", str)); }
+    public bool SlobsIsConnected(int connection = 0)
+    {
+        return false;
+    }
 
-    public string SlobsGetCurrentScene() { return currentScene; }
+    public void SlobsSetScene(string str)
+    {
+        Console.WriteLine(string.Format("Setting SLOBS scene to {0}", str));
+    }
 
-    public void SendMessage(string str) { Console.WriteLine(str); }
+    public string SlobsGetCurrentScene()
+    {
+        return currentScene;
+    }
 
-    public void RunAction(string str) { Console.WriteLine(string.Format("Running action: {0}", str)); }
+    public void SendMessage(string str)
+    {
+        Console.WriteLine(str);
+    }
+
+    public void RunAction(string str)
+    {
+        Console.WriteLine(string.Format("Running action: {0}", str));
+    }
 
     public string? GetGlobalVar<Type>(string key)
     {
@@ -49,29 +84,21 @@ public class CPHmock
     {
         //   Console.WriteLine(string.Format("Writing value {1} to variable {0}",varName,value));
     }
+
     public void UnsetGlobalVar(string varName, bool persisted = true)
     {
         Console.WriteLine("Invalidating var: " + varName);
     }
+
     public static void Main(string[] args)
     {
         CPHInline obj = new CPHInline();
-        string status;
-        string oldStatus = "";
 
         obj.Init();
-        obj.SetLogDebug(true);
-            
+
         while (true)
         {
             obj.Execute();
-            status = obj.GetStatus();
-            if (status != oldStatus)
-            {
-                Console.WriteLine("Status Changed: {0}", status);
-                oldStatus = status;
-            }
-
             Thread.Sleep(1000);
         }
     }
@@ -110,5 +137,4 @@ public class CPHmock
         public string? sectionActions { get; set; }
         public string? blackList { get; set; }
     }
-
 }
