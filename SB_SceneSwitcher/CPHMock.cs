@@ -5,7 +5,9 @@ public class CPHmock
     private static readonly Config? _config = readConfig();
 
     private string? currentScene;
+    
 
+    // TODO add SB log level check to here!
     public void LogError(string str) { Console.WriteLine("[ " + DateTime.Now + " ERR] " + str); }
     public void LogWarn(string str) { Console.WriteLine("[ " + DateTime.Now + " WRN] " + str); }
     public void LogInfo(string str) { Console.WriteLine("[ " + DateTime.Now + " INF] " + str); }
@@ -62,6 +64,7 @@ public class CPHmock
         string oldStatus = "";
 
         obj.Init();
+        // TODO have in config 2 props: SB log level, App log level. Read this here
         // obj.SetLoglevel(CPHInline.LogLevel.VERBOSE); // TODO read this from config?
 
         while (true)
