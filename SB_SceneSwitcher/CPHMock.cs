@@ -1,36 +1,39 @@
 ﻿using YamlDotNet.Serialization;
 
-public class CPHmock
+public class CPHmock : IInlineInvokeProxy
 {
     private static readonly Config? _config = readConfig();
+    private static readonly CPHInline.LogLevel DefaultLogLevel = CPHInline.LogLevel.INFO;
+    private static readonly CPHInline.LogLevel DefaultLogLevelSB = CPHInline.LogLevel.DEBUG;
 
+    private static CPHInline.LogLevel LogLevel;
+    private static CPHInline.LogLevel LogLevelSB;
     private string? currentScene;
 
-
-    // TODO add SB log level check to here!
     public void LogError(string str)
     {
-        Console.WriteLine("[ " + DateTime.Now + " ERR] " + str);
+        if (LogLevel <= CPHInline.LogLevel.ERROR)
+            throw new Exception("[ " + DateTime.Now + " ERR] " + str);
     }
 
     public void LogWarn(string str)
     {
-        Console.WriteLine("[ " + DateTime.Now + " WRN] " + str);
+        if (LogLevel <= CPHInline.LogLevel.WARN) Console.WriteLine("[ " + DateTime.Now + " WRN] " + str);
     }
 
     public void LogInfo(string str)
     {
-        Console.WriteLine("[ " + DateTime.Now + " INF] " + str);
+        if (LogLevel <= CPHInline.LogLevel.INFO) Console.WriteLine("[ " + DateTime.Now + " INF] " + str);
     }
 
     public void LogDebug(string str)
     {
-        Console.WriteLine("[ " + DateTime.Now + " DBG] " + str);
+        if (LogLevel <= CPHInline.LogLevel.DEBUG) Console.WriteLine("[ " + DateTime.Now + " DBG] " + str);
     }
 
     public void LogVerbose(string str)
     {
-        Console.WriteLine("[ " + DateTime.Now + " VER] " + str);
+        if (LogLevel <= CPHInline.LogLevel.VERBOSE) Console.WriteLine("[ " + DateTime.Now + " VER] " + str);
     }
 
     public bool ObsIsConnected(int connection = 0)
@@ -76,6 +79,11 @@ public class CPHmock
 
     public string? GetGlobalVar<Type>(string key)
     {
+        if (key == "logLevel")
+        {
+            return _config == null ? DefaultLogLevel.ToString() : _config.logLevel;
+        }
+
         return key switch
         {
             "snifferIP" => _config?.snifferIp,
@@ -94,7 +102,7 @@ public class CPHmock
 
     public void SetGlobalVar(string varName, object value, bool persisted = true)
     {
-        //   Console.WriteLine(string.Format("Writing value {1} to variable {0}",varName,value));
+        LogVerbose(string.Format("Writing value {1} to variable {0}", varName, value));
     }
 
     public void UnsetGlobalVar(string varName, bool persisted = true)
@@ -105,23 +113,11 @@ public class CPHmock
     public static void Main(string[] args)
     {
         CPHInline obj = new CPHInline();
-        string status;
-        string oldStatus = "";
 
         obj.Init();
-        // TODO have in config 2 props: SB log level, App log level. Read this here
-        // obj.SetLoglevel(CPHInline.LogLevel.VERBOSE); // TODO read this from config?
-
         while (true)
         {
             obj.Execute();
-            status = obj.GetStatus();
-            if (status != oldStatus)
-            {
-                Console.WriteLine("Status Changed: {0}", status);
-                oldStatus = status;
-            }
-
             Thread.Sleep(1000);
         }
     }
@@ -130,6 +126,9 @@ public class CPHmock
     {
         var json = File.ReadAllText("config.yml");
         var config = new DeserializerBuilder().Build().Deserialize<Config>(json);
+
+        setLogLevel(config);
+        setLogLevelSB(config);
 
         Console.WriteLine("----------- CONFIG ------------------------------------");
         Console.WriteLine("sniffIP=" + config.snifferIp);
@@ -142,9 +141,33 @@ public class CPHmock
         Console.WriteLine("switchScenes=" + config.switchScenes);
         Console.WriteLine("sectionActions=" + config.sectionActions);
         Console.WriteLine("blackList=" + config.blackList);
+        Console.WriteLine("logLevel=" + config.logLevel);
+        Console.WriteLine("logLevelSB=" + config.logLevelSB);
         Console.WriteLine("-------------------------------------------------------");
 
         return config;
+    }
+
+    private static void setLogLevel(Config config)
+    {
+        if (config.logLevel == null)
+        {
+            Console.WriteLine("logLevel not found! Will use default Level: " + DefaultLogLevel);
+            config.logLevel = DefaultLogLevel.ToString();
+        }
+
+        LogLevel = CPHInline.GetLogLevel(_config?.logLevel);
+    }
+
+    private static void setLogLevelSB(Config config)
+    {
+        if (config.logLevelSB == null)
+        {
+            Console.WriteLine("logLevelSB not found! Will use default Level: " + DefaultLogLevelSB);
+            config.logLevelSB = DefaultLogLevelSB.ToString();
+        }
+
+        LogLevelSB = CPHInline.GetLogLevel(_config?.logLevelSB);
     }
 
     private record Config
@@ -159,5 +182,7 @@ public class CPHmock
         public string? switchScenes { get; set; }
         public string? sectionActions { get; set; }
         public string? blackList { get; set; }
+        public string? logLevel { get; set; }
+        public string? logLevelSB { get; set; }
     }
 }

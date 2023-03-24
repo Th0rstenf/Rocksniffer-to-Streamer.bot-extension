@@ -19,3 +19,9 @@ blackList: <Blacklisted scenes>
 switchScenes: True
 sectionDetection: True
 sectionActions: True
+
+# Logging
+# Possible values: VERBOSE, DEBUG, INFO, WARN, ERROR
+# Default: INFO
+logLevel: 
+logLevelSB: 
