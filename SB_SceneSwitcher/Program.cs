@@ -157,13 +157,15 @@ public class CPHInline
             {
                 case BroadcastingSoftware.OBS:
                     {
-                        CPH.ObsSetScene(scene); break;
+                        CPH.ObsSetScene(scene);
+                        break;
                     }
                 case BroadcastingSoftware.SLOBS:
                     {
                         CPH.SlobsSetScene(scene);
                         break;
                     }
+                case BroadcastingSoftware.NONE:
                 default:
                     {
                         CPH.LogDebug("No stream program defined");
@@ -179,9 +181,8 @@ public class CPHInline
         private readonly string ip;
         private readonly string port;
         private HttpResponseMessage response = null!;
-        
-
         private HttpClient client = null!;
+
         public ResponseFetcher(IInlineInvokeProxy  cph, string ip, string port)
         {
             CPH = cph;
@@ -256,7 +257,7 @@ public class CPHInline
         private SectionType lastSectionType;
         private ActivityBehavior itsBehavior;
         private SceneInteractor itsSceneInterActor;
-        
+
         private string[] blackListedScenes = null!;
         private double currentSongTimer;
         private double lastSongTimer;
@@ -283,9 +284,9 @@ public class CPHInline
         private int sameTimeCounter;
         private string currentScene = null!;
 
-        private bool isSwitchingScenes = true;
-        private bool isReactingToSections = true;
-        private bool isArrangementIdentified = false;
+        private bool switchScenes = true;
+        private bool reactingToSections = true;
+        private bool arrangementIdentified = false;
         private IInlineInvokeProxy CPH;
         
         public ResponseParser(IInlineInvokeProxy cph, SceneInteractor interactor)
@@ -312,10 +313,10 @@ public class CPHInline
             songPausedScene = CPH.GetGlobalVar<string>("pauseScene");
             CPH.LogInfo("Song paused scene: " + songPausedScene);
 
-            isSwitchingScenes = CPH.GetGlobalVar<string>("switchScenes").ToLower().Contains("true");
-            CPH.LogInfo("Switching scenes configured to " + isSwitchingScenes.ToString());
-            isReactingToSections = CPH.GetGlobalVar<string>("sectionActions").ToLower().Contains("true");
-            CPH.LogInfo("Section actions are configured to " + isReactingToSections.ToString());
+            switchScenes = CPH.GetGlobalVar<string>("switchScenes").ToLower().Contains("true");
+            CPH.LogInfo("Switching scenes configured to " + switchScenes);
+            reactingToSections = CPH.GetGlobalVar<string>("sectionActions").ToLower().Contains("true");
+            CPH.LogInfo("Section actions are configured to " + reactingToSections);
             lastSceneChange = DateTime.Now;
             minDelay = 3;
 
@@ -330,7 +331,7 @@ public class CPHInline
                     itsBehavior = ActivityBehavior.WhiteList;
                     CPH.LogDebug("Behavior not configured, setting to whitelist as default");
                 }
-                CPH.LogInfo("Behavior configured as " + itsBehavior.ToString());
+                CPH.LogInfo("Behavior configured as " + itsBehavior);
             }
 
             if (itsBehavior == ActivityBehavior.BlackList)
@@ -378,6 +379,7 @@ public class CPHInline
 
             return currentStage;
         }
+
         public void UpdateStageAndTimer()
         {
             currentGameStage = EvalGameStage(currentResponse.MemoryReadout.GameStage);
@@ -448,14 +450,11 @@ public class CPHInline
                 CPH.SetGlobalVar("artistName", currentResponse.SongDetails.ArtistName, false);
                 CPH.SetGlobalVar("albumName", currentResponse.SongDetails.AlbumName, false);
                 CPH.SetGlobalVar("songLength", (int)currentResponse.SongDetails.SongLength, false);
-                string formatted = FormatTime((int)currentResponse.SongDetails.SongLength);
-                CPH.SetGlobalVar("songLengthFormatted", formatted, false);
-                if (currentArrangement != null)
-                {
-                    CPH.SetGlobalVar("arrangement", currentArrangement.Name, false);
-                    CPH.SetGlobalVar("arrangementType", currentArrangement.type, false);
-                    CPH.SetGlobalVar("tuning", currentArrangement.Tuning.TuningName, false);
-                }
+                CPH.SetGlobalVar("songLengthFormatted", FormatTime((int)currentResponse.SongDetails.SongLength), false);
+                if (currentArrangement == null) return;
+                CPH.SetGlobalVar("arrangement", currentArrangement.Name, false);
+                CPH.SetGlobalVar("arrangementType", currentArrangement.type, false);
+                CPH.SetGlobalVar("tuning", currentArrangement.Tuning.TuningName, false);
             }
             catch (ObjectDisposedException e)
             {
@@ -642,9 +641,9 @@ public class CPHInline
                 CPH.RunAction("SongStart");
             }
 
-            if (!isArrangementIdentified)
+            if (!arrangementIdentified)
             {
-                isArrangementIdentified = IdentifyArrangement();
+                arrangementIdentified = IdentifyArrangement();
                 SaveSongMetaData();
             }
             if (!IsSongScene(currentScene))
@@ -658,7 +657,7 @@ public class CPHInline
                         {
                             CPH.RunAction("leavePause");
                         }
-                        if (isSwitchingScenes)
+                        if (switchScenes)
                         {
                             itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex]);
                             lastSceneChange = DateTime.Now;
@@ -675,7 +674,7 @@ public class CPHInline
                 if (IsInPause())
                 {
                     CPH.RunAction("enterPause");
-                    if (isSwitchingScenes)
+                    if (switchScenes)
                     {
                         if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
                         {
@@ -690,7 +689,7 @@ public class CPHInline
 
         public void CheckGameStageMenu()
         {
-            if (!currentScene.Equals(menuScene) && isSwitchingScenes)
+            if (!currentScene.Equals(menuScene) && switchScenes)
             {
                 if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
                 {
@@ -700,7 +699,7 @@ public class CPHInline
             }
             if (lastGameStage == GameStage.InSong)
             {
-                isArrangementIdentified = false;
+                arrangementIdentified = false;
                 lastNoteData = null!;
                 CPH.RunAction("SongEnd");
             }
@@ -719,7 +718,7 @@ public class CPHInline
         }
         public void CheckSectionActions()
         {
-            if (currentArrangement != null && isReactingToSections)
+            if (currentArrangement != null && reactingToSections)
             {
                 bool hasSectionChanged = false;
                 if (currentSectionIndex == -1)
@@ -752,11 +751,9 @@ public class CPHInline
             }
         }
 
-        public string FormatTime(int totalSeconds)
+        private static string FormatTime(int totalSeconds)
         {
-            TimeSpan timeSpan = TimeSpan.FromSeconds(totalSeconds);
-
-            return timeSpan.ToString();
+            return TimeSpan.FromSeconds(totalSeconds).ToString();
         }
 
     }
@@ -772,19 +769,14 @@ public class CPHInline
 
     private string currentScene = null!;
 
-       
-
-    public string UpdateCurrentScene()
+    private void UpdateCurrentScene()
     {
         currentScene = itsSceneInteractor.GetCurrent();
         itsParser.setCurrentScene(currentScene);
-        return currentScene;
     }
-    
-    
+
     public void Init()
     {
-        
         CPH.LogInfo("Initialising RockSniffer to SB plugin");
         //Init happens before arguments are passed, therefore temporary globals are used.
         snifferIp = GetSnifferIp();
