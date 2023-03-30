@@ -1,7 +1,6 @@
 ﻿public interface IInlineInvokeProxy
 {
     string GetGlobalVar<Type>(string key);
-    void LogError(string str);
     void LogWarn(string str);
     void LogInfo(string str);
     void LogDebug(string str);

@@ -3,6 +3,10 @@ using System.Net.Http;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 
+public static class Constants
+{
+    public const string AppName = "RS2SB :: ";
+}
 
 // Objects for parsing the song data
 // 
@@ -71,9 +75,6 @@ public record Response
 
 public class CPHInline
 {
-    private const string LogPrefix = "RS2SB :: ";
-    private const LogLevel DefaultLogLevel = LogLevel.INFO;
-
     enum GameStage
     {
         Menu,
@@ -100,64 +101,15 @@ public class CPHInline
         AlwaysOn
     }
 
-    public enum LogLevel
-    {
-        VERBOSE,
-        DEBUG,
-        INFO,
-        WARN,
-        ERROR
-    }
-
-    private static LogLevel logLevel = DefaultLogLevel;
-
-    private static void LogError(string message, params object?[] args)
-    {
-        if (logLevel <= LogLevel.ERROR)
-            throw new Exception(string.Format(LogPrefix + message, args));
-    }
-
-    private static void LogWarn(string message, params object?[] args)
-    {
-        if (logLevel <= LogLevel.WARN) CPH.LogWarn(string.Format(LogPrefix + message, args));
-    }
-
-    private static void LogInfo(string message, params object?[] args)
-    {
-        if (logLevel <= LogLevel.INFO) CPH.LogInfo(string.Format(LogPrefix + message, args));
-    }
-
-    private static void LogDebug(string message, params object?[] args)
-    {
-        if (logLevel <= LogLevel.DEBUG) CPH.LogDebug(string.Format(LogPrefix + message, args));
-    }
-
-    private static void LogVerbose(string message, params object?[] args)
-    {
-        if (logLevel <= LogLevel.VERBOSE) CPH.LogVerbose(string.Format(LogPrefix + message, args));
-    }
-
-    public static LogLevel GetLogLevel(string? level)
-    {
-        if (level == null) return DefaultLogLevel;
-        return level switch
-        {
-            "VERBOSE" => LogLevel.VERBOSE,
-            "DEBUG" => LogLevel.DEBUG,
-            "INFO" => LogLevel.INFO,
-            "WARN" => LogLevel.WARN,
-            "ERROR" => LogLevel.ERROR,
-            _ => DefaultLogLevel
-        };
-    }
-
     public class SceneInteractor
     {
+        private const string MessageNoStreamProgramDefined =
+            Constants.AppName + "No stream program defined! Please connect either to OBS or SLOBS!";
+
         enum BroadcastingSoftware
         {
             OBS,
-            SLOBS,
-            NONE
+            SLOBS
         }
 
         private IInlineInvokeProxy CPH;
@@ -175,35 +127,22 @@ public class CPHInline
             else if (CPH.SlobsIsConnected())
                 itsBroadcastingSoftware = BroadcastingSoftware.SLOBS;
             else
-                itsBroadcastingSoftware = BroadcastingSoftware.NONE;
+                throw new Exception(Constants.AppName +
+                                    "No stream program defined! Please connect either to OBS or SLOBS!");
+
+            CPH.LogVerbose(Constants.AppName + $"itsBroadcastingSoftware = {itsBroadcastingSoftware}");
         }
 
-        public string GetCurrent()
+        public string GetCurrentScene()
         {
             DetermineConnectedBroadcastingSoftware();
-            string scene = "";
-            switch (itsBroadcastingSoftware)
-            {
-                case BroadcastingSoftware.OBS:
-                {
-                    scene = CPH.ObsGetCurrentScene();
-                    break;
-                }
-                case BroadcastingSoftware.SLOBS:
-                {
-                    scene = CPH.SlobsGetCurrentScene();
-                    break;
-                }
-                case BroadcastingSoftware.NONE:
-                default:
-                {
-                    LogWarn("No stream program defined! Please connect either to OBS or SLOBS!");
-                    scene = "";
-                    break;
-                }
-            }
 
-            return scene;
+            return itsBroadcastingSoftware switch
+            {
+                BroadcastingSoftware.OBS => CPH.ObsGetCurrentScene(),
+                BroadcastingSoftware.SLOBS => CPH.SlobsGetCurrentScene(),
+                _ => throw new Exception(MessageNoStreamProgramDefined)
+            };
         }
 
         public void SwitchToScene(string scene)
@@ -211,21 +150,15 @@ public class CPHInline
             switch (itsBroadcastingSoftware)
             {
                 case BroadcastingSoftware.OBS:
-                {
+                    CPH.LogInfo(Constants.AppName + $"Switching to OBS scene: {scene}");
                     CPH.ObsSetScene(scene);
                     break;
-                }
                 case BroadcastingSoftware.SLOBS:
-                {
+                    CPH.LogInfo(Constants.AppName + $"Switching to SLOBS scene: {scene}");
                     CPH.SlobsSetScene(scene);
                     break;
-                }
-                case BroadcastingSoftware.NONE:
                 default:
-                {
-                    LogWarn("No stream program defined! Please connect either to OBS or SLOBS!");
-                    break;
-                }
+                    throw new Exception(MessageNoStreamProgramDefined);
             }
         }
     }
@@ -254,28 +187,33 @@ public class CPHInline
             {
                 string address = string.Format("http://{0}:{1}", ip, port);
                 response = client.GetAsync(address).GetAwaiter().GetResult();
-                if (response != null)
+                // TODO always false?
+                if (response == null)
+                {
+                    // TODO in case Response is null, no need to continue! Drop an error!?
+                    CPH.LogWarn(Constants.AppName + "Response is null");
+                }
+                else
                 {
                     response.EnsureSuccessStatusCode();
                     responseString = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
                 }
-                else
-                {
-                    LogWarn("Response is null");
-                }
             }
             catch (HttpRequestException e)
             {
-                LogError(string.Format("Exception, when trying to get response from sniffer: {0}", e.Message));
+                CPH.LogWarn(Constants.AppName + $"Exception, when trying to get response from sniffer: {e.Message}");
+                throw;
             }
             catch (ObjectDisposedException e)
             {
-                LogWarn("HttpClient was disposed. Exception: " + e.Message + " Reinitialising.");
+                CPH.LogWarn(Constants.AppName + $"HttpClient was disposed. Exception: {e.Message} Reinitialising.");
                 throw;
             }
             catch (Exception e)
             {
-                LogError("Caught an Exception, when trying to read from HttpClient: " + e.Message);
+                CPH.LogWarn(
+                    Constants.AppName + $"Caught an Exception, when trying to read from HttpClient: {e.Message}");
+                throw;
             }
 
             return responseString;
@@ -287,19 +225,18 @@ public class CPHInline
             try
             {
                 currentResponse = JsonConvert.DeserializeObject<Response>(responseString) ??
-                                  throw new Exception("Is never supposed to be zero");
+                                  throw new Exception(Constants.AppName + "Is never supposed to be zero");
             }
             catch (JsonException ex)
             {
-                LogError("Error parsing response: " + ex.Message);
-                // TODO in case could not parse, throw error?
-                currentResponse = null;
+                CPH.LogWarn(Constants.AppName + $"Error parsing response: {ex.Message}");
+                throw;
             }
             catch (Exception e)
             {
-                // TODO in case any problem throw error?
-                LogError("Caught exception when trying to deserialize response string! Exception: " + e.Message);
-                currentResponse = null;
+                CPH.LogWarn(Constants.AppName +
+                            $"Caught exception when trying to deserialize response string! Exception: {e.Message}");
+                throw;
             }
 
             return currentResponse;
@@ -312,7 +249,7 @@ public class CPHInline
         private GameStage lastGameStage;
         private SectionType currentSectionType;
         private SectionType lastSectionType;
-        private ActivityBehavior itsBehavior;
+        private ActivityBehavior itsBehavior = ActivityBehavior.WhiteList;
         private SceneInteractor itsSceneInterActor;
 
         private string[] blackListedScenes = null!;
@@ -357,7 +294,7 @@ public class CPHInline
             currentResponse = response;
         }
 
-        public void setCurrentScene(string scene)
+        public void SetCurrentScene(string scene)
         {
             currentScene = scene;
         }
@@ -365,38 +302,35 @@ public class CPHInline
         public void Init()
         {
             menuScene = CPH.GetGlobalVar<string>("menuScene");
-            LogInfo("Menu scene: " + menuScene);
+            CPH.LogInfo(Constants.AppName + "Menu scene: " + menuScene);
             songScenes = Regex.Split(CPH.GetGlobalVar<string>("songScenes").Trim(), @"\s*[,;]\s*");
-            LogInfo("Song scenes: " + string.Join(", ", songScenes));
+            CPH.LogInfo(Constants.AppName + "Song scenes: " + string.Join(", ", songScenes));
             songPausedScene = CPH.GetGlobalVar<string>("pauseScene");
-            LogInfo("Song paused scene: " + songPausedScene);
+            CPH.LogInfo(Constants.AppName + "Song paused scene: " + songPausedScene);
 
             switchScenes = CPH.GetGlobalVar<string>("switchScenes").ToLower().Contains("true");
-            LogInfo("Switching scenes configured to " + switchScenes);
+            CPH.LogInfo(Constants.AppName + "Switching scenes configured to " + switchScenes);
             reactingToSections = CPH.GetGlobalVar<string>("sectionActions").ToLower().Contains("true");
-            LogInfo("Section actions are configured to " + reactingToSections);
+            CPH.LogInfo(Constants.AppName + "Section actions are configured to " + reactingToSections);
             lastSceneChange = DateTime.Now;
             minDelay = 3;
 
             string behaviorString = CPH.GetGlobalVar<string>("behavior");
-            if (behaviorString != null)
+            CPH.LogWarn(Constants.AppName + "behaviorString='" + behaviorString + "'");
+
+            if (!string.IsNullOrEmpty(behaviorString))
             {
                 if (behaviorString.ToLower().Contains("whitelist")) itsBehavior = ActivityBehavior.WhiteList;
                 else if (behaviorString.ToLower().Contains("blacklist")) itsBehavior = ActivityBehavior.BlackList;
                 else if (behaviorString.ToLower().Contains("always")) itsBehavior = ActivityBehavior.AlwaysOn;
-                else
-                {
-                    itsBehavior = ActivityBehavior.WhiteList;
-                    LogInfo("Behavior not configured, setting to whitelist as default");
-                }
-
-                LogInfo("Behavior configured as " + itsBehavior);
             }
+
+            CPH.LogInfo(Constants.AppName + "Behavior configured as: " + itsBehavior);
 
             if (itsBehavior == ActivityBehavior.BlackList)
             {
                 blackListedScenes = Regex.Split(CPH.GetGlobalVar<string>("blackList").Trim(), @"\s*[,;]\s*");
-                LogInfo("Blacklisted scenes:" + string.Join(", ", blackListedScenes));
+                CPH.LogInfo(Constants.AppName + "Blacklisted scenes: " + string.Join(", ", blackListedScenes));
             }
             else
             {
@@ -423,16 +357,18 @@ public class CPHInline
                 return GameStage.InSong;
             }
 
-            if (stage.Contains("tuner"))
-            {
-                return GameStage.InTuner;
-            }
-
-            return GameStage.Menu;
+            return stage.Contains("tuner") ? GameStage.InTuner : GameStage.Menu;
         }
 
         public void UpdateStageAndTimer()
         {
+            if (currentResponse.MemoryReadout == null)
+            {
+                throw new Exception(
+                    Constants.AppName +
+                    "Could not read Sniffer game values! Please check configuration and run Rocksmith and RockSniffer!");
+            }
+
             currentGameStage = EvalGameStage(currentResponse.MemoryReadout.GameStage);
             currentSongTimer = currentResponse.MemoryReadout.SongTimer;
         }
@@ -479,7 +415,7 @@ public class CPHInline
                     break;
             }
 
-            LogVerbose($"itsBehavior={itsBehavior} isRelevant={isRelevant}");
+            CPH.LogVerbose(Constants.AppName + $"itsBehavior={itsBehavior} isRelevant={isRelevant}");
             return isRelevant;
         }
 
@@ -512,12 +448,14 @@ public class CPHInline
             }
             catch (ObjectDisposedException e)
             {
-                LogError("Caught object disposed exception when trying to save meta data: " + e.Message);
+                CPH.LogWarn(Constants.AppName +
+                            $"Caught object disposed exception when trying to save meta data: {e.Message}");
                 throw;
             }
             catch (Exception e)
             {
-                LogError("Caught exception trying to save song meta data! Exception: " + e.Message);
+                CPH.LogWarn(Constants.AppName +
+                            $"Caught exception trying to save song meta data! Exception: {e.Message}");
                 throw;
             }
         }
@@ -589,12 +527,13 @@ public class CPHInline
             }
             catch (ObjectDisposedException e)
             {
-                LogError("Caught object disposed exception when trying to save note data: " + e.Message);
+                CPH.LogWarn(Constants.AppName +
+                            $"Caught object disposed exception when trying to save note data: {e.Message}");
                 throw;
             }
             catch (Exception e)
             {
-                LogError("Caught exception: " + e.Message);
+                CPH.LogWarn(Constants.AppName + $"Caught exception: {e.Message}");
                 throw;
             }
         }
@@ -614,6 +553,7 @@ public class CPHInline
                             if (arr.ArrangementID == currentResponse.MemoryReadout.ArrangementId)
                             {
                                 currentArrangement = arr;
+                                CPH.LogVerbose(Constants.AppName + $"currentArrangement: {currentArrangement}");
                                 break;
                             }
                         }
@@ -622,7 +562,7 @@ public class CPHInline
             }
             catch (Exception e)
             {
-                LogError("Caught exception trying to identify the arrangement: " + e.Message);
+                CPH.LogWarn(Constants.AppName + $"Caught exception trying to identify the arrangement: {e.Message}");
             }
 
             return (currentArrangement != null);
@@ -634,7 +574,7 @@ public class CPHInline
             {
                 try
                 {
-                    string name = currentArrangement.Sections[currentSectionIndex].Name;
+                    var name = currentArrangement.Sections[currentSectionIndex].Name;
                     if (name.ToLower().Contains("solo"))
                     {
                         currentSectionType = SectionType.Solo;
@@ -670,7 +610,9 @@ public class CPHInline
                 }
                 catch (Exception e)
                 {
-                    LogError("Caught unknown exception trying to identify the section: " + e.Message);
+                    CPH.LogWarn(Constants.AppName + "Caught unknown exception trying to identify the section: " +
+                                e.Message);
+                    throw;
                 }
             }
             else
@@ -711,13 +653,14 @@ public class CPHInline
         {
             CheckTunerActions();
 
-            if (currentGameStage == GameStage.InSong)
+            switch (currentGameStage)
             {
-                CheckGameStageSong();
-            }
-            else if (currentGameStage == GameStage.Menu)
-            {
-                CheckGameStageMenu();
+                case GameStage.InSong:
+                    CheckGameStageSong();
+                    break;
+                case GameStage.Menu:
+                    CheckGameStageMenu();
+                    break;
             }
 
             if (currentGameStage != lastGameStage)
@@ -733,7 +676,7 @@ public class CPHInline
         {
             if (lastGameStage != GameStage.InSong)
             {
-                CPH.RunAction("SongStart");
+                RunAction("SongStart");
             }
 
             if (!arrangementIdentified)
@@ -751,7 +694,7 @@ public class CPHInline
                     {
                         if (currentScene.Equals(songPausedScene))
                         {
-                            CPH.RunAction("leavePause");
+                            RunAction("leavePause");
                         }
 
                         if (switchScenes)
@@ -766,7 +709,7 @@ public class CPHInline
             {
                 if (IsInPause())
                 {
-                    CPH.RunAction("enterPause");
+                    RunAction("enterPause");
                     if (switchScenes)
                     {
                         if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
@@ -777,6 +720,12 @@ public class CPHInline
                     }
                 }
             }
+        }
+
+        private void RunAction(string actionName)
+        {
+            CPH.LogInfo(Constants.AppName + $"RunAction: {actionName}");
+            CPH.RunAction(actionName);
         }
 
         public void CheckGameStageMenu()
@@ -794,7 +743,7 @@ public class CPHInline
             {
                 arrangementIdentified = false;
                 lastNoteData = null!;
-                CPH.RunAction("SongEnd");
+                RunAction("SongEnd");
             }
         }
 
@@ -802,12 +751,12 @@ public class CPHInline
         {
             if ((currentGameStage == GameStage.InTuner) && (lastGameStage != GameStage.InTuner))
             {
-                CPH.RunAction("enterTuner");
+                RunAction("enterTuner");
             }
 
             if ((currentGameStage != GameStage.InTuner) && (lastGameStage == GameStage.InTuner))
             {
-                CPH.RunAction("leaveTuner");
+                RunAction("leaveTuner");
             }
         }
 
@@ -839,8 +788,8 @@ public class CPHInline
                     IdentifySection();
                     if (currentSectionType != lastSectionType)
                     {
-                        CPH.RunAction(string.Format("leave{0}", Enum.GetName(typeof(SectionType), lastSectionType)));
-                        CPH.RunAction(string.Format("enter{0}", Enum.GetName(typeof(SectionType), currentSectionType)));
+                        RunAction($"leave{Enum.GetName(typeof(SectionType), lastSectionType)}");
+                        RunAction($"enter{Enum.GetName(typeof(SectionType), currentSectionType)}");
                         lastSectionType = currentSectionType;
                     }
                 }
@@ -854,7 +803,8 @@ public class CPHInline
     }
 
     //Needs to be commented out in streamer bot.
-    private static CPHmock CPH = new CPHmock();
+    private CPHmock CPH = new CPHmock();
+
     private SceneInteractor itsSceneInteractor = null!;
     private ResponseFetcher itsFetcher = null!;
     private ResponseParser itsParser = null!;
@@ -866,20 +816,22 @@ public class CPHInline
 
     private void UpdateCurrentScene()
     {
-        currentScene = itsSceneInteractor.GetCurrent();
-        itsParser.setCurrentScene(currentScene);
+        var newCurrentScene = itsSceneInteractor.GetCurrentScene();
+        if (string.IsNullOrEmpty(currentScene) && string.IsNullOrEmpty(newCurrentScene) ||
+            currentScene.Equals(newCurrentScene)) return;
+        CPH.LogInfo(Constants.AppName + $"setCurrentScene to '{newCurrentScene}'");
+        currentScene = newCurrentScene;
+        itsParser.SetCurrentScene(currentScene);
     }
 
     public void Init()
     {
-        logLevel = GetLogLevel(CPH.GetGlobalVar<string>("logLevel"));
-
-        LogInfo("Initialising RockSniffer to SB plugin");
+        CPH.LogInfo(Constants.AppName + "!!! Initialising RockSniffer to SB plugin !!!");
         //Init happens before arguments are passed, therefore temporary globals are used.
         snifferIp = GetSnifferIp();
         // TODO snifferPort should be also configurable
         snifferPort = "9938";
-        LogInfo(string.Format("Sniffer ip configured as {0}:{1}", snifferIp, snifferPort));
+        CPH.LogInfo(Constants.AppName + string.Format("Sniffer ip configured as {0}:{1}", snifferIp, snifferPort));
         itsSceneInteractor = new SceneInteractor(CPH);
         itsFetcher = new ResponseFetcher(CPH, snifferIp, snifferPort);
         itsParser = new ResponseParser(CPH, itsSceneInteractor);
@@ -895,6 +847,8 @@ public class CPHInline
 
     public bool Execute()
     {
+        CPH.LogDebug(Constants.AppName + "------- START! -------");
+
         UpdateCurrentScene();
 
         if (itsParser.IsRelevantScene())
@@ -916,13 +870,16 @@ public class CPHInline
                     }
                     catch (ObjectDisposedException e)
                     {
-                        LogError("Caught object disposed exception when trying to save note data: " + e.Message);
-                        LogWarn("Trying to reinitialize");
+                        CPH.LogWarn(Constants.AppName +
+                                    $"Caught object disposed exception when trying to save note data: {e.Message}");
+                        CPH.LogWarn(Constants.AppName + "Trying to reinitialize");
                         Init();
                     }
                     catch (Exception e)
                     {
-                        LogError("Caught unknown exception when trying to write song meta data: " + e.Message);
+                        throw new Exception(
+                            Constants.AppName +
+                            $"Caught unknown exception when trying to write song meta data: {e.Message}", e);
                     }
 
                     try
@@ -931,8 +888,8 @@ public class CPHInline
                     }
                     catch (NullReferenceException e)
                     {
-                        LogError("Caught null reference in scene switch: " + e.Message);
-                        LogWarn("Reinitialising to fix the issue");
+                        CPH.LogWarn(Constants.AppName + $"Caught null reference in scene switch: {e.Message}");
+                        CPH.LogWarn(Constants.AppName + "Reinitialising to fix the issue");
                         Init();
                     }
 
@@ -941,10 +898,12 @@ public class CPHInline
             }
             else
             {
-                LogWarn("Fetching response failed, exiting action.");
+                CPH.LogWarn(Constants.AppName + "Fetching response failed, exiting action.");
                 return false;
             }
         }
+
+        CPH.LogDebug(Constants.AppName + "------- END! -------");
 
         return true;
     }

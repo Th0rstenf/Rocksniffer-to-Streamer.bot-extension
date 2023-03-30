@@ -22,6 +22,6 @@ sectionActions: True
 
 # Logging
 # Possible values: VERBOSE, DEBUG, INFO, WARN, ERROR
-# Default: INFO
+# Default logLevel: INFO | logLevelSB: DEBUG
 logLevel: 
 logLevelSB: 
