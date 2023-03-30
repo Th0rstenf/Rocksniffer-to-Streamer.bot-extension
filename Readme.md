@@ -69,20 +69,20 @@ In addition to that, actions for entering/leaving a pause, the tuner and startin
 
 Inside the SceneSwitcher action, there are several global parameters that can/need to be changed:
 For scene switching:
-* menuScene - This should be scene you want to load when you're in the menu or tuner
-* songScene - The scene you switch to when the song starts
-* pauseScene - the scene that will be loaded when pausing during a song.  
+* menuScene - this should be the scene you want to load when you're in the menu or tuner
+* songScenes - a comma separated list of scenes you could switch to during a song play (at start, the first is used)
+* pauseScene - the scene that will be loaded when pausing during a song
 
 For the sniffer connection:
 * snifferIP - ip address of the PC that is running rocksniffer. If it's the same it should be `"127.0.0.1"` (Quotes are not optional!)
-* snifferPort - should usually never be touched (`9938`), but provided for sake of completeness.
+* snifferPort - should usually never be touched (`9938`), but provided for sake of completeness
 
 For determining when it is active:
 * behavior - The following options are available:
-    * Whitelist - Will only be active during the scenes defined in *menuScene*, *songScene* and *pauseScene*
+    * Whitelist - Will only be active during the scenes defined in *menuScene*, *songScenes* and *pauseScene*
     * Blacklist - Will be active unless the current scene is in the blacklist
     * AlwaysOn - Self-explanatory
-* blackList - Enter blacklisted scenes, coma separated.
+* blackList - a comma separated list of blacklisted scenes
 
 To disable certain aspects:
 * switchScenes - True or false
