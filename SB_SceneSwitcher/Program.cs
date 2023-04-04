@@ -269,6 +269,7 @@ public class CPHInline
         private Arrangement? currentArrangement = null!;
         private int currentSectionIndex;
         private int currentSongSceneIndex;
+        private int songSwitchPeriodInSeconds = 5;
 
         private Response currentResponse = null!;
         private NoteData lastNoteData = null!;
@@ -696,13 +697,13 @@ public class CPHInline
                 arrangementIdentified = IdentifyArrangement();
                 SaveSongMetaData();
             }
-
+            double TimeSinceLastSceneSwitch = (DateTime.Now - lastSceneChange).TotalSeconds;
             if (!IsSongScene(currentScene))
             {
                 if (!currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
                 {
                     sameTimeCounter = 0;
-                    if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
+                    if (TimeSinceLastSceneSwitch >= minDelay)
                     {
                         if (currentScene.Equals(songPausedScene))
                         {
@@ -723,12 +724,20 @@ public class CPHInline
             }
             else if (IsSongScene(currentScene))
             {
+                if (TimeSinceLastSceneSwitch >= minDelay)
+                {
+                    if (++currentSongSceneIndex > songScenes.Length)
+                    {
+                        currentSongSceneIndex = 0;
+                    }
+                    itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex]);
+                }
                 if (IsInPause())
                 {
                     CPH.RunAction("enterPause");
                     if (switchScenes)
                     {
-                        if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
+                        if (TimeSinceLastSceneSwitch >= minDelay)
                         {
                             itsSceneInterActor.SwitchToScene(songPausedScene);
                             lastSceneChange = DateTime.Now;
