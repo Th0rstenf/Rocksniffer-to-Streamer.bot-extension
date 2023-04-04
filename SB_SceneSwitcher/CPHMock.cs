@@ -76,6 +76,7 @@ public class CPHmock : IInlineInvokeProxy
             "switchScenes" => _config?.switchScenes,
             "sectionActions" => _config?.sectionActions,
             "blackList" => _config?.blackList,
+            "songSwitchPeriod" => _config?.sceneSwitchPeriod,
             _ => throw new InvalidOperationException("Key " + key + " is not found!")
         };
     }
@@ -119,6 +120,7 @@ public class CPHmock : IInlineInvokeProxy
         Console.WriteLine("switchScenes=" + config.switchScenes);
         Console.WriteLine("sectionActions=" + config.sectionActions);
         Console.WriteLine("blackList=" + config.blackList);
+        Console.WriteLine("sceneSwitchPeriod=" + config.sceneSwitchPeriod);
         Console.WriteLine("-------------------------------------------------------");
 
         return config;
@@ -136,5 +138,6 @@ public class CPHmock : IInlineInvokeProxy
         public string? switchScenes { get; set; }
         public string? sectionActions { get; set; }
         public string? blackList { get; set; }
+        public string? sceneSwitchPeriod { get; set; }
     }
 }

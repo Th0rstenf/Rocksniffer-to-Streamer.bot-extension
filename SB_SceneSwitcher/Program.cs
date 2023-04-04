@@ -287,7 +287,7 @@ public class CPHInline
         private Arrangement? currentArrangement = null!;
         private int currentSectionIndex;
         private int currentSongSceneIndex;
-        private int songSwitchPeriodInSeconds = 5;
+        private int sceneSwitchPeriodInSeconds = 5;
 
         private Response currentResponse = null!;
         private NoteData lastNoteData = null!;
@@ -340,8 +340,8 @@ public class CPHInline
             reactingToSections = CPH.GetGlobalVar<string>("sectionActions").ToLower().Contains("true");
             CPH.LogInfo("Section actions are configured to " + reactingToSections);
             // how to parse string to int
-            songSwitchPeriodInSeconds = int.Parse(CPH.GetGlobalVar<string>("songSwitchPeriodInSeconds"));
-            CPH.LogInfo("Song switch period is configured to " + songSwitchPeriodInSeconds + " seconds");
+            sceneSwitchPeriodInSeconds = int.Parse(CPH.GetGlobalVar<string>("sceneSwitchPeriod"));
+            CPH.LogInfo("Song switch period is configured to " + sceneSwitchPeriodInSeconds + " seconds");
 
             string behaviorString = CPH.GetGlobalVar<string>("behavior");
             if (behaviorString != null)
@@ -740,7 +740,7 @@ public class CPHInline
             }
             else if (IsSongScene(currentScene))
             {
-                if (itsSceneInterActor.GetTimeSinceLastSceneChange() >= songSwitchPeriodInSeconds)
+                if (itsSceneInterActor.GetTimeSinceLastSceneChange() >= sceneSwitchPeriodInSeconds)
                 {
                     if (++currentSongSceneIndex > songScenes.Length)
                     {
