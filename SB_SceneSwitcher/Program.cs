@@ -3,7 +3,7 @@ using System.Net.Http;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 
-public static class Constants
+public struct Constants
 {
     public const string AppName = "RS2SB :: ";
 }
