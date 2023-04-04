@@ -108,12 +108,16 @@ public class CPHInline
             NONE
         }
 
+        private int cooldownPeriod;
+        private DateTime lastSceneChange;
         private IInlineInvokeProxy CPH;
         private BroadcastingSoftware itsBroadcastingSoftware;
 
         public SceneInteractor(IInlineInvokeProxy cph)
         {
             CPH = cph;
+            cooldownPeriod= 3;
+            lastSceneChange = DateTime.Now;
         }
 
         private void DetermineConnectedBroadcastingSoftware()
@@ -126,7 +130,7 @@ public class CPHInline
                 itsBroadcastingSoftware = BroadcastingSoftware.NONE;
         }
 
-        public string GetCurrent()
+        public string GetCurrentScene()
         {
             DetermineConnectedBroadcastingSoftware();
             string scene = "";
@@ -155,25 +159,39 @@ public class CPHInline
 
         public void SwitchToScene(string scene)
         {
-            switch (itsBroadcastingSoftware)
+            if (!IsInCooldown())
             {
-                case BroadcastingSoftware.OBS:
+                switch (itsBroadcastingSoftware)
                 {
-                    CPH.ObsSetScene(scene);
-                    break;
+                    case BroadcastingSoftware.OBS:
+                        {
+                            CPH.ObsSetScene(scene);
+                            break;
+                        }
+                    case BroadcastingSoftware.SLOBS:
+                        {
+                            CPH.SlobsSetScene(scene);
+                            break;
+                        }
+                    case BroadcastingSoftware.NONE:
+                    default:
+                        {
+                            CPH.LogDebug("No stream program defined");
+                            break;
+                        }
                 }
-                case BroadcastingSoftware.SLOBS:
-                {
-                    CPH.SlobsSetScene(scene);
-                    break;
-                }
-                case BroadcastingSoftware.NONE:
-                default:
-                {
-                    CPH.LogDebug("No stream program defined");
-                    break;
-                }
+                lastSceneChange = DateTime.Now;
             }
+        }
+
+        public bool IsInCooldown()
+        {
+            return GetTimeSinceLastSceneChange() < cooldownPeriod;
+        }
+
+        public double GetTimeSinceLastSceneChange()
+        {
+            return DateTime.Now.Subtract(lastSceneChange).TotalSeconds;
         }
     }
 
@@ -283,9 +301,7 @@ public class CPHInline
         private string menuScene = null!;
         private string[] songScenes = null!;
         private string songPausedScene = null!;
-
-        private DateTime lastSceneChange;
-        private int minDelay;
+        
         private int sameTimeCounter;
         private string currentScene = null!;
 
@@ -323,8 +339,8 @@ public class CPHInline
             CPH.LogInfo("Switching scenes configured to " + switchScenes);
             reactingToSections = CPH.GetGlobalVar<string>("sectionActions").ToLower().Contains("true");
             CPH.LogInfo("Section actions are configured to " + reactingToSections);
-            lastSceneChange = DateTime.Now;
-            minDelay = 3;
+            
+            
 
             string behaviorString = CPH.GetGlobalVar<string>("behavior");
             if (behaviorString != null)
@@ -645,7 +661,7 @@ public class CPHInline
                 if (currentResponse.MemoryReadout.SongTimer.Equals(0)
                     || ((currentResponse.SongDetails.SongLength - currentResponse.MemoryReadout.SongTimer) < 0.25))
                 {
-                    if ((sameTimeCounter++) >= minDelay)
+                    if ((sameTimeCounter++) >= 3)
                     {
                         isPause = true;
                     }
@@ -697,13 +713,13 @@ public class CPHInline
                 arrangementIdentified = IdentifyArrangement();
                 SaveSongMetaData();
             }
-            double TimeSinceLastSceneSwitch = (DateTime.Now - lastSceneChange).TotalSeconds;
+
             if (!IsSongScene(currentScene))
             {
                 if (!currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
                 {
                     sameTimeCounter = 0;
-                    if (TimeSinceLastSceneSwitch >= minDelay)
+                    if (!itsSceneInterActor.IsInCooldown())
                     {
                         if (currentScene.Equals(songPausedScene))
                         {
@@ -713,7 +729,6 @@ public class CPHInline
                         if (switchScenes)
                         {
                             itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex]);
-                            lastSceneChange = DateTime.Now;
                         }
                     }
                 }
@@ -724,7 +739,7 @@ public class CPHInline
             }
             else if (IsSongScene(currentScene))
             {
-                if (TimeSinceLastSceneSwitch >= minDelay)
+                if (itsSceneInterActor.GetTimeSinceLastSceneChange() >= songSwitchPeriodInSeconds)
                 {
                     if (++currentSongSceneIndex > songScenes.Length)
                     {
@@ -737,11 +752,7 @@ public class CPHInline
                     CPH.RunAction("enterPause");
                     if (switchScenes)
                     {
-                        if (TimeSinceLastSceneSwitch >= minDelay)
-                        {
-                            itsSceneInterActor.SwitchToScene(songPausedScene);
-                            lastSceneChange = DateTime.Now;
-                        }
+                        itsSceneInterActor.SwitchToScene(songPausedScene);
                     }
                 }
             }
@@ -751,11 +762,7 @@ public class CPHInline
         {
             if (!currentScene.Equals(menuScene) && switchScenes)
             {
-                if ((DateTime.Now - lastSceneChange).TotalSeconds > minDelay)
-                {
-                    itsSceneInterActor.SwitchToScene(menuScene);
-                    lastSceneChange = DateTime.Now;
-                }
+                 itsSceneInterActor.SwitchToScene(menuScene);
             }
 
             if (lastGameStage == GameStage.InSong)
@@ -834,7 +841,7 @@ public class CPHInline
 
     private void UpdateCurrentScene()
     {
-        currentScene = itsSceneInteractor.GetCurrent();
+        currentScene = itsSceneInteractor.GetCurrentScene();
         itsParser.setCurrentScene(currentScene);
     }
 
