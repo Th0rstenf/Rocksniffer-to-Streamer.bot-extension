@@ -145,12 +145,12 @@ public class CPHmock : IInlineInvokeProxy
 
     public static void Main(string[] args)
     {
-        CPHInline cph = new CPHInline();
+        CPHInline cphInline = new CPHInline();
 
-        cph.Init();
+        cphInline.Init();
         while (true)
         {
-            cph.Execute();
+            cphInline.Execute();
             Thread.Sleep(1000);
         }
     }
