@@ -339,8 +339,9 @@ public class CPHInline
             CPH.LogInfo("Switching scenes configured to " + switchScenes);
             reactingToSections = CPH.GetGlobalVar<string>("sectionActions").ToLower().Contains("true");
             CPH.LogInfo("Section actions are configured to " + reactingToSections);
-            
-            
+            // how to parse string to int
+            songSwitchPeriodInSeconds = int.Parse(CPH.GetGlobalVar<string>("songSwitchPeriodInSeconds"));
+            CPH.LogInfo("Song switch period is configured to " + songSwitchPeriodInSeconds + " seconds");
 
             string behaviorString = CPH.GetGlobalVar<string>("behavior");
             if (behaviorString != null)
