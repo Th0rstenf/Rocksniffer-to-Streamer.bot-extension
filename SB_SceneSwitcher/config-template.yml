@@ -20,3 +20,9 @@ sceneSwitchPeriod: 5
 switchScenes: True
 sectionDetection: True
 sectionActions: True
+
+# Logging
+# Possible values: VERBOSE, DEBUG, INFO, WARN, ERROR
+# Default logLevel: INFO | logLevelSB: DEBUG
+logLevel: 
+logLevelSB: 
