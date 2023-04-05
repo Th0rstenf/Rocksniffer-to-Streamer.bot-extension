@@ -125,6 +125,7 @@ public class CPHmock : IInlineInvokeProxy
             "switchScenes" => _config?.switchScenes,
             "sectionActions" => _config?.sectionActions,
             "blackList" => _config?.blackList,
+            "songSwitchPeriod" => _config?.sceneSwitchPeriod,
             _ => null
         };
     }
@@ -174,6 +175,7 @@ public class CPHmock : IInlineInvokeProxy
         Console.WriteLine(MockAppName + "switchScenes=" + config.switchScenes);
         Console.WriteLine(MockAppName + "sectionActions=" + config.sectionActions);
         Console.WriteLine(MockAppName + "blackList=" + config.blackList);
+        Console.WriteLine("sceneSwitchPeriod=" + config.sceneSwitchPeriod);
         Console.WriteLine(MockAppName + "logLevel=" + config.logLevel);
         Console.WriteLine(MockAppName + "logLevelSB=" + config.logLevelSB);
         Console.WriteLine(MockAppName + "-------------------------------------------------------");
@@ -216,6 +218,7 @@ public class CPHmock : IInlineInvokeProxy
         public string? switchScenes { get; set; }
         public string? sectionActions { get; set; }
         public string? blackList { get; set; }
+        public string? sceneSwitchPeriod { get; set; }
         public string? logLevel { get; set; }
         public string? logLevelSB { get; set; }
     }

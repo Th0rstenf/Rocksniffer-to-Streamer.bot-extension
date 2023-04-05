@@ -15,7 +15,8 @@ snifferPort: <Port of your RockSniffer. Usually 9938>
 behavior: <The following options are available - Whitelist, Blacklist, AlwaysOn>
 blackList: <Blacklisted scenes>
 
-# Other 
+# Other
+sceneSwitchPeriod: 5
 switchScenes: True
 sectionDetection: True
 sectionActions: True
