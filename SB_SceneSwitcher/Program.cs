@@ -343,12 +343,10 @@ public class CPHInline
             // how to parse string to int
             var sceneSwitchPeriod = CPH.GetGlobalVar<string>("sceneSwitchPeriod");
             sceneSwitchPeriodInSeconds = string.IsNullOrEmpty(sceneSwitchPeriod) ? 5 : int.Parse(sceneSwitchPeriod);
-            CPH.LogInfo(Constants.AppName +"Song switch period is configured to " + sceneSwitchPeriodInSeconds + " seconds");            
+            CPH.LogInfo(Constants.AppName +
+                        $"Song switch period is configured to {sceneSwitchPeriodInSeconds} seconds");
 
-            CPH.LogInfo(Constants.AppName + "Song switch period is configured to " + sceneSwitchPeriodInSeconds + " seconds");
-            
-
-            string behaviorString = CPH.GetGlobalVar<string>("behavior");
+            var behaviorString = CPH.GetGlobalVar<string>("behavior");
             if (!string.IsNullOrEmpty(behaviorString))
             {
                 if (behaviorString.ToLower().Contains("whitelist")) itsBehavior = ActivityBehavior.WhiteList;
