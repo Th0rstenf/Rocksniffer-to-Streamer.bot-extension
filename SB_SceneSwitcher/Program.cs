@@ -113,35 +113,41 @@ public class CPHInline
         }
 
         private IInlineInvokeProxy CPH;
-        private BroadcastingSoftware itsBroadcastingSoftware;
+        private BroadcastingSoftware? itsBroadcastingSoftware;
 
         public SceneInteractor(IInlineInvokeProxy cph)
         {
             CPH = cph;
         }
 
-        private void DetermineConnectedBroadcastingSoftware()
+        public void DetermineAndSetConnectedBroadcastingSoftware()
         {
             if (CPH.ObsIsConnected())
+            {
                 itsBroadcastingSoftware = BroadcastingSoftware.OBS;
+                CPH.LogDebug(Constants.AppName + $"Connected to BroadcastingSoftware {BroadcastingSoftware.OBS}");
+            }
             else if (CPH.SlobsIsConnected())
+            {
                 itsBroadcastingSoftware = BroadcastingSoftware.SLOBS;
+                CPH.LogDebug(Constants.AppName + $"Connected to BroadcastingSoftware {BroadcastingSoftware.SLOBS}");
+            }
             else
-                throw new Exception(Constants.AppName +
-                                    "No stream program defined! Please connect either to OBS or SLOBS!");
-
-            CPH.LogVerbose(Constants.AppName + $"itsBroadcastingSoftware = {itsBroadcastingSoftware}");
+            {
+                itsBroadcastingSoftware = null;
+                CPH.LogDebug(MessageNoStreamProgramDefined);
+            }
         }
 
-        public string GetCurrentScene()
+        public string GetCurrent()
         {
-            DetermineConnectedBroadcastingSoftware();
+            DetermineAndSetConnectedBroadcastingSoftware();
 
             return itsBroadcastingSoftware switch
             {
                 BroadcastingSoftware.OBS => CPH.ObsGetCurrentScene(),
                 BroadcastingSoftware.SLOBS => CPH.SlobsGetCurrentScene(),
-                _ => throw new Exception(MessageNoStreamProgramDefined)
+                _ => ""
             };
         }
 
@@ -158,7 +164,8 @@ public class CPHInline
                     CPH.SlobsSetScene(scene);
                     break;
                 default:
-                    throw new Exception(MessageNoStreamProgramDefined);
+                    CPH.LogDebug(MessageNoStreamProgramDefined);
+                    break;
             }
         }
     }
@@ -276,7 +283,7 @@ public class CPHInline
         private DateTime lastSceneChange;
         private int minDelay;
         private int sameTimeCounter;
-        private string currentScene = null!;
+        private string currentScene = "";
 
         private bool switchScenes = true;
         private bool reactingToSections = true;
@@ -316,8 +323,6 @@ public class CPHInline
             minDelay = 3;
 
             string behaviorString = CPH.GetGlobalVar<string>("behavior");
-            CPH.LogWarn(Constants.AppName + "behaviorString='" + behaviorString + "'");
-
             if (!string.IsNullOrEmpty(behaviorString))
             {
                 if (behaviorString.ToLower().Contains("whitelist")) itsBehavior = ActivityBehavior.WhiteList;
@@ -375,12 +380,14 @@ public class CPHInline
 
         public bool IsRelevantScene()
         {
-            bool isRelevant = false;
+            var isRelevant = false;
 
+            CPH.LogVerbose(Constants.AppName + $"IsRelevantScene - itsBehavior={itsBehavior}");
             switch (itsBehavior)
             {
                 case ActivityBehavior.WhiteList:
                 {
+                    CPH.LogDebug(Constants.AppName + "IsRelevantScene - case ActivityBehavior.WhiteList");
                     if (currentScene.Equals(menuScene)
                         || IsSongScene(currentScene)
                         || currentScene.Equals(songPausedScene))
@@ -392,6 +399,7 @@ public class CPHInline
                 }
                 case ActivityBehavior.BlackList:
                 {
+                    CPH.LogDebug(Constants.AppName + "IsRelevantScene - case ActivityBehavior.BlackList");
                     isRelevant = true;
                     foreach (string str in blackListedScenes)
                     {
@@ -406,16 +414,18 @@ public class CPHInline
                 }
                 case ActivityBehavior.AlwaysOn:
                 {
+                    CPH.LogDebug(Constants.AppName + "IsRelevantScene - case ActivityBehavior.AlwaysOn");
                     isRelevant = true;
                     break;
                 }
 
                 default:
+                    CPH.LogDebug(Constants.AppName + "IsRelevantScene - case default --> not relevant");
                     isRelevant = false;
                     break;
             }
 
-            CPH.LogVerbose(Constants.AppName + $"itsBehavior={itsBehavior} isRelevant={isRelevant}");
+            CPH.LogVerbose(Constants.AppName + $"IsRelevantScene - itsBehavior={itsBehavior} isRelevant={isRelevant}");
             return isRelevant;
         }
 
@@ -467,8 +477,8 @@ public class CPHInline
                 if (currentGameStage == GameStage.InSong)
                 {
                     CPH.SetGlobalVar("songTimer", (int)currentResponse.MemoryReadout.SongTimer, false);
-                    string formatted = FormatTime((int)currentResponse.MemoryReadout.SongTimer);
-                    CPH.SetGlobalVar("songTimerFormatted", formatted, false);
+                    CPH.SetGlobalVar("songTimerFormatted", FormatTime((int)currentResponse.MemoryReadout.SongTimer),
+                        false);
                     if (lastNoteData != currentResponse.MemoryReadout.NoteData)
                     {
                         CPH.SetGlobalVar("accuracy", currentResponse.MemoryReadout.NoteData.Accuracy, false);
@@ -802,8 +812,10 @@ public class CPHInline
         }
     }
 
-    //Needs to be commented out in streamer bot.
+    // -------------------------------------------------
+    // Needs to be commented out in streamer bot!
     private CPHmock CPH = new CPHmock();
+    // -------------------------------------------------
 
     private SceneInteractor itsSceneInteractor = null!;
     private ResponseFetcher itsFetcher = null!;
@@ -812,14 +824,19 @@ public class CPHInline
     private string snifferIp = null!;
     private string snifferPort = null!;
 
-    private string currentScene = null!;
+    private string currentScene = "";
 
     private void UpdateCurrentScene()
     {
-        var newCurrentScene = itsSceneInteractor.GetCurrentScene();
-        if (string.IsNullOrEmpty(currentScene) && string.IsNullOrEmpty(newCurrentScene) ||
-            currentScene.Equals(newCurrentScene)) return;
-        CPH.LogInfo(Constants.AppName + $"setCurrentScene to '{newCurrentScene}'");
+        var newCurrentScene = itsSceneInteractor.GetCurrent();
+
+        if (newCurrentScene.Equals(currentScene))
+        {
+            CPH.LogDebug(Constants.AppName + "Scene does not changed, nothing to update!");
+            return;
+        }
+
+        CPH.LogInfo(Constants.AppName + $"Scene has been changed! Set current scene to '{newCurrentScene}'");
         currentScene = newCurrentScene;
         itsParser.SetCurrentScene(currentScene);
     }
@@ -827,7 +844,7 @@ public class CPHInline
     public void Init()
     {
         CPH.LogInfo(Constants.AppName + "!!! Initialising RockSniffer to SB plugin !!!");
-        //Init happens before arguments are passed, therefore temporary globals are used.
+        // Init happens before arguments are passed, therefore temporary globals are used.
         snifferIp = GetSnifferIp();
         // TODO snifferPort should be also configurable
         snifferPort = "9938";
