@@ -175,7 +175,7 @@ public class CPHmock : IInlineInvokeProxy
         Console.WriteLine(MockAppName + "switchScenes=" + config.switchScenes);
         Console.WriteLine(MockAppName + "sectionActions=" + config.sectionActions);
         Console.WriteLine(MockAppName + "blackList=" + config.blackList);
-        Console.WriteLine("sceneSwitchPeriod=" + config.sceneSwitchPeriod);
+        Console.WriteLine(MockAppName + "sceneSwitchPeriod=" + config.sceneSwitchPeriod);
         Console.WriteLine(MockAppName + "logLevel=" + config.logLevel);
         Console.WriteLine(MockAppName + "logLevelSB=" + config.logLevelSB);
         Console.WriteLine(MockAppName + "-------------------------------------------------------");
