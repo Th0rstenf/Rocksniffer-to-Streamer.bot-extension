@@ -383,11 +383,12 @@ public class CPHInline
         {
             // Other potential values are: MainMenu las_SongList las_SongOptions las_tuner
             if (stage.Equals("las_game") || stage.Equals("sa_game"))
-            {
                 return GameStage.InSong;
-            }
 
-            return stage.Contains("tuner") ? GameStage.InTuner : GameStage.Menu;
+            if (stage.Contains("tuner"))
+                return GameStage.InTuner;
+
+            return GameStage.Menu;
         }
 
         public void UpdateStageAndTimer()
