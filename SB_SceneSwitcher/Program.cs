@@ -745,12 +745,8 @@ public class CPHInline
             {
                 if (itsSceneInterActor.GetTimeSinceLastSceneChange() >= sceneSwitchPeriodInSeconds)
                 {
-                    if (++currentSongSceneIndex > songScenes.Length)
-                    {
-                        currentSongSceneIndex = 0;
-                    }
-
                     itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex]);
+                    if (++currentSongSceneIndex >= songScenes.Length) currentSongSceneIndex = 0;
                 }
 
                 if (IsInPause())
