@@ -724,13 +724,17 @@ public class CPHInline
 
             if (!IsSongScene(currentScene))
             {
-                if (!currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
+                var songTimer = currentResponse.MemoryReadout.SongTimer;
+                CPH.LogVerbose(Constants.AppName + $"songTimer={songTimer} | lastSongTimer={lastSongTimer}");
+                if (!songTimer.Equals(lastSongTimer))
                 {
-                    if (currentResponse.MemoryReadout.SongTimer < lastSongTimer)
+                    if (songTimer < lastSongTimer)
                     {
-                        //Song was restarded from pause menu, which means lastNoteData is from previous playthrough
+                        // Song was restarted from pause menu, which means lastNoteData is from previous playthrough
+                        CPH.LogDebug(Constants.AppName + "Song has been restarted!");
                         lastNoteData = currentResponse.MemoryReadout.NoteData;
                     }
+
                     sameTimeCounter = 0;
                     if (!itsSceneInterActor.IsInCooldown())
                     {
