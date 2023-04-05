@@ -1,8 +1,9 @@
 ﻿public interface IInlineInvokeProxy
 {
     string GetGlobalVar<Type>(string key);
-    void LogDebug(string str);
+    void LogWarn(string str);
     void LogInfo(string str);
+    void LogDebug(string str);
     void LogVerbose(string str);
     string ObsGetCurrentScene();
     bool ObsIsConnected(int connection = 0);
