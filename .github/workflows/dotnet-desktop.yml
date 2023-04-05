@@ -40,9 +40,9 @@ name: .NET Core Desktop
 
 on:
   push:
-    branches: [ "develop", "kozaka-tv-patch-1" ]
+    branches: [ "**" ]
   pull_request:
-    branches: [ "develop", "kozaka-tv-patch-1" ]
+    branches: [ "**" ]
 
 jobs:
 
