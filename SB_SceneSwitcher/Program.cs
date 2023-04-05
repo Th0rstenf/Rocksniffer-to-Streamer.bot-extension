@@ -116,7 +116,7 @@ public class CPHInline
         public SceneInteractor(IInlineInvokeProxy cph)
         {
             CPH = cph;
-            cooldownPeriod= 3;
+            cooldownPeriod = 3;
             lastSceneChange = DateTime.Now;
         }
 
@@ -164,22 +164,23 @@ public class CPHInline
                 switch (itsBroadcastingSoftware)
                 {
                     case BroadcastingSoftware.OBS:
-                        {
-                            CPH.ObsSetScene(scene);
-                            break;
-                        }
+                    {
+                        CPH.ObsSetScene(scene);
+                        break;
+                    }
                     case BroadcastingSoftware.SLOBS:
-                        {
-                            CPH.SlobsSetScene(scene);
-                            break;
-                        }
+                    {
+                        CPH.SlobsSetScene(scene);
+                        break;
+                    }
                     case BroadcastingSoftware.NONE:
                     default:
-                        {
-                            CPH.LogDebug("No stream program defined");
-                            break;
-                        }
+                    {
+                        CPH.LogDebug("No stream program defined");
+                        break;
+                    }
                 }
+
                 lastSceneChange = DateTime.Now;
             }
         }
@@ -301,7 +302,7 @@ public class CPHInline
         private string menuScene = null!;
         private string[] songScenes = null!;
         private string songPausedScene = null!;
-        
+
         private int sameTimeCounter;
         private string currentScene = null!;
 
@@ -340,7 +341,9 @@ public class CPHInline
             reactingToSections = CPH.GetGlobalVar<string>("sectionActions").ToLower().Contains("true");
             CPH.LogInfo("Section actions are configured to " + reactingToSections);
             // how to parse string to int
-            sceneSwitchPeriodInSeconds = int.Parse(CPH.GetGlobalVar<string>("sceneSwitchPeriod"));
+            var sceneSwitchPeriod = CPH.GetGlobalVar<string>("sceneSwitchPeriod");
+            sceneSwitchPeriodInSeconds = string.IsNullOrEmpty(sceneSwitchPeriod) ? 5 : int.Parse(sceneSwitchPeriod);
+
             CPH.LogInfo("Song switch period is configured to " + sceneSwitchPeriodInSeconds + " seconds");
 
             string behaviorString = CPH.GetGlobalVar<string>("behavior");
@@ -746,8 +749,10 @@ public class CPHInline
                     {
                         currentSongSceneIndex = 0;
                     }
+
                     itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex]);
                 }
+
                 if (IsInPause())
                 {
                     CPH.RunAction("enterPause");
@@ -763,7 +768,7 @@ public class CPHInline
         {
             if (!currentScene.Equals(menuScene) && switchScenes)
             {
-                 itsSceneInterActor.SwitchToScene(menuScene);
+                itsSceneInterActor.SwitchToScene(menuScene);
             }
 
             if (lastGameStage == GameStage.InSong)
