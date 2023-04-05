@@ -108,12 +108,7 @@ public class CPHmock : IInlineInvokeProxy
 
     public string? GetGlobalVar<Type>(string key)
     {
-        if (key == "logLevel")
-        {
-            return _config == null ? DefaultLogLevel.ToString() : _config.logLevel;
-        }
-
-        return key switch
+        var value = key switch
         {
             "snifferIP" => _config?.snifferIp,
             "snifferPort" => _config?.snifferPort,
@@ -126,8 +121,13 @@ public class CPHmock : IInlineInvokeProxy
             "sectionActions" => _config?.sectionActions,
             "blackList" => _config?.blackList,
             "songSwitchPeriod" => _config?.sceneSwitchPeriod,
+            "logLevel" => _config == null ? DefaultLogLevel.ToString() : _config.logLevel,
             _ => null
         };
+
+        if (value == null) Console.WriteLine($"Key {key} is not found in config.yml!");
+
+        return value;
     }
 
     public void SetGlobalVar(string varName, object value, bool persisted = true)
@@ -159,7 +159,7 @@ public class CPHmock : IInlineInvokeProxy
     private static Config readConfig()
     {
         var json = File.ReadAllText("config.yml");
-        var config = new DeserializerBuilder().Build().Deserialize<Config>(json);
+        var config = new DeserializerBuilder().IgnoreUnmatchedProperties().Build().Deserialize<Config>(json);
 
         SetLogLevel(config);
         SetLogLevelSB(config);

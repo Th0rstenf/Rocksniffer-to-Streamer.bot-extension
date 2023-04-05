@@ -341,9 +341,12 @@ public class CPHInline
             reactingToSections = CPH.GetGlobalVar<string>("sectionActions").ToLower().Contains("true");
             CPH.LogInfo(Constants.AppName + "Section actions are configured to " + reactingToSections);
             // how to parse string to int
-            sceneSwitchPeriodInSeconds = int.Parse(CPH.GetGlobalVar<string>("sceneSwitchPeriod"));
-            CPH.LogInfo(Constants.AppName + "Song switch period is configured to " + sceneSwitchPeriodInSeconds +
-                        " seconds");
+            var sceneSwitchPeriod = CPH.GetGlobalVar<string>("sceneSwitchPeriod");
+            sceneSwitchPeriodInSeconds = string.IsNullOrEmpty(sceneSwitchPeriod) ? 5 : int.Parse(sceneSwitchPeriod);
+            CPH.LogInfo(Constants.AppName +"Song switch period is configured to " + sceneSwitchPeriodInSeconds + " seconds");            
+
+            CPH.LogInfo(Constants.AppName + "Song switch period is configured to " + sceneSwitchPeriodInSeconds + " seconds");
+            
 
             string behaviorString = CPH.GetGlobalVar<string>("behavior");
             if (!string.IsNullOrEmpty(behaviorString))
