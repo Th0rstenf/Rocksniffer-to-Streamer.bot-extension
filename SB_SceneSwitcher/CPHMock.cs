@@ -64,7 +64,7 @@ public class CPHmock : IInlineInvokeProxy
 
     public string? GetGlobalVar<Type>(string key)
     {
-        return key switch
+        var value = key switch
         {
             "snifferIP" => _config?.snifferIp,
             "snifferPort" => _config?.snifferPort,
@@ -77,8 +77,12 @@ public class CPHmock : IInlineInvokeProxy
             "sectionActions" => _config?.sectionActions,
             "blackList" => _config?.blackList,
             "songSwitchPeriod" => _config?.sceneSwitchPeriod,
-            _ => throw new InvalidOperationException("Key " + key + " is not found!")
+            _ => null
         };
+
+        if (value == null) Console.WriteLine($"Key {key} is not found in config.yml!");
+
+        return value;
     }
 
     public void SetGlobalVar(string varName, object value, bool persisted = true)
@@ -107,7 +111,7 @@ public class CPHmock : IInlineInvokeProxy
     private static Config readConfig()
     {
         var json = File.ReadAllText("config.yml");
-        var config = new DeserializerBuilder().Build().Deserialize<Config>(json);
+        var config = new DeserializerBuilder().IgnoreUnmatchedProperties().Build().Deserialize<Config>(json);
 
         Console.WriteLine("----------- CONFIG ------------------------------------");
         Console.WriteLine("sniffIP=" + config.snifferIp);
