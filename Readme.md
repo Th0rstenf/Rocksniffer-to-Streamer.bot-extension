@@ -1,11 +1,11 @@
-# Rocksniffer to Streamer.bot extension
+# RockSniffer to Streamer.bot extension
 
-A [streamer.bot](https://streamer.bot) implementation to replace Warth's SceneSwitcher, and more.
+A [streamer.bot](https://streamer.bot) implementation to replace Warths SceneSwitcher, and more.
 
 ## Description
 
 ## Switching Scenes
-This code fetches the output of Rocksniffer and evaluates game state and song timer. Depending on the state it switches to the scenes defined in global variables for Rocksmith, song, and break (pausing during a song).  
+This code fetches the output of RockSniffer and evaluates game state and song timer. Depending on the state it switches to the scenes defined in global variables for Rocksmith, song, and break (pausing during a song).  
 
 ## Providing Global variables
 
@@ -52,7 +52,7 @@ In addition to that, actions for entering/leaving a pause, the tuner and startin
 
 ## Installing
 
-### Adding it to streamerbot
+### Adding it to Streamer.bot
 * Import the content of importCode.txt into streamer.bot
 * Modify the global variables inside the *SceneSwitcher* action to match your configuration
 * Check if the code is compiling. If it doesn't, a reference is missing. References necessary are:
@@ -74,7 +74,7 @@ For scene switching:
 * pauseScene - the scene that will be loaded when pausing during a song
 
 For the sniffer connection:
-* snifferIP - ip address of the PC that is running rocksniffer. If it's the same it should be `"127.0.0.1"` (Quotes are not optional!)
+* snifferIP - ip address of the PC that is running RockSniffer. If it's the same it should be `"127.0.0.1"` (Quotes are not optional!)
 * snifferPort - should usually never be touched (`9938`), but provided for sake of completeness
 
 For determining when it is active:
@@ -84,15 +84,15 @@ For determining when it is active:
     * AlwaysOn - Self-explanatory
 * blackList - a comma separated list of blacklisted scenes
 
-To disable certain aspects:
-* switchScenes - True or false
-* sectionActions - True or false
-
+To enable/disable or set certain functions:
+* switchScenes - True or False
+* sectionActions - True or False
+* songSwitchPeriod - Automatic switching time between songScenes in seconds 
 
 ## Dependencies
 
 * Rocksmith
-* [Rocksniffer](https://github.com/kokolihapihvi/RockSniffer/releases)
+* [RockSniffer](https://github.com/kokolihapihvi/RockSniffer/releases)
 * [streamer.bot](https://streamer.bot)
 
 ## Help
@@ -102,7 +102,7 @@ Note that the IP address needs to be entered with quotes e.g.
 ```
 "127.0.0.1"
 ```
-Otherwise streamerbot will misinterpret it as double value. If the issues can not be solved this way, feel free to contact me in discord. See below.
+Otherwise Streamer.bot will misinterpret it as double value. If the issues can not be solved this way, feel free to contact me in discord. See below.
 
 With the usage of whitelist or blacklist, make sure to only switch to scenes that are valid for running. Otherwise you will not automatically switch back!
 
@@ -113,9 +113,9 @@ With the usage of whitelist or blacklist, make sure to only switch to scenes tha
 
 ## Version History
 * 0.2
-   * Detecting different tyes of sections and calling enter/leave actions in Streamerbot 
+   * Detecting different types of sections and calling enter/leave actions in Streamer.bot 
    * Storing Note data and other meta data in global variables to be used in other actions
-   * Behavior can now be changed between Whitelist / Blacklist / Alwayson
+   * Behavior can now be changed between **Whitelist** / **Blacklist** / **Always on**
    * Added option to disable scene switches
    * Added option to disable section change actions
    * Providing note & meta data in global variables
@@ -130,4 +130,3 @@ This project is licensed under the MIT License - see the LICENSE.txt file for de
 
 * [awesome-readme](https://github.com/matiassingers/awesome-readme)
 * [Warths Scene Switcher](https://github.com/Warths/Rocksmith-Scene-Switcher)
-
