@@ -726,6 +726,11 @@ public class CPHInline
             {
                 if (!currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
                 {
+                    if (currentResponse.MemoryReadout.SongTimer < lastSongTimer)
+                    {
+                        //Song was restarded from pause menu, which means lastNoteData is from previous playthrough
+                        lastNoteData = currentResponse.MemoryReadout.NoteData;
+                    }
                     sameTimeCounter = 0;
                     if (!itsSceneInterActor.IsInCooldown())
                     {
