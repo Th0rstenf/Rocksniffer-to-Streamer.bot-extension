@@ -103,8 +103,9 @@ public class CPHInline
 
     public class SceneInteractor
     {
-        private const string MessageNoStreamProgramDefined =
-            Constants.AppName + "No stream program defined! Please connect either to OBS or SLOBS!";
+        private const string MessageNoStreamAppConnectionAvailable =
+            Constants.AppName +
+            "No stream app connection available! Please set and connect either to OBS or SLOBS under 'Stream Apps' in SB!";
 
         enum BroadcastingSoftware
         {
@@ -135,7 +136,7 @@ public class CPHInline
             else
             {
                 itsBroadcastingSoftware = null;
-                CPH.LogDebug(MessageNoStreamProgramDefined);
+                CPH.LogDebug(MessageNoStreamAppConnectionAvailable);
             }
         }
 
@@ -164,7 +165,7 @@ public class CPHInline
                     CPH.SlobsSetScene(scene);
                     break;
                 default:
-                    CPH.LogDebug(MessageNoStreamProgramDefined);
+                    CPH.LogDebug(MessageNoStreamAppConnectionAvailable);
                     break;
             }
         }
