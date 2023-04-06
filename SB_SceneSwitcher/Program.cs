@@ -403,6 +403,7 @@ public class CPHInline
 
             currentGameStage = EvalGameStage(currentResponse.MemoryReadout.GameStage);
             currentSongTimer = currentResponse.MemoryReadout.SongTimer;
+            CPH.LogVerbose(Constants.AppName + $"UpdateStageAndTimer - currentGameStage={currentGameStage}, currentSongTimer={currentSongTimer}");
         }
 
         public bool IsRelevantScene()
@@ -506,8 +507,11 @@ public class CPHInline
                     CPH.SetGlobalVar("songTimer", (int)currentResponse.MemoryReadout.SongTimer, false);
                     CPH.SetGlobalVar("songTimerFormatted", FormatTime((int)currentResponse.MemoryReadout.SongTimer),
                         false);
+                    CPH.LogVerbose(Constants.AppName + $"Current song timer={currentResponse.MemoryReadout.SongTimer} Last song timer={lastSongTimer}");
                     if (lastNoteData != currentResponse.MemoryReadout.NoteData)
                     {
+                        CPH.LogVerbose(Constants.AppName + "Note data has changed, saving new values");
+                        
                         CPH.SetGlobalVar("accuracy", currentResponse.MemoryReadout.NoteData.Accuracy, false);
                         CPH.SetGlobalVar("currentHitStreak", currentResponse.MemoryReadout.NoteData.CurrentHitStreak,
                             false);
@@ -525,6 +529,14 @@ public class CPHInline
                             highestStreakSinceLaunch = highestHitStreak;
                             CPH.SetGlobalVar("highestHitStreakSinceLaunch", highestStreakSinceLaunch, false);
                         }
+
+                        CPH.LogVerbose(Constants.AppName + $"New total notes={currentResponse.MemoryReadout.NoteData.TotalNotes} last total notes={lastNoteData.TotalNotes}");
+                        CPH.LogVerbose(Constants.AppName + $"New total notes hit={currentResponse.MemoryReadout.NoteData.TotalNotesHit} last total notes hit={lastNoteData.TotalNotesHit}");
+                        CPH.LogVerbose(Constants.AppName + $"New total notes missed={currentResponse.MemoryReadout.NoteData.TotalNotesMissed} last total notes missed={lastNoteData.TotalNotesMissed}");
+                        CPH.LogVerbose(Constants.AppName + $"New current hit streak={currentResponse.MemoryReadout.NoteData.CurrentHitStreak} last current hit streak={lastNoteData.CurrentHitStreak}");
+                        CPH.LogVerbose(Constants.AppName + $"New current miss streak={currentResponse.MemoryReadout.NoteData.CurrentMissStreak} last current miss streak={lastNoteData.CurrentMissStreak}");
+                        CPH.LogVerbose(Constants.AppName + $"New highest hit streak={currentResponse.MemoryReadout.NoteData.HighestHitStreak} last highest hit streak={lastNoteData.HighestHitStreak}");
+                        CPH.LogVerbose(Constants.AppName + $"New accuracy={currentResponse.MemoryReadout.NoteData.Accuracy} last accuracy={lastNoteData.Accuracy}");
 
                         UInt32 additionalNotesHit;
                         UInt32 additionalNotesMissed;
@@ -544,6 +556,15 @@ public class CPHInline
                             additionalNotesMissed = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesMissed);
                             additionalNotes = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotes);
                         }
+
+                        //Debug
+                        //we need to check whether additional notes are negative
+                        if ((additionalNotes < 0) || (additionalNotesHit < 0) || (additionalNotesMissed < 0))
+                        {
+                            CPH.LogWarn(Constants.AppName +
+                                        $"additionalNotes is negative! additionalNotes={additionalNotes} additionalNotesHit={additionalNotesHit} additionalNotesMissed={additionalNotesMissed} totalNotesThisStream={totalNotesThisStream} totalNotesHitThisStream={totalNotesHitThisStream} totalNotesMissedThisStream={totalNotesMissedThisStream}");
+                        }
+                      
 
                         totalNotesHitThisStream += additionalNotesHit;
                         totalNotesMissedThisStream += additionalNotesMissed;
@@ -732,7 +753,7 @@ public class CPHInline
                     {
                         // Song was restarted from pause menu, which means lastNoteData is from previous playthrough
                         CPH.LogDebug(Constants.AppName + "Song has been restarted!");
-                        lastNoteData = currentResponse.MemoryReadout.NoteData;
+                    //    lastNoteData = currentResponse.MemoryReadout.NoteData;
                     }
 
                     sameTimeCounter = 0;
@@ -903,10 +924,12 @@ public class CPHInline
 
         if (itsParser.IsRelevantScene())
         {
+            CPH.LogVerbose(Constants.AppName + "Scene is relevant, fetching data from sniffer...");
             string response = itsFetcher.Fetch();
 
             if (response != string.Empty)
             {
+                CPH.LogVerbose(Constants.AppName + "Valid response received.");
                 Response currentResponse = itsFetcher.ExtractResponse(response);
 
                 if (currentResponse != null)
@@ -951,6 +974,10 @@ public class CPHInline
                 CPH.LogWarn(Constants.AppName + "Fetching response failed, exiting action.");
                 return false;
             }
+        }
+        else
+        {
+            CPH.LogVerbose(Constants.AppName + "Scene is not relevant, skipping.");
         }
 
         CPH.LogDebug(Constants.AppName + "------- END! -------");
