@@ -118,9 +118,10 @@ public class CPHmock : IInlineInvokeProxy
             "sectionDetection" => _config?.sectionDetection,
             "behavior" => _config?.behavior,
             "switchScenes" => _config?.switchScenes,
+            "songSceneAutoSwitchMode" => _config?.songSceneAutoSwitchMode,
+            "songSwitchPeriod" => _config?.sceneSwitchPeriod,
             "sectionActions" => _config?.sectionActions,
             "blackList" => _config?.blackList,
-            "songSwitchPeriod" => _config?.sceneSwitchPeriod,
             "logLevel" => _config == null ? DefaultLogLevel.ToString() : _config.logLevel,
             _ => null
         };
@@ -164,21 +165,7 @@ public class CPHmock : IInlineInvokeProxy
         SetLogLevel(config);
         SetLogLevelSB(config);
 
-        Console.WriteLine(MockAppName + "----------- CONFIG ------------------------------------");
-        Console.WriteLine(MockAppName + "sniffIP=" + config.snifferIp);
-        Console.WriteLine(MockAppName + "sniffPort=" + config.snifferPort);
-        Console.WriteLine(MockAppName + "songScenes=" + config.songScenes);
-        Console.WriteLine(MockAppName + "menuScene=" + config.menuScene);
-        Console.WriteLine(MockAppName + "pauseScene=" + config.pauseScene);
-        Console.WriteLine(MockAppName + "sectionDetection=" + config.sectionDetection);
-        Console.WriteLine(MockAppName + "behavior=" + config.behavior);
-        Console.WriteLine(MockAppName + "switchScenes=" + config.switchScenes);
-        Console.WriteLine(MockAppName + "sectionActions=" + config.sectionActions);
-        Console.WriteLine(MockAppName + "blackList=" + config.blackList);
-        Console.WriteLine(MockAppName + "sceneSwitchPeriod=" + config.sceneSwitchPeriod);
-        Console.WriteLine(MockAppName + "logLevel=" + config.logLevel);
-        Console.WriteLine(MockAppName + "logLevelSB=" + config.logLevelSB);
-        Console.WriteLine(MockAppName + "-------------------------------------------------------");
+        Console.WriteLine(MockAppName + config);
 
         return config;
     }
@@ -210,16 +197,37 @@ public class CPHmock : IInlineInvokeProxy
     {
         public string? snifferIp { get; set; }
         public string? snifferPort { get; set; }
-        public string? songScenes { get; set; }
         public string? menuScene { get; set; }
+        public string? songScenes { get; set; }
         public string? pauseScene { get; set; }
-        public string? sectionDetection { get; set; }
-        public string? behavior { get; set; }
-        public string? switchScenes { get; set; }
-        public string? sectionActions { get; set; }
         public string? blackList { get; set; }
+        public string? behavior { get; set; }
+        public string? sectionDetection { get; set; }
+        public string? switchScenes { get; set; }
+        public string? songSceneAutoSwitchMode { get; set; }
         public string? sceneSwitchPeriod { get; set; }
+        public string? sectionActions { get; set; }
         public string? logLevel { get; set; }
         public string? logLevelSB { get; set; }
+
+        public override string ToString()
+        {
+            return $"----------- CONFIG ------------------------------------{Environment.NewLine}" +
+                   $"{nameof(snifferIp)}: {snifferIp}, {Environment.NewLine}" +
+                   $"{nameof(snifferPort)}: {snifferPort}, {Environment.NewLine}" +
+                   $"{nameof(menuScene)}: {menuScene}, {Environment.NewLine}" +
+                   $"{nameof(songScenes)}: {songScenes}, {Environment.NewLine}" +
+                   $"{nameof(pauseScene)}: {pauseScene}, {Environment.NewLine}" +
+                   $"{nameof(blackList)}: {blackList}, {Environment.NewLine}" +
+                   $"{nameof(behavior)}: {behavior}, {Environment.NewLine}" +
+                   $"{nameof(sectionDetection)}: {sectionDetection}, {Environment.NewLine}" +
+                   $"{nameof(switchScenes)}: {switchScenes}, {Environment.NewLine}" +
+                   $"{nameof(songSceneAutoSwitchMode)}: {songSceneAutoSwitchMode}, {Environment.NewLine}" +
+                   $"{nameof(sceneSwitchPeriod)}: {sceneSwitchPeriod}, {Environment.NewLine}" +
+                   $"{nameof(sectionActions)}: {sectionActions}, {Environment.NewLine}" +
+                   $"{nameof(logLevel)}: {logLevel}, {Environment.NewLine}" +
+                   $"{nameof(logLevelSB)}: {logLevelSB} {Environment.NewLine}" +
+                   "-------------------------------------------------------";
+        }
     }
 }

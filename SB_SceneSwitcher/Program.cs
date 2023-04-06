@@ -6,6 +6,20 @@ using Newtonsoft.Json;
 public struct Constants
 {
     public const string AppName = "RS2SB :: ";
+
+    public const string GlobalVarNameSnifferIP = "snifferIP";
+    public const string GlobalVarNameSnifferPort = "snifferPort";
+    public const string GlobalVarNameMenuScene = "menuScene";
+    public const string GlobalVarNameMenuSongScenes = "songScenes";
+    public const string GlobalVarNamePauseScene = "pauseScene";
+    public const string GlobalVarNameSongSceneAutoSwitchMode = "songSceneAutoSwitchMode";
+    public const string GlobalVarNameSwitchScenes = "switchScenes";
+    public const string GlobalVarNameSectionActions = "sectionActions";
+    public const string GlobalVarNameSceneSwitchPeriod = "sceneSwitchPeriod";
+    public const string GlobalVarNameBehavior = "behavior";
+    public const string GlobalVarNameBlackList = "blackList";
+
+    public const string SnifferPortDefault = "9938";
 }
 
 // Objects for parsing the song data
@@ -99,6 +113,13 @@ public class CPHInline
         WhiteList,
         BlackList,
         AlwaysOn
+    }
+
+    enum SongSceneAutoSwitchMode
+    {
+        Off,
+        Sequential,
+        Random
     }
 
     public class SceneInteractor
@@ -279,7 +300,7 @@ public class CPHInline
         private ActivityBehavior itsBehavior = ActivityBehavior.WhiteList;
         private SceneInteractor itsSceneInterActor;
 
-        private string[] blackListedScenes = null!;
+        private string[]? blackListedScenes = null!;
         private double currentSongTimer;
         private double lastSongTimer;
 
@@ -298,13 +319,14 @@ public class CPHInline
         private UInt32 highestStreakSinceLaunch;
 
         private string menuScene = null!;
-        private string[] songScenes = null!;
+        private string[]? songScenes = null!;
         private string songPausedScene = null!;
 
         private int sameTimeCounter;
         private string currentScene = "";
 
         private bool switchScenes = true;
+        private SongSceneAutoSwitchMode songSceneAutoSwitchMode = SongSceneAutoSwitchMode.Off;
         private bool reactingToSections = true;
         private bool arrangementIdentified = false;
         private IInlineInvokeProxy CPH;
@@ -327,46 +349,20 @@ public class CPHInline
 
         public void Init()
         {
-            menuScene = CPH.GetGlobalVar<string>("menuScene");
-            CPH.LogInfo(Constants.AppName + "Menu scene: " + menuScene);
-            var songScenesRaw = CPH.GetGlobalVar<string>("songScenes");
-            CPH.LogVerbose(Constants.AppName + $"Song scenes from SB: {songScenesRaw}");
-            songScenes = Regex.Split(songScenesRaw.Trim(), @"\s*[,;]\s*");
-            CPH.LogInfo(Constants.AppName + "Song scenes: " + string.Join(", ", songScenes));
-            songPausedScene = CPH.GetGlobalVar<string>("pauseScene");
-            CPH.LogInfo(Constants.AppName + "Song paused scene: " + songPausedScene);
+            menuScene = GetGlobalVarAsString(Constants.GlobalVarNameMenuScene);
+            songScenes = GetGlobalVarAsStringArray(Constants.GlobalVarNameMenuSongScenes);
+            songPausedScene = GetGlobalVarAsString(Constants.GlobalVarNamePauseScene);
 
-            switchScenes = CPH.GetGlobalVar<string>("switchScenes").ToLower().Contains("true");
-            CPH.LogInfo(Constants.AppName + "Switching scenes configured to " + switchScenes);
-            reactingToSections = CPH.GetGlobalVar<string>("sectionActions").ToLower().Contains("true");
-            CPH.LogInfo(Constants.AppName + "Section actions are configured to " + reactingToSections);
-            // how to parse string to int
-            var sceneSwitchPeriod = CPH.GetGlobalVar<string>("sceneSwitchPeriod");
-            sceneSwitchPeriodInSeconds = string.IsNullOrEmpty(sceneSwitchPeriod) ? 5 : int.Parse(sceneSwitchPeriod);
-            CPH.LogInfo(Constants.AppName +
-                        $"Song switch period is configured to {sceneSwitchPeriodInSeconds} seconds");
+            songSceneAutoSwitchMode = GetGlobalVarSongSceneAutoSwitchMode();
+            // TODO switchScenes is actually just on or off according to songSceneAutoSwitchMode. GlobalVar switchScenes is not needed anymore.
+            // TODO do the set of switchScenes always together with set songSceneAutoSwitchMode? In a SetSongSceneAutoSwitchMode method?
+            switchScenes = GetGlobalVarAsBool(Constants.GlobalVarNameSwitchScenes);
+            reactingToSections = GetGlobalVarAsBool(Constants.GlobalVarNameSectionActions);
 
-            var behaviorString = CPH.GetGlobalVar<string>("behavior");
-            if (!string.IsNullOrEmpty(behaviorString))
-            {
-                if (behaviorString.ToLower().Contains("whitelist")) itsBehavior = ActivityBehavior.WhiteList;
-                else if (behaviorString.ToLower().Contains("blacklist")) itsBehavior = ActivityBehavior.BlackList;
-                else if (behaviorString.ToLower().Contains("always")) itsBehavior = ActivityBehavior.AlwaysOn;
-            }
+            sceneSwitchPeriodInSeconds = GetGlobalVarSceneSwitchPeriod();
 
-            CPH.LogInfo(Constants.AppName + "Behavior configured as: " + itsBehavior);
-
-            if (itsBehavior == ActivityBehavior.BlackList)
-            {
-                var blackListedScenesRaw = CPH.GetGlobalVar<string>("blackList");
-                CPH.LogVerbose(Constants.AppName + $"Blacklisted scenes from SB: {blackListedScenesRaw}");
-                blackListedScenes = Regex.Split(blackListedScenesRaw.Trim(), @"\s*[,;]\s*");
-                CPH.LogInfo(Constants.AppName + "Blacklisted scenes: " + string.Join(", ", blackListedScenes));
-            }
-            else
-            {
-                blackListedScenes = new string[1];
-            }
+            itsBehavior = GetGlobalVarBehavior();
+            blackListedScenes = GetGlobalVarBlackListedScenes();
 
             totalNotesThisStream = 0;
             totalNotesHitThisStream = 0;
@@ -378,6 +374,92 @@ public class CPHInline
             lastSectionType = currentSectionType = SectionType.Default;
             lastGameStage = currentGameStage = GameStage.Menu;
             sameTimeCounter = 0;
+        }
+
+        private string GetGlobalVarAsString(string name)
+        {
+            var globalVar = CPH.GetGlobalVar<string>(name);
+            CPH.LogInfo($"{Constants.AppName}{name}={globalVar}");
+            return globalVar;
+        }
+
+        private bool GetGlobalVarAsBool(string name)
+        {
+            var globalVar = CPH.GetGlobalVar<string>(name).ToLower().Contains("true");
+            CPH.LogInfo($"{Constants.AppName}{name}={globalVar}");
+            return globalVar;
+        }
+
+        private string[]? GetGlobalVarAsStringArray(string name)
+        {
+            var rawValue = CPH.GetGlobalVar<string>(name);
+            CPH.LogVerbose($"{Constants.AppName}{name} raw={rawValue}");
+
+            if (string.IsNullOrEmpty(rawValue)) return null;
+
+            var trimmedValues = Regex.Split(rawValue.Trim(), @"\s*[,;]\s*");
+            CPH.LogInfo($"{Constants.AppName}{name}=[{string.Join(",", trimmedValues)}]");
+
+            return trimmedValues;
+        }
+
+        private ActivityBehavior GetGlobalVarBehavior()
+        {
+            var behavior = GetBehavior(CPH.GetGlobalVar<string>(Constants.GlobalVarNameBehavior));
+            CPH.LogInfo($"{Constants.AppName}{nameof(behavior)}={behavior}");
+            return behavior;
+        }
+
+        private static ActivityBehavior GetBehavior(string globalVar)
+        {
+            if (string.IsNullOrEmpty(globalVar))
+                return ActivityBehavior.WhiteList;
+
+            return globalVar.ToLower().Trim() switch
+            {
+                nameof(ActivityBehavior.WhiteList) => ActivityBehavior.WhiteList,
+                nameof(ActivityBehavior.BlackList) => ActivityBehavior.BlackList,
+                nameof(ActivityBehavior.AlwaysOn) => ActivityBehavior.AlwaysOn,
+                _ => ActivityBehavior.WhiteList
+            };
+        }
+
+        private SongSceneAutoSwitchMode GetGlobalVarSongSceneAutoSwitchMode()
+        {
+            var autoSwitchMode =
+                GetSongSceneAutoSwitchMode(CPH.GetGlobalVar<string>(Constants.GlobalVarNameSongSceneAutoSwitchMode));
+            CPH.LogInfo($"{Constants.AppName}{nameof(autoSwitchMode)}={autoSwitchMode}");
+            return autoSwitchMode;
+        }
+
+        private static SongSceneAutoSwitchMode GetSongSceneAutoSwitchMode(string globalVar)
+        {
+            if (string.IsNullOrEmpty(globalVar))
+                return SongSceneAutoSwitchMode.Off;
+
+            return globalVar.ToLower().Trim() switch
+            {
+                nameof(SongSceneAutoSwitchMode.Off) => SongSceneAutoSwitchMode.Off,
+                nameof(SongSceneAutoSwitchMode.Sequential) => SongSceneAutoSwitchMode.Sequential,
+                nameof(SongSceneAutoSwitchMode.Random) => SongSceneAutoSwitchMode.Random,
+                _ => SongSceneAutoSwitchMode.Off
+            };
+        }
+
+        private int GetGlobalVarSceneSwitchPeriod()
+        {
+            var sceneSwitchPeriodVar = CPH.GetGlobalVar<string>(Constants.GlobalVarNameSceneSwitchPeriod);
+            // how to parse string to int
+            var sceneSwitchPeriod = string.IsNullOrEmpty(sceneSwitchPeriodVar) ? 5 : int.Parse(sceneSwitchPeriodVar);
+            CPH.LogInfo($"{Constants.AppName}{nameof(sceneSwitchPeriod)}={sceneSwitchPeriod}");
+            return sceneSwitchPeriod;
+        }
+
+        private string[] GetGlobalVarBlackListedScenes()
+        {
+            return (itsBehavior == ActivityBehavior.BlackList
+                ? GetGlobalVarAsStringArray(Constants.GlobalVarNameBlackList)
+                : new string[1])!;
         }
 
         private GameStage EvalGameStage(string stage)
@@ -879,9 +961,9 @@ public class CPHInline
         CPH.LogInfo(Constants.AppName + "!!! Initialising RockSniffer to SB plugin !!!");
         // Init happens before arguments are passed, therefore temporary globals are used.
         snifferIp = GetSnifferIp();
-        // TODO snifferPort should be also configurable
-        snifferPort = "9938";
-        CPH.LogInfo(Constants.AppName + string.Format("Sniffer ip configured as {0}:{1}", snifferIp, snifferPort));
+        // TODO in case snifferIp is null, no need to do anything after this as, Sniffer could be not connected/used.
+        snifferPort = GetSnifferPort();
+        CPH.LogInfo($"{Constants.AppName}Sniffer ip configured as {snifferIp}:{snifferPort}");
         itsSceneInteractor = new SceneInteractor(CPH);
         itsFetcher = new ResponseFetcher(CPH, snifferIp, snifferPort);
         itsParser = new ResponseParser(CPH, itsSceneInteractor);
@@ -892,7 +974,18 @@ public class CPHInline
 
     private string GetSnifferIp()
     {
-        return CPH.GetGlobalVar<string>("snifferIP").Replace('"', ' ').Trim();
+        var globalVar = CPH.GetGlobalVar<string>(Constants.GlobalVarNameSnifferIP);
+        CPH.LogInfo($"{Constants.AppName}{Constants.GlobalVarNameSnifferIP}={globalVar}");
+        // TODO in case not found, return null, or return default localhost?
+        if (string.IsNullOrEmpty(globalVar)) return null;
+        return globalVar.Replace('"', ' ').Trim();
+    }
+
+    private string GetSnifferPort()
+    {
+        var globalVar = CPH.GetGlobalVar<string>(Constants.GlobalVarNameSnifferPort);
+        CPH.LogInfo($"{Constants.AppName}{Constants.GlobalVarNameSnifferPort}={globalVar}");
+        return string.IsNullOrEmpty(globalVar) ? Constants.SnifferPortDefault : globalVar.Trim();
     }
 
     public bool Execute()
