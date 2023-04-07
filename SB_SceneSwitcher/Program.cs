@@ -19,7 +19,29 @@ public struct Constants
     public const string GlobalVarNameBehavior = "behavior";
     public const string GlobalVarNameBlackList = "blackList";
 
+    public const string ActionNameSongStart = "SongStart";
+    public const string ActionNameLeavePause = "leavePause";
+    public const string ActionNameEnterPause = "enterPause";
+    public const string ActionNameSongEnd = "SongEnd";
+    public const string ActionNameEnterTuner = "enterTuner";
+    public const string ActionNameLeaveTuner = "leaveTuner";
+
     public const string SnifferPortDefault = "9938";
+}
+
+enum SongSceneAutoSwitchMode
+{
+    Off,
+    Sequential,
+    Random
+}
+
+static class SongSceneAutoSwitchModeExtensions
+{
+    public static bool IsOn(this SongSceneAutoSwitchMode mode)
+    {
+        return !mode.Equals(SongSceneAutoSwitchMode.Off);
+    }
 }
 
 // Objects for parsing the song data
@@ -113,13 +135,6 @@ public class CPHInline
         WhiteList,
         BlackList,
         AlwaysOn
-    }
-
-    enum SongSceneAutoSwitchMode
-    {
-        Off,
-        Sequential,
-        Random
     }
 
     public class SceneInteractor
@@ -354,8 +369,6 @@ public class CPHInline
             songPausedScene = GetGlobalVarAsString(Constants.GlobalVarNamePauseScene);
 
             songSceneAutoSwitchMode = GetGlobalVarSongSceneAutoSwitchMode();
-            // TODO switchScenes is actually just on or off according to songSceneAutoSwitchMode. GlobalVar switchScenes is not needed anymore.
-            // TODO do the set of switchScenes always together with set songSceneAutoSwitchMode? In a SetSongSceneAutoSwitchMode method?
             switchScenes = GetGlobalVarAsBool(Constants.GlobalVarNameSwitchScenes);
             reactingToSections = GetGlobalVarAsBool(Constants.GlobalVarNameSectionActions);
 
@@ -538,7 +551,7 @@ public class CPHInline
             return isRelevant;
         }
 
-        public bool IsSongScene(string scene)
+        private bool IsSongScene(string scene)
         {
             foreach (var s in songScenes)
             {
@@ -551,7 +564,13 @@ public class CPHInline
             return false;
         }
 
-        public void SaveSongMetaData()
+        private bool IsNotSongScene(string scene)
+        {
+            return !IsSongScene(scene);
+        }
+
+
+        private void SaveSongMetaData()
         {
             try
             {
@@ -795,7 +814,7 @@ public class CPHInline
         {
             if (lastGameStage != GameStage.InSong)
             {
-                RunAction("SongStart");
+                RunAction(Constants.ActionNameSongStart);
             }
 
             if (!arrangementIdentified)
@@ -804,7 +823,7 @@ public class CPHInline
                 SaveSongMetaData();
             }
 
-            if (!IsSongScene(currentScene))
+            if (IsNotSongScene(currentScene))
             {
                 var songTimer = currentResponse.MemoryReadout.SongTimer;
                 CPH.LogVerbose(Constants.AppName + $"songTimer={songTimer} | lastSongTimer={lastSongTimer}");
@@ -822,7 +841,7 @@ public class CPHInline
                     {
                         if (currentScene.Equals(songPausedScene))
                         {
-                            RunAction("leavePause");
+                            RunAction(Constants.ActionNameLeavePause);
                         }
 
                         if (switchScenes)
@@ -834,7 +853,7 @@ public class CPHInline
             }
             else if (IsSongScene(currentScene))
             {
-                if (itsSceneInterActor.GetTimeSinceLastSceneChange() >= sceneSwitchPeriodInSeconds)
+                if (switchScenes && itsSceneInterActor.GetTimeSinceLastSceneChange() >= sceneSwitchPeriodInSeconds)
                 {
                     itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex]);
                     if (++currentSongSceneIndex >= songScenes.Length) currentSongSceneIndex = 0;
@@ -842,7 +861,7 @@ public class CPHInline
 
                 if (IsInPause())
                 {
-                    RunAction("enterPause");
+                    RunAction(Constants.ActionNameEnterPause);
                     if (switchScenes)
                     {
                         itsSceneInterActor.SwitchToScene(songPausedScene);
@@ -857,9 +876,9 @@ public class CPHInline
             CPH.RunAction(actionName);
         }
 
-        public void CheckGameStageMenu()
+        private void CheckGameStageMenu()
         {
-            if (!currentScene.Equals(menuScene) && switchScenes)
+            if (switchScenes && !currentScene.Equals(menuScene))
             {
                 itsSceneInterActor.SwitchToScene(menuScene);
             }
@@ -868,7 +887,7 @@ public class CPHInline
             {
                 arrangementIdentified = false;
                 lastNoteData = null!;
-                RunAction("SongEnd");
+                RunAction(Constants.ActionNameSongEnd);
             }
         }
 
@@ -876,12 +895,12 @@ public class CPHInline
         {
             if ((currentGameStage == GameStage.InTuner) && (lastGameStage != GameStage.InTuner))
             {
-                RunAction("enterTuner");
+                RunAction(Constants.ActionNameEnterTuner);
             }
 
             if ((currentGameStage != GameStage.InTuner) && (lastGameStage == GameStage.InTuner))
             {
-                RunAction("leaveTuner");
+                RunAction(Constants.ActionNameLeaveTuner);
             }
         }
 
@@ -889,13 +908,13 @@ public class CPHInline
         {
             if (currentArrangement != null && reactingToSections)
             {
-                bool hasSectionChanged = false;
+                bool isSectionChanged = false;
                 if (currentSectionIndex == -1)
                 {
                     if (currentSongTimer >= currentArrangement.Sections[0].StartTime)
                     {
                         currentSectionIndex = 0;
-                        hasSectionChanged = true;
+                        isSectionChanged = true;
                     }
                 }
                 else
@@ -904,11 +923,11 @@ public class CPHInline
                     if (currentSongTimer >= currentArrangement.Sections[currentSectionIndex].EndTime)
                     {
                         ++currentSectionIndex;
-                        hasSectionChanged = true;
+                        isSectionChanged = true;
                     }
                 }
 
-                if (hasSectionChanged)
+                if (isSectionChanged)
                 {
                     IdentifySection();
                     if (currentSectionType != lastSectionType)
@@ -958,7 +977,7 @@ public class CPHInline
 
     public void Init()
     {
-        CPH.LogInfo(Constants.AppName + "!!! Initialising RockSniffer to SB plugin !!!");
+        CPH.LogInfo($"{Constants.AppName}!!! Initialising RockSniffer to SB plugin !!!");
         // Init happens before arguments are passed, therefore temporary globals are used.
         snifferIp = GetSnifferIp();
         // TODO in case snifferIp is null, no need to do anything after this as, Sniffer could be not connected/used.
@@ -977,8 +996,7 @@ public class CPHInline
         var globalVar = CPH.GetGlobalVar<string>(Constants.GlobalVarNameSnifferIP);
         CPH.LogInfo($"{Constants.AppName}{Constants.GlobalVarNameSnifferIP}={globalVar}");
         // TODO in case not found, return null, or return default localhost?
-        if (string.IsNullOrEmpty(globalVar)) return null;
-        return globalVar.Replace('"', ' ').Trim();
+        return string.IsNullOrEmpty(globalVar) ? null : globalVar.Replace('"', ' ').Trim();
     }
 
     private string GetSnifferPort()
