@@ -192,9 +192,9 @@ public class CPHInline
             };
         }
 
-        public void SwitchToScene(string scene)
+        public void SwitchToScene(string scene, bool switchScenes)
         {
-            if (!IsInCooldown())
+            if (switchScenes && !IsInCooldown())
             {
                 switch (itsBroadcastingSoftware)
                 {
@@ -844,10 +844,7 @@ public class CPHInline
                             RunAction(Constants.ActionNameLeavePause);
                         }
 
-                        if (switchScenes)
-                        {
-                            itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex]);
-                        }
+                        itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex], switchScenes);
                     }
                 }
             }
@@ -855,17 +852,14 @@ public class CPHInline
             {
                 if (switchScenes && itsSceneInterActor.GetTimeSinceLastSceneChange() >= sceneSwitchPeriodInSeconds)
                 {
-                    itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex]);
+                    itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex], switchScenes);
                     if (++currentSongSceneIndex >= songScenes.Length) currentSongSceneIndex = 0;
                 }
 
                 if (IsInPause())
                 {
                     RunAction(Constants.ActionNameEnterPause);
-                    if (switchScenes)
-                    {
-                        itsSceneInterActor.SwitchToScene(songPausedScene);
-                    }
+                    itsSceneInterActor.SwitchToScene(songPausedScene, switchScenes);
                 }
             }
         }
@@ -880,7 +874,7 @@ public class CPHInline
         {
             if (switchScenes && !currentScene.Equals(menuScene))
             {
-                itsSceneInterActor.SwitchToScene(menuScene);
+                itsSceneInterActor.SwitchToScene(menuScene, switchScenes);
             }
 
             if (lastGameStage == GameStage.InSong)
@@ -891,7 +885,7 @@ public class CPHInline
             }
         }
 
-        public void CheckTunerActions()
+        private void CheckTunerActions()
         {
             if ((currentGameStage == GameStage.InTuner) && (lastGameStage != GameStage.InTuner))
             {
