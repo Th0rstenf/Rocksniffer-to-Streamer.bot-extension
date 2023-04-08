@@ -29,7 +29,7 @@ public struct Constants
     public const string SnifferPortDefault = "9938";
 }
 
-enum SongSceneAutoSwitchMode
+internal enum SongSceneAutoSwitchMode
 {
     Off,
     Sequential,
@@ -368,8 +368,8 @@ public class CPHInline
             songScenes = GetGlobalVarAsStringArray(Constants.GlobalVarNameMenuSongScenes);
             songPausedScene = GetGlobalVarAsString(Constants.GlobalVarNamePauseScene);
 
-            songSceneAutoSwitchMode = GetGlobalVarSongSceneAutoSwitchMode();
             switchScenes = GetGlobalVarAsBool(Constants.GlobalVarNameSwitchScenes);
+            songSceneAutoSwitchMode = GetGlobalVarSongSceneAutoSwitchMode();
             reactingToSections = GetGlobalVarAsBool(Constants.GlobalVarNameSectionActions);
 
             sceneSwitchPeriodInSeconds = GetGlobalVarSceneSwitchPeriod();
@@ -430,9 +430,9 @@ public class CPHInline
 
             return globalVar.ToLower().Trim() switch
             {
-                nameof(ActivityBehavior.WhiteList) => ActivityBehavior.WhiteList,
-                nameof(ActivityBehavior.BlackList) => ActivityBehavior.BlackList,
-                nameof(ActivityBehavior.AlwaysOn) => ActivityBehavior.AlwaysOn,
+                "whitelist" => ActivityBehavior.WhiteList,
+                "blacklist" => ActivityBehavior.BlackList,
+                "alwayson" => ActivityBehavior.AlwaysOn,
                 _ => ActivityBehavior.WhiteList
             };
         }
@@ -452,9 +452,9 @@ public class CPHInline
 
             return globalVar.ToLower().Trim() switch
             {
-                nameof(SongSceneAutoSwitchMode.Off) => SongSceneAutoSwitchMode.Off,
-                nameof(SongSceneAutoSwitchMode.Sequential) => SongSceneAutoSwitchMode.Sequential,
-                nameof(SongSceneAutoSwitchMode.Random) => SongSceneAutoSwitchMode.Random,
+                "off" => SongSceneAutoSwitchMode.Off,
+                "sequential" => SongSceneAutoSwitchMode.Sequential,
+                "random" => SongSceneAutoSwitchMode.Random,
                 _ => SongSceneAutoSwitchMode.Off
             };
         }
@@ -850,7 +850,8 @@ public class CPHInline
             }
             else if (IsSongScene(currentScene))
             {
-                if (switchScenes && itsSceneInterActor.GetTimeSinceLastSceneChange() >= sceneSwitchPeriodInSeconds)
+                if (switchScenes && songSceneAutoSwitchMode.IsOn() &&
+                    itsSceneInterActor.GetTimeSinceLastSceneChange() >= sceneSwitchPeriodInSeconds)
                 {
                     itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex], switchScenes);
                     if (++currentSongSceneIndex >= songScenes.Length) currentSongSceneIndex = 0;
