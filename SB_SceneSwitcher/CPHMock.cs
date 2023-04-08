@@ -122,6 +122,7 @@ public class CPHmock : IInlineInvokeProxy
             "songSwitchPeriod" => _config?.sceneSwitchPeriod,
             "sectionActions" => _config?.sectionActions,
             "blackList" => _config?.blackList,
+            "sceneSwitchPeriod" => _config?.sceneSwitchPeriod,
             "logLevel" => _config == null ? DefaultLogLevel.ToString() : _config.logLevel,
             _ => null
         };
