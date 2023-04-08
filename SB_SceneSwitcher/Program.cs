@@ -194,7 +194,7 @@ public class CPHInline
 
         public void SwitchToScene(string scene, bool switchScenes)
         {
-            if (switchScenes && !IsInCooldown())
+            if (switchScenes && IsNotInCooldown())
             {
                 switch (itsBroadcastingSoftware)
                 {
@@ -215,9 +215,15 @@ public class CPHInline
             }
         }
 
-        public bool IsInCooldown()
+        public bool IsNotInCooldown()
         {
-            return GetTimeSinceLastSceneChange() < cooldownPeriod;
+            var timeSinceLastSceneChange = GetTimeSinceLastSceneChange();
+            var isNotInCooldown = !(timeSinceLastSceneChange < cooldownPeriod);
+            CPH.LogVerbose(
+                $"{Constants.AppName}isNotInCooldown={isNotInCooldown} - " +
+                $"timeSinceLastSceneChange={timeSinceLastSceneChange} " +
+                $"cooldownPeriod={cooldownPeriod} ");
+            return isNotInCooldown;
         }
 
         public double GetTimeSinceLastSceneChange()
@@ -837,7 +843,7 @@ public class CPHInline
                     }
 
                     sameTimeCounter = 0;
-                    if (!itsSceneInterActor.IsInCooldown())
+                    if (itsSceneInterActor.IsNotInCooldown())
                     {
                         if (currentScene.Equals(songPausedScene))
                         {
