@@ -856,11 +856,17 @@ public class CPHInline
             }
             else if (IsSongScene(currentScene))
             {
-                if (switchScenes && songSceneAutoSwitchMode.IsOn() &&
-                    itsSceneInterActor.GetTimeSinceLastSceneChange() >= sceneSwitchPeriodInSeconds)
+                if (switchScenes)
                 {
-                    itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex], switchScenes);
-                    if (++currentSongSceneIndex >= songScenes.Length) currentSongSceneIndex = 0;
+                    if (itsSceneInterActor.GetTimeSinceLastSceneChange() >= sceneSwitchPeriodInSeconds)
+                    {
+                        if (songSceneAutoSwitchMode.IsOn())
+                        {
+                            itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex], switchScenes);
+                            if (++currentSongSceneIndex >= songScenes.Length) currentSongSceneIndex = 0;
+                        }
+                    }
+                    
                 }
 
                 if (IsInPause())
