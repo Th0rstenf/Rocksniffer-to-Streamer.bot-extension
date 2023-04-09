@@ -1,5 +1,6 @@
 using System;
 using System.Net.Http;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 
@@ -559,15 +560,7 @@ public class CPHInline
 
         private bool IsSongScene(string scene)
         {
-            foreach (var s in songScenes)
-            {
-                if (scene.Equals(s))
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return Array.Find<string>(songScenes, s => s.Equals(scene)) != null;
         }
 
         private bool IsNotSongScene(string scene)
