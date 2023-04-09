@@ -864,12 +864,14 @@ public class CPHInline
                         {
 
                             case SongSceneAutoSwitchMode.Sequential:
-                                if (++currentSongSceneIndex >= songScenes.Length) currentSongSceneIndex = 0;
+                                if (++currentSongSceneIndex >= songScenes.Length)
+                                {
+                                    currentSongSceneIndex = 0;
+                                }
                                 itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex], switchScenes);
                                 break;
                             case SongSceneAutoSwitchMode.Random:
-                                currentSongSceneIndex = new Random().Next(0, songScenes.Length);
-                                
+                                currentSongSceneIndex = new Random().Next(0, songScenes.Length);                               
                                 itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex], switchScenes);
                             break;
                             case SongSceneAutoSwitchMode.Off:
