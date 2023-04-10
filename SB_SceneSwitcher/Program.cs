@@ -503,8 +503,7 @@ public class CPHInline
             }
 
             currentGameStage = EvalGameStage(currentResponse.MemoryReadout.GameStage);
-            currentSongTimer = currentResponse.MemoryReadout.SongTimer;
-            CPH.LogVerbose(Constants.AppName + $"UpdateStageAndTimer - currentGameStage={currentGameStage}, currentSongTimer={currentSongTimer}");
+            currentSongTimer = currentResponse.MemoryReadout.SongTimer;          
         }
 
         public bool IsRelevantScene()
@@ -614,7 +613,7 @@ public class CPHInline
                     CPH.SetGlobalVar("songTimer", (int)currentResponse.MemoryReadout.SongTimer, false);
                     CPH.SetGlobalVar("songTimerFormatted", FormatTime((int)currentResponse.MemoryReadout.SongTimer),
                         false);
-                    CPH.LogVerbose(Constants.AppName + $"Current song timer={currentResponse.MemoryReadout.SongTimer} Last song timer={lastSongTimer}");
+                    
                     if (lastNoteData != currentResponse.MemoryReadout.NoteData)
                     {
                         CPH.LogVerbose(Constants.AppName + "Note data has changed, saving new values");
@@ -636,14 +635,6 @@ public class CPHInline
                             highestStreakSinceLaunch = (uint)highestHitStreak;
                             CPH.SetGlobalVar("highestHitStreakSinceLaunch", highestStreakSinceLaunch, false);
                         }
-
-                        CPH.LogVerbose(Constants.AppName + $"New total notes={currentResponse.MemoryReadout.NoteData.TotalNotes} last total notes={lastNoteData.TotalNotes}");
-                        CPH.LogVerbose(Constants.AppName + $"New total notes hit={currentResponse.MemoryReadout.NoteData.TotalNotesHit} last total notes hit={lastNoteData.TotalNotesHit}");
-                        CPH.LogVerbose(Constants.AppName + $"New total notes missed={currentResponse.MemoryReadout.NoteData.TotalNotesMissed} last total notes missed={lastNoteData.TotalNotesMissed}");
-                        CPH.LogVerbose(Constants.AppName + $"New current hit streak={currentResponse.MemoryReadout.NoteData.CurrentHitStreak} last current hit streak={lastNoteData.CurrentHitStreak}");
-                        CPH.LogVerbose(Constants.AppName + $"New current miss streak={currentResponse.MemoryReadout.NoteData.CurrentMissStreak} last current miss streak={lastNoteData.CurrentMissStreak}");
-                        CPH.LogVerbose(Constants.AppName + $"New highest hit streak={currentResponse.MemoryReadout.NoteData.HighestHitStreak} last highest hit streak={lastNoteData.HighestHitStreak}");
-                        CPH.LogVerbose(Constants.AppName + $"New accuracy={currentResponse.MemoryReadout.NoteData.Accuracy} last accuracy={lastNoteData.Accuracy}");
 
                         int additionalNotesHit;
                         int additionalNotesMissed;
