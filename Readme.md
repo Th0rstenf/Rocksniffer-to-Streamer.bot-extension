@@ -50,9 +50,9 @@ Assuming the song has properly named sections, the following section types are r
 For each of those sections, an enter and leave action is provided. Those will automatically be called by the SceneSwitcher action. Feel free to fill them with whatever you like.  
 In addition to that, actions for entering/leaving a pause, the tuner and starting or ending a song are provided. 
 
-## Installing
+## Installation and configuration
 
-### Adding it to Streamer.bot
+### Add to Streamer.bot
 * Import the content of importCode.txt into streamer.bot
 * Modify the global variables inside the *SceneSwitcher* action to match your configuration
 * Check if the code is compiling. If it doesn't, a reference is missing. References necessary are:
@@ -79,15 +79,22 @@ For the sniffer connection:
 
 For determining when it is active:
 * behavior - The following options are available:
-    * Whitelist - Will only be active during the scenes defined in *menuScene*, *songScenes* and *pauseScene*
-    * Blacklist - Will be active unless the current scene is in the blacklist
-    * AlwaysOn - Self-explanatory
+  * Whitelist - Will only be active during the scenes defined in *menuScene*, *songScenes* and *pauseScene*
+  * Blacklist - Will be active unless the current scene is in the blacklist
+  * AlwaysOn - Self-explanatory
 * blackList - a comma separated list of blacklisted scenes
 
+Scene switching:
+* switchScenes - True/False - enable or disable scene switching
+* songSwitchPeriod - Automatic switching time between songScenes in seconds
+* songSceneAutoSwitchMode - the mode of the automatic switching between the given song scenes after reached the songSwitchPeriod 
+  * Off - automatic switching is disabled
+  * Sequential - runs over the song scene list sequentially
+  * Random - runs over the song scene list randomly
+
 To enable/disable or set certain functions:
-* switchScenes - True or False
 * sectionActions - True or False
-* songSwitchPeriod - Automatic switching time between songScenes in seconds 
+ 
 
 ## Dependencies
 

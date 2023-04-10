@@ -36,14 +36,6 @@ internal enum SongSceneAutoSwitchMode
     Random
 }
 
-static class SongSceneAutoSwitchModeExtensions
-{
-    public static bool IsOn(this SongSceneAutoSwitchMode mode)
-    {
-        return !mode.Equals(SongSceneAutoSwitchMode.Off);
-    }
-}
-
 // Objects for parsing the song data
 // 
 
@@ -228,7 +220,9 @@ public class CPHInline
 
         public double GetTimeSinceLastSceneChange()
         {
-            return DateTime.Now.Subtract(lastSceneChange).TotalSeconds;
+            var timeSinceLastSceneChange = DateTime.Now.Subtract(lastSceneChange).TotalSeconds;
+            CPH.LogVerbose($"timeSinceLastSceneChange={timeSinceLastSceneChange}");
+            return timeSinceLastSceneChange;
         }
     }
 
@@ -559,15 +553,7 @@ public class CPHInline
 
         private bool IsSongScene(string scene)
         {
-            foreach (var s in songScenes)
-            {
-                if (scene.Equals(s))
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return Array.Find<string>(songScenes, s => s.Equals(scene)) != null;
         }
 
         private bool IsNotSongScene(string scene)
@@ -856,11 +842,23 @@ public class CPHInline
             }
             else if (IsSongScene(currentScene))
             {
-                if (switchScenes && songSceneAutoSwitchMode.IsOn() &&
-                    itsSceneInterActor.GetTimeSinceLastSceneChange() >= sceneSwitchPeriodInSeconds)
+                CPH.LogDebug("currentScene IsSongScene");
+                CPH.LogVerbose($"songSceneAutoSwitchMode={songSceneAutoSwitchMode}");
+                if (switchScenes && ItsTimeToSwitchScene() && (songScenes.Length > 1))
                 {
-                    itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex], switchScenes);
-                    if (++currentSongSceneIndex >= songScenes.Length) currentSongSceneIndex = 0;
+                    switch (songSceneAutoSwitchMode)
+                    {
+                        case SongSceneAutoSwitchMode.Sequential:
+                            DoSequentialSceneSwitch();
+                            break;
+                        case SongSceneAutoSwitchMode.Random:
+                            DoRandomSceneSwitch();
+                            break;
+                        case SongSceneAutoSwitchMode.Off:
+                        default:
+                            // Nothing to do
+                            break;
+                    }
                 }
 
                 if (IsInPause())
@@ -869,6 +867,38 @@ public class CPHInline
                     itsSceneInterActor.SwitchToScene(songPausedScene, switchScenes);
                 }
             }
+        }
+
+        private bool ItsTimeToSwitchScene()
+        {
+            return itsSceneInterActor.GetTimeSinceLastSceneChange() >= sceneSwitchPeriodInSeconds;
+        }
+
+        private void DoSequentialSceneSwitch()
+        {
+            if (++currentSongSceneIndex >= songScenes.Length)
+            {
+                currentSongSceneIndex = 0;
+            }
+
+            itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex], switchScenes);
+        }
+
+        private void DoRandomSceneSwitch()
+        {
+            int newSongSceneIndex;
+            do
+            {
+                if (songScenes.Length == 1)
+                {
+                    newSongSceneIndex = 0;
+                    break;
+                }
+                newSongSceneIndex = new Random().Next(0, songScenes.Length);
+            } while (newSongSceneIndex == currentSongSceneIndex);
+
+            currentSongSceneIndex = newSongSceneIndex;
+            itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex], switchScenes);
         }
 
         private void RunAction(string actionName)
