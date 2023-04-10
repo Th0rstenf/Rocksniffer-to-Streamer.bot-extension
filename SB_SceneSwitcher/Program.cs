@@ -497,7 +497,7 @@ public class CPHInline
             }
 
             currentGameStage = EvalGameStage(currentResponse.MemoryReadout.GameStage);
-            currentSongTimer = currentResponse.MemoryReadout.SongTimer;
+            currentSongTimer = currentResponse.MemoryReadout.SongTimer;          
         }
 
         public bool IsRelevantScene()
@@ -599,8 +599,11 @@ public class CPHInline
                     CPH.SetGlobalVar("songTimer", (int)currentResponse.MemoryReadout.SongTimer, false);
                     CPH.SetGlobalVar("songTimerFormatted", FormatTime((int)currentResponse.MemoryReadout.SongTimer),
                         false);
+                    
                     if (lastNoteData != currentResponse.MemoryReadout.NoteData)
                     {
+                        CPH.LogVerbose(Constants.AppName + "Note data has changed, saving new values");
+
                         CPH.SetGlobalVar("accuracy", currentResponse.MemoryReadout.NoteData.Accuracy, false);
                         CPH.SetGlobalVar("currentHitStreak", currentResponse.MemoryReadout.NoteData.CurrentHitStreak,
                             false);
@@ -611,46 +614,54 @@ public class CPHInline
                         CPH.SetGlobalVar("totalNotesMissed", currentResponse.MemoryReadout.NoteData.TotalNotesMissed,
                             false);
 
-                        UInt32 highestHitStreak = (UInt32)currentResponse.MemoryReadout.NoteData.HighestHitStreak;
+                        int highestHitStreak = currentResponse.MemoryReadout.NoteData.HighestHitStreak;
                         CPH.SetGlobalVar("highestHitStreak", highestHitStreak, false);
                         if (highestHitStreak > highestStreakSinceLaunch)
                         {
-                            highestStreakSinceLaunch = highestHitStreak;
+                            highestStreakSinceLaunch = (uint)highestHitStreak;
                             CPH.SetGlobalVar("highestHitStreakSinceLaunch", highestStreakSinceLaunch, false);
                         }
 
-                        UInt32 additionalNotesHit;
-                        UInt32 additionalNotesMissed;
-                        UInt32 additionalNotes;
+                        int additionalNotesHit;
+                        int additionalNotesMissed;
+                        int additionalNotes;
                         if (lastNoteData != null)
                         {
-                            additionalNotesHit = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesHit -
+                            additionalNotesHit = (currentResponse.MemoryReadout.NoteData.TotalNotesHit -
                                                         lastNoteData.TotalNotesHit);
-                            additionalNotesMissed = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesMissed -
+                            additionalNotesMissed = (currentResponse.MemoryReadout.NoteData.TotalNotesMissed -
                                                            lastNoteData.TotalNotesMissed);
-                            additionalNotes = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotes -
+                            additionalNotes = (currentResponse.MemoryReadout.NoteData.TotalNotes -
                                                      lastNoteData.TotalNotes);
                         }
                         else
                         {
-                            additionalNotesHit = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesHit);
-                            additionalNotesMissed = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesMissed);
-                            additionalNotes = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotes);
+                            additionalNotesHit = currentResponse.MemoryReadout.NoteData.TotalNotesHit;
+                            additionalNotesMissed = currentResponse.MemoryReadout.NoteData.TotalNotesMissed;
+                            additionalNotes = currentResponse.MemoryReadout.NoteData.TotalNotes;
                         }
 
-                        totalNotesHitThisStream += additionalNotesHit;
-                        totalNotesMissedThisStream += additionalNotesMissed;
-                        totalNotesThisStream += additionalNotes;
-                        CPH.SetGlobalVar("totalNotesSinceLaunch", totalNotesThisStream, false);
-                        CPH.SetGlobalVar("totalNotesHitSinceLaunch", totalNotesHitThisStream, false);
-                        CPH.SetGlobalVar("totalNotesMissedSinceLaunch", totalNotesMissedThisStream, false);
-                        if (totalNotesThisStream > 0)
+                        //Usually additional Notes should never be negative, but could be in case sniffer delivers bad data
+                        // In this case we will log a warning, and ignore this data for the accumulation. It should fix itself next cycle
+                        if ((additionalNotes < 0) || (additionalNotesHit < 0) || (additionalNotesMissed < 0))
                         {
-                            accuracyThisStream = 100.0 * ((double)(totalNotesHitThisStream) / totalNotesThisStream);
+                            CPH.LogWarn(Constants.AppName +
+                                        $"additionalNotes is negative! additionalNotes={additionalNotes} additionalNotesHit={additionalNotesHit} additionalNotesMissed={additionalNotesMissed} totalNotesThisStream={totalNotesThisStream} totalNotesHitThisStream={totalNotesHitThisStream} totalNotesMissedThisStream={totalNotesMissedThisStream}");
                         }
-
-                        CPH.SetGlobalVar("accuracySinceLaunch", accuracyThisStream, false);
-
+                        else
+                        {
+                            totalNotesHitThisStream += (uint)additionalNotesHit;
+                            totalNotesMissedThisStream += (uint)additionalNotesMissed;
+                            totalNotesThisStream += (uint)additionalNotes;
+                            CPH.SetGlobalVar("totalNotesSinceLaunch", totalNotesThisStream, false);
+                            CPH.SetGlobalVar("totalNotesHitSinceLaunch", totalNotesHitThisStream, false);
+                            CPH.SetGlobalVar("totalNotesMissedSinceLaunch", totalNotesMissedThisStream, false);
+                            if (totalNotesThisStream > 0)
+                            {
+                                accuracyThisStream = 100.0 * ((double)(totalNotesHitThisStream) / totalNotesThisStream);
+                            }
+                            CPH.SetGlobalVar("accuracySinceLaunch", accuracyThisStream, false);
+                        }
                         lastNoteData = currentResponse.MemoryReadout.NoteData;
                     }
                 }
@@ -823,8 +834,9 @@ public class CPHInline
                 {
                     if (songTimer < lastSongTimer)
                     {
-                        // Song was restarted from pause menu, which means lastNoteData is from previous playthrough
-                        CPH.LogDebug(Constants.AppName + "Song has been restarted!");
+                        // When leaving pause, it is either a restart, in that case lastNoteData is from previous playthrough
+                        // or the timer roll back when resuming could lead to unexpected deltas.
+                        // In both cases we want to reset the lastNoteData to the current one to prevent underflows
                         lastNoteData = currentResponse.MemoryReadout.NoteData;
                     }
 
@@ -1045,10 +1057,12 @@ public class CPHInline
 
         if (itsParser.IsRelevantScene())
         {
+            CPH.LogVerbose(Constants.AppName + "Scene is relevant, fetching data from sniffer...");
             string response = itsFetcher.Fetch();
 
             if (response != string.Empty)
             {
+                CPH.LogVerbose(Constants.AppName + "Valid response received.");
                 Response currentResponse = itsFetcher.ExtractResponse(response);
 
                 if (currentResponse != null)
@@ -1093,6 +1107,10 @@ public class CPHInline
                 CPH.LogWarn(Constants.AppName + "Fetching response failed, exiting action.");
                 return false;
             }
+        }
+        else
+        {
+            CPH.LogVerbose(Constants.AppName + "Scene is not relevant, skipping.");
         }
 
         CPH.LogDebug(Constants.AppName + "------- END! -------");
