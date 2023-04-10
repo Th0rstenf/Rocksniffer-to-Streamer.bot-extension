@@ -497,7 +497,7 @@ public class CPHInline
             }
 
             currentGameStage = EvalGameStage(currentResponse.MemoryReadout.GameStage);
-            currentSongTimer = currentResponse.MemoryReadout.SongTimer;          
+            currentSongTimer = currentResponse.MemoryReadout.SongTimer;
         }
 
         public bool IsRelevantScene()
@@ -553,7 +553,7 @@ public class CPHInline
 
         private bool IsSongScene(string scene)
         {
-            return Array.Find<string>(songScenes, s => s.Equals(scene)) != null;
+            return Array.Find(songScenes, s => s.Equals(scene)) != null;
         }
 
         private bool IsNotSongScene(string scene)
@@ -599,7 +599,7 @@ public class CPHInline
                     CPH.SetGlobalVar("songTimer", (int)currentResponse.MemoryReadout.SongTimer, false);
                     CPH.SetGlobalVar("songTimerFormatted", FormatTime((int)currentResponse.MemoryReadout.SongTimer),
                         false);
-                    
+
                     if (lastNoteData != currentResponse.MemoryReadout.NoteData)
                     {
                         CPH.LogVerbose(Constants.AppName + "Note data has changed, saving new values");
@@ -627,12 +627,12 @@ public class CPHInline
                         int additionalNotes;
                         if (lastNoteData != null)
                         {
-                            additionalNotesHit = (currentResponse.MemoryReadout.NoteData.TotalNotesHit -
-                                                        lastNoteData.TotalNotesHit);
-                            additionalNotesMissed = (currentResponse.MemoryReadout.NoteData.TotalNotesMissed -
-                                                           lastNoteData.TotalNotesMissed);
-                            additionalNotes = (currentResponse.MemoryReadout.NoteData.TotalNotes -
-                                                     lastNoteData.TotalNotes);
+                            additionalNotesHit = currentResponse.MemoryReadout.NoteData.TotalNotesHit -
+                                                 lastNoteData.TotalNotesHit;
+                            additionalNotesMissed = currentResponse.MemoryReadout.NoteData.TotalNotesMissed -
+                                                    lastNoteData.TotalNotesMissed;
+                            additionalNotes = currentResponse.MemoryReadout.NoteData.TotalNotes -
+                                              lastNoteData.TotalNotes;
                         }
                         else
                         {
@@ -658,10 +658,12 @@ public class CPHInline
                             CPH.SetGlobalVar("totalNotesMissedSinceLaunch", totalNotesMissedThisStream, false);
                             if (totalNotesThisStream > 0)
                             {
-                                accuracyThisStream = 100.0 * ((double)(totalNotesHitThisStream) / totalNotesThisStream);
+                                accuracyThisStream = 100.0 * ((double)totalNotesHitThisStream / totalNotesThisStream);
                             }
+
                             CPH.SetGlobalVar("accuracySinceLaunch", accuracyThisStream, false);
                         }
+
                         lastNoteData = currentResponse.MemoryReadout.NoteData;
                     }
                 }
@@ -706,7 +708,7 @@ public class CPHInline
                 CPH.LogWarn(Constants.AppName + $"Caught exception trying to identify the arrangement: {e.Message}");
             }
 
-            return (currentArrangement != null);
+            return currentArrangement != null;
         }
 
         public void IdentifySection()
@@ -906,6 +908,7 @@ public class CPHInline
                     newSongSceneIndex = 0;
                     break;
                 }
+
                 newSongSceneIndex = new Random().Next(0, songScenes.Length);
             } while (newSongSceneIndex == currentSongSceneIndex);
 
