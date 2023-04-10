@@ -643,7 +643,7 @@ public class CPHInline
 
                         //Usually additional Notes should never be negative, but could be in case sniffer delivers bad data
                         // In this case we will log a warning, and ignore this data for the accumulation. It should fix itself next cycle
-                        if (additionalNotes < 0 || additionalNotesHit < 0 || additionalNotesMissed < 0)
+                        if ((additionalNotes < 0) || (additionalNotesHit < 0) || (additionalNotesMissed < 0))
                         {
                             CPH.LogWarn(Constants.AppName +
                                         $"additionalNotes is negative! additionalNotes={additionalNotes} additionalNotesHit={additionalNotesHit} additionalNotesMissed={additionalNotesMissed} totalNotesThisStream={totalNotesThisStream} totalNotesHitThisStream={totalNotesHitThisStream} totalNotesMissedThisStream={totalNotesMissedThisStream}");
@@ -772,9 +772,9 @@ public class CPHInline
                 //Checking for zero, as otherwise the start of the song can be mistakenly identified as pause
                 //When ending the song, there are a few responses with the same time before game state switches. Not triggering a pause if it's less than 250ms to end of song.
                 if (currentResponse.MemoryReadout.SongTimer.Equals(0)
-                    || currentResponse.SongDetails.SongLength - currentResponse.MemoryReadout.SongTimer < 0.25)
+                    || ((currentResponse.SongDetails.SongLength - currentResponse.MemoryReadout.SongTimer) < 0.25))
                 {
-                    if (sameTimeCounter++ >= 3)
+                    if ((sameTimeCounter++) >= 3)
                     {
                         isPause = true;
                     }
@@ -858,7 +858,7 @@ public class CPHInline
             {
                 CPH.LogDebug("currentScene IsSongScene");
                 CPH.LogVerbose($"songSceneAutoSwitchMode={songSceneAutoSwitchMode}");
-                if (switchScenes && ItsTimeToSwitchScene() && songScenes.Length > 1)
+                if (switchScenes && ItsTimeToSwitchScene() && (songScenes.Length > 1))
                 {
                     switch (songSceneAutoSwitchMode)
                     {
@@ -939,12 +939,12 @@ public class CPHInline
 
         private void CheckTunerActions()
         {
-            if (currentGameStage == GameStage.InTuner && lastGameStage != GameStage.InTuner)
+            if ((currentGameStage == GameStage.InTuner) && (lastGameStage != GameStage.InTuner))
             {
                 RunAction(Constants.ActionNameEnterTuner);
             }
 
-            if (currentGameStage != GameStage.InTuner && lastGameStage == GameStage.InTuner)
+            if ((currentGameStage != GameStage.InTuner) && (lastGameStage == GameStage.InTuner))
             {
                 RunAction(Constants.ActionNameLeaveTuner);
             }
