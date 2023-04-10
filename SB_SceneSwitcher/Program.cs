@@ -844,7 +844,7 @@ public class CPHInline
             {
                 CPH.LogDebug("currentScene IsSongScene");
                 CPH.LogVerbose($"songSceneAutoSwitchMode={songSceneAutoSwitchMode}");
-                if (switchScenes && ItsTimeToSwitchScene())
+                if (switchScenes && ItsTimeToSwitchScene() && (songScenes.Length > 1))
                 {
                     switch (songSceneAutoSwitchMode)
                     {
@@ -894,7 +894,6 @@ public class CPHInline
                     newSongSceneIndex = 0;
                     break;
                 }
-
                 newSongSceneIndex = new Random().Next(0, songScenes.Length);
             } while (newSongSceneIndex == currentSongSceneIndex);
 
