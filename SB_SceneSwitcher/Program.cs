@@ -497,7 +497,7 @@ public class CPHInline
             }
 
             currentGameStage = EvalGameStage(currentResponse.MemoryReadout.GameStage);
-            currentSongTimer = currentResponse.MemoryReadout.SongTimer;          
+            currentSongTimer = currentResponse.MemoryReadout.SongTimer;
         }
 
         public bool IsRelevantScene()
@@ -553,7 +553,7 @@ public class CPHInline
 
         private bool IsSongScene(string scene)
         {
-            return Array.Find<string>(songScenes, s => s.Equals(scene)) != null;
+            return Array.Find(songScenes, s => s.Equals(scene)) != null;
         }
 
         private bool IsNotSongScene(string scene)
@@ -599,7 +599,7 @@ public class CPHInline
                     CPH.SetGlobalVar("songTimer", (int)currentResponse.MemoryReadout.SongTimer, false);
                     CPH.SetGlobalVar("songTimerFormatted", FormatTime((int)currentResponse.MemoryReadout.SongTimer),
                         false);
-                    
+
                     if (lastNoteData != currentResponse.MemoryReadout.NoteData)
                     {
                         CPH.LogVerbose(Constants.AppName + "Note data has changed, saving new values");
@@ -627,12 +627,12 @@ public class CPHInline
                         int additionalNotes;
                         if (lastNoteData != null)
                         {
-                            additionalNotesHit = (currentResponse.MemoryReadout.NoteData.TotalNotesHit -
-                                                        lastNoteData.TotalNotesHit);
-                            additionalNotesMissed = (currentResponse.MemoryReadout.NoteData.TotalNotesMissed -
-                                                           lastNoteData.TotalNotesMissed);
-                            additionalNotes = (currentResponse.MemoryReadout.NoteData.TotalNotes -
-                                                     lastNoteData.TotalNotes);
+                            additionalNotesHit = currentResponse.MemoryReadout.NoteData.TotalNotesHit -
+                                                 lastNoteData.TotalNotesHit;
+                            additionalNotesMissed = currentResponse.MemoryReadout.NoteData.TotalNotesMissed -
+                                                    lastNoteData.TotalNotesMissed;
+                            additionalNotes = currentResponse.MemoryReadout.NoteData.TotalNotes -
+                                              lastNoteData.TotalNotes;
                         }
                         else
                         {
@@ -643,7 +643,7 @@ public class CPHInline
 
                         //Usually additional Notes should never be negative, but could be in case sniffer delivers bad data
                         // In this case we will log a warning, and ignore this data for the accumulation. It should fix itself next cycle
-                        if ((additionalNotes < 0) || (additionalNotesHit < 0) || (additionalNotesMissed < 0))
+                        if (additionalNotes < 0 || additionalNotesHit < 0 || additionalNotesMissed < 0)
                         {
                             CPH.LogWarn(Constants.AppName +
                                         $"additionalNotes is negative! additionalNotes={additionalNotes} additionalNotesHit={additionalNotesHit} additionalNotesMissed={additionalNotesMissed} totalNotesThisStream={totalNotesThisStream} totalNotesHitThisStream={totalNotesHitThisStream} totalNotesMissedThisStream={totalNotesMissedThisStream}");
@@ -658,10 +658,12 @@ public class CPHInline
                             CPH.SetGlobalVar("totalNotesMissedSinceLaunch", totalNotesMissedThisStream, false);
                             if (totalNotesThisStream > 0)
                             {
-                                accuracyThisStream = 100.0 * ((double)(totalNotesHitThisStream) / totalNotesThisStream);
+                                accuracyThisStream = 100.0 * ((double)totalNotesHitThisStream / totalNotesThisStream);
                             }
+
                             CPH.SetGlobalVar("accuracySinceLaunch", accuracyThisStream, false);
                         }
+
                         lastNoteData = currentResponse.MemoryReadout.NoteData;
                     }
                 }
@@ -706,7 +708,7 @@ public class CPHInline
                 CPH.LogWarn(Constants.AppName + $"Caught exception trying to identify the arrangement: {e.Message}");
             }
 
-            return (currentArrangement != null);
+            return currentArrangement != null;
         }
 
         public void IdentifySection()
@@ -770,9 +772,9 @@ public class CPHInline
                 //Checking for zero, as otherwise the start of the song can be mistakenly identified as pause
                 //When ending the song, there are a few responses with the same time before game state switches. Not triggering a pause if it's less than 250ms to end of song.
                 if (currentResponse.MemoryReadout.SongTimer.Equals(0)
-                    || ((currentResponse.SongDetails.SongLength - currentResponse.MemoryReadout.SongTimer) < 0.25))
+                    || currentResponse.SongDetails.SongLength - currentResponse.MemoryReadout.SongTimer < 0.25)
                 {
-                    if ((sameTimeCounter++) >= 3)
+                    if (sameTimeCounter++ >= 3)
                     {
                         isPause = true;
                     }
@@ -856,7 +858,7 @@ public class CPHInline
             {
                 CPH.LogDebug("currentScene IsSongScene");
                 CPH.LogVerbose($"songSceneAutoSwitchMode={songSceneAutoSwitchMode}");
-                if (switchScenes && ItsTimeToSwitchScene() && (songScenes.Length > 1))
+                if (switchScenes && ItsTimeToSwitchScene() && songScenes.Length > 1)
                 {
                     switch (songSceneAutoSwitchMode)
                     {
@@ -906,6 +908,7 @@ public class CPHInline
                     newSongSceneIndex = 0;
                     break;
                 }
+
                 newSongSceneIndex = new Random().Next(0, songScenes.Length);
             } while (newSongSceneIndex == currentSongSceneIndex);
 
@@ -936,12 +939,12 @@ public class CPHInline
 
         private void CheckTunerActions()
         {
-            if ((currentGameStage == GameStage.InTuner) && (lastGameStage != GameStage.InTuner))
+            if (currentGameStage == GameStage.InTuner && lastGameStage != GameStage.InTuner)
             {
                 RunAction(Constants.ActionNameEnterTuner);
             }
 
-            if ((currentGameStage != GameStage.InTuner) && (lastGameStage == GameStage.InTuner))
+            if (currentGameStage != GameStage.InTuner && lastGameStage == GameStage.InTuner)
             {
                 RunAction(Constants.ActionNameLeaveTuner);
             }
