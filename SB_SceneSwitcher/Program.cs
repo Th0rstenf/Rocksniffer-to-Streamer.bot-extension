@@ -618,7 +618,7 @@ public class CPHInline
                     if (lastNoteData != currentResponse.MemoryReadout.NoteData)
                     {
                         CPH.LogVerbose(Constants.AppName + "Note data has changed, saving new values");
-                        
+
                         CPH.SetGlobalVar("accuracy", currentResponse.MemoryReadout.NoteData.Accuracy, false);
                         CPH.SetGlobalVar("currentHitStreak", currentResponse.MemoryReadout.NoteData.CurrentHitStreak,
                             false);
@@ -629,11 +629,11 @@ public class CPHInline
                         CPH.SetGlobalVar("totalNotesMissed", currentResponse.MemoryReadout.NoteData.TotalNotesMissed,
                             false);
 
-                        UInt32 highestHitStreak = (UInt32)currentResponse.MemoryReadout.NoteData.HighestHitStreak;
+                        int highestHitStreak = currentResponse.MemoryReadout.NoteData.HighestHitStreak;
                         CPH.SetGlobalVar("highestHitStreak", highestHitStreak, false);
                         if (highestHitStreak > highestStreakSinceLaunch)
                         {
-                            highestStreakSinceLaunch = highestHitStreak;
+                            highestStreakSinceLaunch = (uint)highestHitStreak;
                             CPH.SetGlobalVar("highestHitStreakSinceLaunch", highestStreakSinceLaunch, false);
                         }
 
@@ -645,47 +645,46 @@ public class CPHInline
                         CPH.LogVerbose(Constants.AppName + $"New highest hit streak={currentResponse.MemoryReadout.NoteData.HighestHitStreak} last highest hit streak={lastNoteData.HighestHitStreak}");
                         CPH.LogVerbose(Constants.AppName + $"New accuracy={currentResponse.MemoryReadout.NoteData.Accuracy} last accuracy={lastNoteData.Accuracy}");
 
-                        UInt32 additionalNotesHit;
-                        UInt32 additionalNotesMissed;
-                        UInt32 additionalNotes;
+                        int additionalNotesHit;
+                        int additionalNotesMissed;
+                        int additionalNotes;
                         if (lastNoteData != null)
                         {
-                            additionalNotesHit = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesHit -
+                            additionalNotesHit = (currentResponse.MemoryReadout.NoteData.TotalNotesHit -
                                                         lastNoteData.TotalNotesHit);
-                            additionalNotesMissed = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesMissed -
+                            additionalNotesMissed = (currentResponse.MemoryReadout.NoteData.TotalNotesMissed -
                                                            lastNoteData.TotalNotesMissed);
-                            additionalNotes = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotes -
+                            additionalNotes = (currentResponse.MemoryReadout.NoteData.TotalNotes -
                                                      lastNoteData.TotalNotes);
                         }
                         else
                         {
-                            additionalNotesHit = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesHit);
-                            additionalNotesMissed = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotesMissed);
-                            additionalNotes = (uint)(currentResponse.MemoryReadout.NoteData.TotalNotes);
+                            additionalNotesHit = currentResponse.MemoryReadout.NoteData.TotalNotesHit;
+                            additionalNotesMissed = currentResponse.MemoryReadout.NoteData.TotalNotesMissed;
+                            additionalNotes = currentResponse.MemoryReadout.NoteData.TotalNotes;
                         }
 
-                        //Debug
-                        //we need to check whether additional notes are negative
+                        //Usually additional Notes should never be negative, but could be in case sniffer delivers bad data
+                        // In this case we will log a warning, and ignore this data for the accumulation. It should fix itself next cycle
                         if ((additionalNotes < 0) || (additionalNotesHit < 0) || (additionalNotesMissed < 0))
                         {
                             CPH.LogWarn(Constants.AppName +
                                         $"additionalNotes is negative! additionalNotes={additionalNotes} additionalNotesHit={additionalNotesHit} additionalNotesMissed={additionalNotesMissed} totalNotesThisStream={totalNotesThisStream} totalNotesHitThisStream={totalNotesHitThisStream} totalNotesMissedThisStream={totalNotesMissedThisStream}");
                         }
-                      
-
-                        totalNotesHitThisStream += additionalNotesHit;
-                        totalNotesMissedThisStream += additionalNotesMissed;
-                        totalNotesThisStream += additionalNotes;
-                        CPH.SetGlobalVar("totalNotesSinceLaunch", totalNotesThisStream, false);
-                        CPH.SetGlobalVar("totalNotesHitSinceLaunch", totalNotesHitThisStream, false);
-                        CPH.SetGlobalVar("totalNotesMissedSinceLaunch", totalNotesMissedThisStream, false);
-                        if (totalNotesThisStream > 0)
+                        else
                         {
-                            accuracyThisStream = 100.0 * ((double)(totalNotesHitThisStream) / totalNotesThisStream);
+                            totalNotesHitThisStream += (uint)additionalNotesHit;
+                            totalNotesMissedThisStream += (uint)additionalNotesMissed;
+                            totalNotesThisStream += (uint)additionalNotes;
+                            CPH.SetGlobalVar("totalNotesSinceLaunch", totalNotesThisStream, false);
+                            CPH.SetGlobalVar("totalNotesHitSinceLaunch", totalNotesHitThisStream, false);
+                            CPH.SetGlobalVar("totalNotesMissedSinceLaunch", totalNotesMissedThisStream, false);
+                            if (totalNotesThisStream > 0)
+                            {
+                                accuracyThisStream = 100.0 * ((double)(totalNotesHitThisStream) / totalNotesThisStream);
+                            }
+                            CPH.SetGlobalVar("accuracySinceLaunch", accuracyThisStream, false);
                         }
-
-                        CPH.SetGlobalVar("accuracySinceLaunch", accuracyThisStream, false);
-
                         lastNoteData = currentResponse.MemoryReadout.NoteData;
                     }
                 }
@@ -858,9 +857,10 @@ public class CPHInline
                 {
                     if (songTimer < lastSongTimer)
                     {
-                        // Song was restarted from pause menu, which means lastNoteData is from previous playthrough
-                        CPH.LogDebug(Constants.AppName + "Song has been restarted!");
-                    //    lastNoteData = currentResponse.MemoryReadout.NoteData;
+                        // When leaving pause, it is either a restart, in that case lastNoteData is from previous playthrough
+                        // or the timer roll back when resuming could lead to unexpected deltas.
+                        // In both cases we want to reset the lastNoteData to the current one to prevent underflows
+                        lastNoteData = currentResponse.MemoryReadout.NoteData;
                     }
 
                     sameTimeCounter = 0;
