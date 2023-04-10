@@ -827,21 +827,20 @@ public class CPHInline
                 arrangementIdentified = IdentifyArrangement();
                 SaveSongMetaData();
             }
-
+            var songTimer = currentResponse.MemoryReadout.SongTimer;
+            CPH.LogVerbose(Constants.AppName + $"songTimer={songTimer} | lastSongTimer={lastSongTimer}");
+            if (songTimer < lastSongTimer)
+            {
+                // When leaving pause, it is either a restart, in that case lastNoteData is from previous playthrough
+                // or the timer roll back when resuming could lead to unexpected deltas.
+                // In both cases we want to reset the lastNoteData to the current one to prevent underflows
+                lastNoteData = currentResponse.MemoryReadout.NoteData;
+            }
             if (IsNotSongScene(currentScene))
             {
-                var songTimer = currentResponse.MemoryReadout.SongTimer;
-                CPH.LogVerbose(Constants.AppName + $"songTimer={songTimer} | lastSongTimer={lastSongTimer}");
+               
                 if (!songTimer.Equals(lastSongTimer))
-                {
-                    if (songTimer < lastSongTimer)
-                    {
-                        // When leaving pause, it is either a restart, in that case lastNoteData is from previous playthrough
-                        // or the timer roll back when resuming could lead to unexpected deltas.
-                        // In both cases we want to reset the lastNoteData to the current one to prevent underflows
-                        lastNoteData = currentResponse.MemoryReadout.NoteData;
-                    }
-
+                {    
                     sameTimeCounter = 0;
                     if (itsSceneInterActor.IsNotInCooldown())
                     {
