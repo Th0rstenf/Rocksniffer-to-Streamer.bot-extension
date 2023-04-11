@@ -379,6 +379,22 @@ public class CPHInline
 
         public void Init()
         {
+            UpdateConfig();
+
+            totalNotesThisStream = 0;
+            totalNotesHitThisStream = 0;
+            totalNotesMissedThisStream = 0;
+            accuracyThisStream = 0;
+            highestStreakSinceLaunch = 0;
+            currentSectionIndex = -1;
+            currentSongSceneIndex = 0;
+            lastSectionType = currentSectionType = SectionType.Default;
+            lastGameStage = currentGameStage = GameStage.Menu;
+            sameTimeCounter = 0;
+        }
+
+        public void UpdateConfig()
+        {
             menuScene = GetGlobalVarAsString(Constants.GlobalVarNameMenuScene);
             songScenes = GetGlobalVarAsStringArray(Constants.GlobalVarNameMenuSongScenes);
             songPausedScene = GetGlobalVarAsString(Constants.GlobalVarNamePauseScene);
@@ -391,17 +407,6 @@ public class CPHInline
             sceneSwitchCooldownPeriodInSeconds = GetGlobalVarSceneSwitchCooldownPeriod();
             itsBehavior = GetGlobalVarBehavior();
             blackListedScenes = GetGlobalVarBlackListedScenes();
-
-            totalNotesThisStream = 0;
-            totalNotesHitThisStream = 0;
-            totalNotesMissedThisStream = 0;
-            accuracyThisStream = 0;
-            highestStreakSinceLaunch = 0;
-            currentSectionIndex = -1;
-            currentSongSceneIndex = 0;
-            lastSectionType = currentSectionType = SectionType.Default;
-            lastGameStage = currentGameStage = GameStage.Menu;
-            sameTimeCounter = 0;
         }
 
         private string GetGlobalVarAsString(string name)
@@ -583,12 +588,6 @@ public class CPHInline
         {
             return Array.Find(songScenes, s => s.Equals(scene)) != null;
         }
-
-        private bool IsNotSongScene(string scene)
-        {
-            return !IsSongScene(scene);
-        }
-
 
         private void SaveSongMetaData()
         {
@@ -866,7 +865,7 @@ public class CPHInline
                 lastNoteData = currentResponse.MemoryReadout.NoteData;
             }
 
-            if (IsNotSongScene(currentScene))
+            if (IsSongScene(currentScene) == false)
             {
                 if (!songTimer.Equals(lastSongTimer))
                 {
@@ -1052,10 +1051,7 @@ public class CPHInline
     public void Init()
     {
         CPH.LogInfo($"{Constants.AppName}!!! Initialising RockSniffer to SB plugin !!!");
-        // Init happens before arguments are passed, therefore temporary globals are used.
-        snifferIp = GetSnifferIp();
-        // TODO in case snifferIp is null, no need to do anything after this as, Sniffer could be not connected/used.
-        snifferPort = GetSnifferPort();
+        UpdateConfig();
         CPH.LogInfo($"{Constants.AppName}Sniffer ip configured as {snifferIp}:{snifferPort}");
         itsSceneInteractor = new SceneInteractor(CPH);
         itsFetcher = new ResponseFetcher(CPH, snifferIp, snifferPort);
@@ -1064,6 +1060,15 @@ public class CPHInline
         itsSceneInteractor.SetCooldownPeriod(itsParser.GetSceneSwitchCooldownPeriodInSeconds());
 
         currentScene = "";
+    }
+
+    private void UpdateConfig()
+    {
+        // Init happens before arguments are passed, therefore temporary globals are used.
+        snifferIp = GetSnifferIp();
+        // TODO in case snifferIp is null, no need to do anything after this as, Sniffer could be not connected/used.
+        snifferPort = GetSnifferPort();
+        itsParser.UpdateConfig();
     }
 
     private string GetSnifferIp()
@@ -1086,6 +1091,7 @@ public class CPHInline
         CPH.LogDebug(Constants.AppName + "------- START! -------");
 
         UpdateCurrentScene();
+        UpdateConfig();
 
         if (itsParser.IsRelevantScene())
         {
