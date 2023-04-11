@@ -311,9 +311,13 @@ public class CPHInline
         struct SongScene
         {
             public string Name;
+
             public enum Period
-            { FIXED
-            ,RANGE}
+            {
+                FIXED,
+                RANGE
+            }
+
             public Period period;
             public int minimumPeriod;
             public int currentSwitchPeriod;
@@ -403,7 +407,7 @@ public class CPHInline
             menuScene = GetGlobalVarAsString(Constants.GlobalVarNameMenuScene);
             string[] songScenesRaw = GetGlobalVarAsStringArray(Constants.GlobalVarNameMenuSongScenes);
             songScenes = new SongScene[songScenesRaw.Length];
-            for (int i = 0;i < songScenesRaw.Length; ++i)
+            for (int i = 0; i < songScenesRaw.Length; ++i)
             {
                 if (songScenesRaw[i].Contains("#"))
                 {
@@ -421,7 +425,6 @@ public class CPHInline
                         songScenes[i].period = SongScene.Period.FIXED;
                         songScenes[i].currentSwitchPeriod = int.Parse(temp[1]);
                     }
-
                 }
                 else
                 {
@@ -430,6 +433,7 @@ public class CPHInline
                     songScenes[i].currentSwitchPeriod = defaultSceneSwitchPeriodInSeconds;
                 }
             }
+
             songPausedScene = GetGlobalVarAsString(Constants.GlobalVarNamePauseScene);
 
             switchScenes = GetGlobalVarAsBool(Constants.GlobalVarNameSwitchScenes);
@@ -606,10 +610,10 @@ public class CPHInline
 
         private bool IsSongScene(string scene)
         {
-           foreach (SongScene s in songScenes)
+            foreach (SongScene s in songScenes)
                 if (s.Name.Equals(scene))
                     return true;
-           return false;
+            return false;
         }
 
         private void SaveSongMetaData()
@@ -695,7 +699,8 @@ public class CPHInline
                         // In this case we will log a warning, and ignore this data for the accumulation. It should fix itself next cycle
                         if ((additionalNotes < 0) || (additionalNotesHit < 0) || (additionalNotesMissed < 0))
                         {
-                            CPH.LogWarn(Constants.AppName + "Leaving pause lead to inconsistency in note data. they will be ignored for accumulation");
+                            CPH.LogWarn(Constants.AppName +
+                                        "Leaving pause lead to inconsistency in note data. they will be ignored for accumulation");
                             CPH.LogWarn(Constants.AppName +
                                         $"additionalNotes is negative! additionalNotes={additionalNotes} additionalNotesHit={additionalNotesHit} additionalNotesMissed={additionalNotesMissed} totalNotesThisStream={totalNotesThisStream} totalNotesHitThisStream={totalNotesHitThisStream} totalNotesMissedThisStream={totalNotesMissedThisStream}");
                         }
@@ -881,7 +886,7 @@ public class CPHInline
 
             var songTimer = currentResponse.MemoryReadout.SongTimer;
             CPH.LogVerbose(Constants.AppName + $"songTimer={songTimer} | lastSongTimer={lastSongTimer}");
-            
+
 
             if (IsSongScene(currentScene) == false)
             {
@@ -931,7 +936,8 @@ public class CPHInline
 
         private bool ItsTimeToSwitchScene()
         {
-            return itsSceneInterActor.GetTimeSinceLastSceneChange() >= songScenes[currentSongSceneIndex].currentSwitchPeriod;
+            return itsSceneInterActor.GetTimeSinceLastSceneChange() >=
+                   songScenes[currentSongSceneIndex].currentSwitchPeriod;
         }
 
         private void DoSequentialSceneSwitch()
@@ -943,7 +949,6 @@ public class CPHInline
 
             itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex].Name, switchScenes);
             songScenes[currentSongSceneIndex].RandomizePeriodIfNecessary();
-            
         }
 
         private void DoRandomSceneSwitch()
@@ -1079,7 +1084,7 @@ public class CPHInline
         itsFetcher = new ResponseFetcher(CPH, snifferIp, snifferPort);
         itsParser = new ResponseParser(CPH, itsSceneInteractor);
         itsParser.Init();
-        
+
 
         currentScene = "";
     }
