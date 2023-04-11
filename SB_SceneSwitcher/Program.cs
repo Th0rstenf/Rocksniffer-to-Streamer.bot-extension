@@ -322,7 +322,7 @@ public class CPHInline
         private Arrangement? currentArrangement = null!;
         private int currentSectionIndex;
         private int currentSongSceneIndex;
-        private int sceneSwitchPeriodInSeconds = 5;
+        private int defaultSceneSwitchPeriodInSeconds = 5;
 
         private Response currentResponse = null!;
         private NoteData lastNoteData = null!;
@@ -388,7 +388,7 @@ public class CPHInline
             songSceneAutoSwitchMode = GetGlobalVarSongSceneAutoSwitchMode();
             reactingToSections = GetGlobalVarAsBool(Constants.GlobalVarNameSectionActions);
 
-            sceneSwitchPeriodInSeconds = GetGlobalVarSceneSwitchPeriod();
+            defaultSceneSwitchPeriodInSeconds = GetGlobalVarSceneSwitchPeriod();
 
             itsBehavior = GetGlobalVarBehavior();
             blackListedScenes = GetGlobalVarBlackListedScenes();
@@ -887,7 +887,7 @@ public class CPHInline
 
         private bool ItsTimeToSwitchScene()
         {
-            return itsSceneInterActor.GetTimeSinceLastSceneChange() >= sceneSwitchPeriodInSeconds;
+            return itsSceneInterActor.GetTimeSinceLastSceneChange() >= defaultSceneSwitchPeriodInSeconds;
         }
 
         private void DoSequentialSceneSwitch()
