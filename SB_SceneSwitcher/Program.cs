@@ -857,7 +857,7 @@ public class CPHInline
 
             var songTimer = currentResponse.MemoryReadout.SongTimer;
             CPH.LogVerbose(Constants.AppName + $"songTimer={songTimer} | lastSongTimer={lastSongTimer}");
-            
+
 
             if (!IsSongScene(currentScene))
             {
@@ -1061,7 +1061,7 @@ public class CPHInline
         itsParser = new ResponseParser(CPH, itsSceneInteractor);
         itsParser.Init();
         itsSceneInteractor.SetCooldownPeriod(itsParser.GetSceneSwitchCooldownPeriodInSeconds());
-        
+
 
         currentScene = "";
     }
