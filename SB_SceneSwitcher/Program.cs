@@ -857,13 +857,7 @@ public class CPHInline
 
             var songTimer = currentResponse.MemoryReadout.SongTimer;
             CPH.LogVerbose(Constants.AppName + $"songTimer={songTimer} | lastSongTimer={lastSongTimer}");
-            if (songTimer < lastSongTimer)
-            {
-                // When leaving pause, it is either a restart, in that case lastNoteData is from previous playthrough
-                // or the timer roll back when resuming could lead to unexpected deltas.
-                // In both cases we want to reset the lastNoteData to the current one to prevent underflows
-                lastNoteData = currentResponse.MemoryReadout.NoteData;
-            }
+            
 
             if (!IsSongScene(currentScene))
             {
@@ -885,6 +879,15 @@ public class CPHInline
             {
                 CPH.LogDebug("currentScene IsSongScene");
                 CPH.LogVerbose($"songSceneAutoSwitchMode={songSceneAutoSwitchMode}");
+
+                if (songTimer < lastSongTimer)
+                {
+                    // When leaving pause, it is either a restart, in that case lastNoteData is from previous playthrough
+                    // or the timer roll back when resuming could lead to unexpected deltas.
+                    // In both cases we want to reset the lastNoteData to the current one to prevent underflows
+                    lastNoteData = currentResponse.MemoryReadout.NoteData;
+                }
+
                 if (switchScenes && ItsTimeToSwitchScene() && (songScenes.Length > 1))
                 {
                     switch (songSceneAutoSwitchMode)
@@ -1058,6 +1061,7 @@ public class CPHInline
         itsParser = new ResponseParser(CPH, itsSceneInteractor);
         itsParser.Init();
         itsSceneInteractor.SetCooldownPeriod(itsParser.GetSceneSwitchCooldownPeriodInSeconds());
+        
 
         currentScene = "";
     }
@@ -1068,7 +1072,6 @@ public class CPHInline
         snifferIp = GetSnifferIp();
         // TODO in case snifferIp is null, no need to do anything after this as, Sniffer could be not connected/used.
         snifferPort = GetSnifferPort();
-        itsParser.UpdateConfig();
     }
 
     private string GetSnifferIp()
@@ -1092,6 +1095,7 @@ public class CPHInline
 
         UpdateCurrentScene();
         UpdateConfig();
+        itsParser.UpdateConfig();
 
         if (itsParser.IsRelevantScene())
         {
