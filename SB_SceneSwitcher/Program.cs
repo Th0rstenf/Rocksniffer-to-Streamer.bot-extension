@@ -308,6 +308,17 @@ public class CPHInline
 
     public class ResponseParser
     {
+        struct SongScene
+        {
+            public string Name;
+            public enum Period
+            { FIXED
+            ,RANGE}
+            public Period period;
+            public int minimumPeriod;
+            public int maximumPeriod;
+        }
+
         private GameStage currentGameStage;
         private GameStage lastGameStage;
         private SectionType currentSectionType;
