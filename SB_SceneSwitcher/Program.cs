@@ -135,7 +135,7 @@ public class CPHInline
             Constants.AppName +
             "No stream app connection available! Please set and connect either to OBS or SLOBS under 'Stream Apps' in SB!";
 
-        enum BroadcastingSoftware
+        enum StreamApp
         {
             OBS,
             SLOBS
@@ -144,7 +144,7 @@ public class CPHInline
         private int cooldownPeriod;
         private DateTime lastSceneChange;
         private IInlineInvokeProxy CPH;
-        private BroadcastingSoftware? itsBroadcastingSoftware;
+        private StreamApp? _streamApp;
 
         public SceneInteractor(IInlineInvokeProxy cph)
         {
@@ -153,33 +153,33 @@ public class CPHInline
             lastSceneChange = DateTime.Now;
         }
 
-        public void DetermineAndSetConnectedBroadcastingSoftware()
+        private void DetermineAndSetConnectedStreamApp()
         {
             if (CPH.ObsIsConnected())
             {
-                itsBroadcastingSoftware = BroadcastingSoftware.OBS;
-                CPH.LogDebug(Constants.AppName + $"Connected to BroadcastingSoftware {BroadcastingSoftware.OBS}");
+                _streamApp = StreamApp.OBS;
+                CPH.LogDebug(Constants.AppName + $"Connected to {StreamApp.OBS}");
             }
             else if (CPH.SlobsIsConnected())
             {
-                itsBroadcastingSoftware = BroadcastingSoftware.SLOBS;
-                CPH.LogDebug(Constants.AppName + $"Connected to BroadcastingSoftware {BroadcastingSoftware.SLOBS}");
+                _streamApp = StreamApp.SLOBS;
+                CPH.LogDebug(Constants.AppName + $"Connected to {StreamApp.SLOBS}");
             }
             else
             {
-                itsBroadcastingSoftware = null;
+                _streamApp = null;
                 CPH.LogDebug(MessageNoStreamAppConnectionAvailable);
             }
         }
 
         public string GetCurrentScene()
         {
-            DetermineAndSetConnectedBroadcastingSoftware();
+            DetermineAndSetConnectedStreamApp();
 
-            return itsBroadcastingSoftware switch
+            return _streamApp switch
             {
-                BroadcastingSoftware.OBS => CPH.ObsGetCurrentScene(),
-                BroadcastingSoftware.SLOBS => CPH.SlobsGetCurrentScene(),
+                StreamApp.OBS => CPH.ObsGetCurrentScene(),
+                StreamApp.SLOBS => CPH.SlobsGetCurrentScene(),
                 _ => ""
             };
         }
@@ -188,13 +188,13 @@ public class CPHInline
         {
             if (switchScenes && IsNotInCooldown())
             {
-                switch (itsBroadcastingSoftware)
+                switch (_streamApp)
                 {
-                    case BroadcastingSoftware.OBS:
+                    case StreamApp.OBS:
                         CPH.LogInfo(Constants.AppName + $"Switching to OBS scene: {scene}");
                         CPH.ObsSetScene(scene);
                         break;
-                    case BroadcastingSoftware.SLOBS:
+                    case StreamApp.SLOBS:
                         CPH.LogInfo(Constants.AppName + $"Switching to SLOBS scene: {scene}");
                         CPH.SlobsSetScene(scene);
                         break;
@@ -226,7 +226,7 @@ public class CPHInline
         }
     }
 
-    public class ResponseFetcher
+    private class ResponseFetcher
     {
         private IInlineInvokeProxy CPH;
         private readonly string ip;
@@ -641,7 +641,7 @@ public class CPHInline
                             additionalNotes = currentResponse.MemoryReadout.NoteData.TotalNotes;
                         }
 
-                        //Usually additional Notes should never be negative, but could be in case sniffer delivers bad data
+                        // Usually additional Notes should never be negative, but could be in case sniffer delivers bad data
                         // In this case we will log a warning, and ignore this data for the accumulation. It should fix itself next cycle
                         if ((additionalNotes < 0) || (additionalNotesHit < 0) || (additionalNotesMissed < 0))
                         {
@@ -815,7 +815,7 @@ public class CPHInline
             lastSongTimer = currentResponse.MemoryReadout.SongTimer;
         }
 
-        public void CheckGameStageSong()
+        private void CheckGameStageSong()
         {
             if (lastGameStage != GameStage.InSong)
             {
@@ -827,6 +827,7 @@ public class CPHInline
                 arrangementIdentified = IdentifyArrangement();
                 SaveSongMetaData();
             }
+
             var songTimer = currentResponse.MemoryReadout.SongTimer;
             CPH.LogVerbose(Constants.AppName + $"songTimer={songTimer} | lastSongTimer={lastSongTimer}");
             if (songTimer < lastSongTimer)
@@ -836,11 +837,11 @@ public class CPHInline
                 // In both cases we want to reset the lastNoteData to the current one to prevent underflows
                 lastNoteData = currentResponse.MemoryReadout.NoteData;
             }
+
             if (IsNotSongScene(currentScene))
             {
-               
                 if (!songTimer.Equals(lastSongTimer))
-                {    
+                {
                     sameTimeCounter = 0;
                     if (itsSceneInterActor.IsNotInCooldown())
                     {
