@@ -407,15 +407,15 @@ public class CPHInline
             menuScene = GetGlobalVarAsString(Constants.GlobalVarNameMenuScene);
             string[] songScenesRaw = GetGlobalVarAsStringArray(Constants.GlobalVarNameMenuSongScenes);
             songScenes = new SongScene[songScenesRaw.Length];
-            for (int i = 0; i < songScenesRaw.Length; ++i)
+            for (var i = 0; i < songScenesRaw.Length; ++i)
             {
                 if (songScenesRaw[i].Contains("#"))
                 {
-                    string[] temp = songScenesRaw[i].Split("#");
+                    string[] temp = songScenesRaw[i].Split('#');
                     songScenes[i].Name = temp[0];
                     if (temp[1].Contains("-"))
                     {
-                        string[] temp2 = temp[1].Split("-");
+                        string[] temp2 = temp[1].Split('-');
                         songScenes[i].period = SongScene.Period.RANGE;
                         songScenes[i].minimumPeriod = int.Parse(temp2[0]);
                         songScenes[i].maximumPeriod = int.Parse(temp2[1]);
