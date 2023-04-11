@@ -319,7 +319,7 @@ public class CPHInline
             public int currentSwitchPeriod;
             public int maximumPeriod;
 
-            public void randomizePeriodIfNecessary()
+            public void RandomizePeriodIfNecessary()
             {
                 if (period == SongScene.Period.RANGE)
                 {
@@ -949,7 +949,7 @@ public class CPHInline
             }
 
             itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex].Name, switchScenes);
-            songScenes[currentSongSceneIndex].randomizePeriodIfNecessary();
+            songScenes[currentSongSceneIndex].RandomizePeriodIfNecessary();
             
         }
 
@@ -969,7 +969,7 @@ public class CPHInline
 
             currentSongSceneIndex = newSongSceneIndex;
             itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex].Name, switchScenes);
-            songScenes[currentSongSceneIndex].randomizePeriodIfNecessary();
+            songScenes[currentSongSceneIndex].RandomizePeriodIfNecessary();
         }
 
         private void RunAction(string actionName)
