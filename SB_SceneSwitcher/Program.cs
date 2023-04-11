@@ -829,13 +829,7 @@ public class CPHInline
 
             var songTimer = currentResponse.MemoryReadout.SongTimer;
             CPH.LogVerbose(Constants.AppName + $"songTimer={songTimer} | lastSongTimer={lastSongTimer}");
-            if (songTimer < lastSongTimer)
-            {
-                // When leaving pause, it is either a restart, in that case lastNoteData is from previous playthrough
-                // or the timer roll back when resuming could lead to unexpected deltas.
-                // In both cases we want to reset the lastNoteData to the current one to prevent underflows
-                lastNoteData = currentResponse.MemoryReadout.NoteData;
-            }
+            
 
             if (IsSongScene(currentScene) == false)
             {
@@ -857,6 +851,15 @@ public class CPHInline
             {
                 CPH.LogDebug("currentScene IsSongScene");
                 CPH.LogVerbose($"songSceneAutoSwitchMode={songSceneAutoSwitchMode}");
+
+                if (songTimer < lastSongTimer)
+                {
+                    // When leaving pause, it is either a restart, in that case lastNoteData is from previous playthrough
+                    // or the timer roll back when resuming could lead to unexpected deltas.
+                    // In both cases we want to reset the lastNoteData to the current one to prevent underflows
+                    lastNoteData = currentResponse.MemoryReadout.NoteData;
+                }
+
                 if (switchScenes && ItsTimeToSwitchScene() && (songScenes.Length > 1))
                 {
                     switch (songSceneAutoSwitchMode)
