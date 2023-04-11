@@ -12,10 +12,11 @@ public struct Constants
     public const string GlobalVarNameMenuScene = "menuScene";
     public const string GlobalVarNameMenuSongScenes = "songScenes";
     public const string GlobalVarNamePauseScene = "pauseScene";
-    public const string GlobalVarNameSongSceneAutoSwitchMode = "songSceneAutoSwitchMode";
     public const string GlobalVarNameSwitchScenes = "switchScenes";
-    public const string GlobalVarNameSectionActions = "sectionActions";
     public const string GlobalVarNameSceneSwitchPeriod = "sceneSwitchPeriod";
+    public const string GlobalVarNameSceneSwitchCooldownPeriod = "sceneSwitchCooldownPeriod";
+    public const string GlobalVarNameSongSceneAutoSwitchMode = "songSceneAutoSwitchMode";
+    public const string GlobalVarNameSectionActions = "sectionActions";
     public const string GlobalVarNameBehavior = "behavior";
     public const string GlobalVarNameBlackList = "blackList";
 
@@ -27,6 +28,9 @@ public struct Constants
     public const string ActionNameLeaveTuner = "leaveTuner";
 
     public const string SnifferPortDefault = "9938";
+
+    public const int DefaultSceneSwitchPeriod = 5;
+    public const int DefaultSceneSwitchCooldownPeriod = 3;
 }
 
 internal enum SongSceneAutoSwitchMode
@@ -149,8 +153,13 @@ public class CPHInline
         public SceneInteractor(IInlineInvokeProxy cph)
         {
             CPH = cph;
-            cooldownPeriod = 3;
+            cooldownPeriod = Constants.DefaultSceneSwitchCooldownPeriod;
             lastSceneChange = DateTime.Now;
+        }
+
+        public void SetCooldownPeriod(int cooldown)
+        {
+            cooldownPeriod = cooldown;
         }
 
         private void DetermineAndSetConnectedStreamApp()
@@ -210,12 +219,12 @@ public class CPHInline
         public bool IsNotInCooldown()
         {
             var timeSinceLastSceneChange = GetTimeSinceLastSceneChange();
-            var isNotInCooldown = !(timeSinceLastSceneChange < cooldownPeriod);
-            CPH.LogVerbose(
-                $"{Constants.AppName}isNotInCooldown={isNotInCooldown} - " +
-                $"timeSinceLastSceneChange={timeSinceLastSceneChange} " +
-                $"cooldownPeriod={cooldownPeriod} ");
-            return isNotInCooldown;
+            var notInCooldown = !(timeSinceLastSceneChange < cooldownPeriod);
+            CPH.LogDebug($"Is in cooldown={!notInCooldown}");
+            CPH.LogVerbose($"{Constants.AppName}isNotInCooldown={notInCooldown} - " +
+                           $"timeSinceLastSceneChange={timeSinceLastSceneChange} " +
+                           $"cooldownPeriod={cooldownPeriod} ");
+            return notInCooldown;
         }
 
         public double GetTimeSinceLastSceneChange()
@@ -322,7 +331,8 @@ public class CPHInline
         private Arrangement? currentArrangement = null!;
         private int currentSectionIndex;
         private int currentSongSceneIndex;
-        private int sceneSwitchPeriodInSeconds = 5;
+        private int sceneSwitchPeriodInSeconds = Constants.DefaultSceneSwitchPeriod;
+        private int sceneSwitchCooldownPeriodInSeconds = Constants.DefaultSceneSwitchCooldownPeriod;
 
         private Response currentResponse = null!;
         private NoteData lastNoteData = null!;
@@ -362,6 +372,11 @@ public class CPHInline
             currentScene = scene;
         }
 
+        public int GetSceneSwitchCooldownPeriodInSeconds()
+        {
+            return sceneSwitchCooldownPeriodInSeconds;
+        }
+
         public void Init()
         {
             menuScene = GetGlobalVarAsString(Constants.GlobalVarNameMenuScene);
@@ -373,7 +388,7 @@ public class CPHInline
             reactingToSections = GetGlobalVarAsBool(Constants.GlobalVarNameSectionActions);
 
             sceneSwitchPeriodInSeconds = GetGlobalVarSceneSwitchPeriod();
-
+            sceneSwitchCooldownPeriodInSeconds = GetGlobalVarSceneSwitchCooldownPeriod();
             itsBehavior = GetGlobalVarBehavior();
             blackListedScenes = GetGlobalVarBlackListedScenes();
 
@@ -459,13 +474,26 @@ public class CPHInline
             };
         }
 
+        private int GetGlobalVarAsInt(string name, int def = 0)
+        {
+            var globalVar = CPH.GetGlobalVar<string>(name);
+            return string.IsNullOrEmpty(globalVar) ? def : int.Parse(globalVar);
+        }
+
         private int GetGlobalVarSceneSwitchPeriod()
         {
-            var sceneSwitchPeriodVar = CPH.GetGlobalVar<string>(Constants.GlobalVarNameSceneSwitchPeriod);
-            // how to parse string to int
-            var sceneSwitchPeriod = string.IsNullOrEmpty(sceneSwitchPeriodVar) ? 5 : int.Parse(sceneSwitchPeriodVar);
-            CPH.LogInfo($"{Constants.AppName}{nameof(sceneSwitchPeriod)}={sceneSwitchPeriod}");
-            return sceneSwitchPeriod;
+            var globalVar = GetGlobalVarAsInt(Constants.GlobalVarNameSceneSwitchPeriod,
+                Constants.DefaultSceneSwitchPeriod);
+            CPH.LogInfo($"{Constants.AppName}{Constants.GlobalVarNameSceneSwitchPeriod}={globalVar}");
+            return globalVar;
+        }
+
+        private int GetGlobalVarSceneSwitchCooldownPeriod()
+        {
+            var globalVar = GetGlobalVarAsInt(Constants.GlobalVarNameSceneSwitchCooldownPeriod,
+                Constants.DefaultSceneSwitchCooldownPeriod);
+            CPH.LogInfo($"{Constants.AppName}{Constants.GlobalVarNameSceneSwitchCooldownPeriod}={globalVar}");
+            return globalVar;
         }
 
         private string[] GetGlobalVarBlackListedScenes()
@@ -764,7 +792,7 @@ public class CPHInline
             }
         }
 
-        public bool IsInPause()
+        private bool IsInPause()
         {
             bool isPause = false;
             if (currentResponse.MemoryReadout.SongTimer.Equals(lastSongTimer))
@@ -1033,6 +1061,7 @@ public class CPHInline
         itsFetcher = new ResponseFetcher(CPH, snifferIp, snifferPort);
         itsParser = new ResponseParser(CPH, itsSceneInteractor);
         itsParser.Init();
+        itsSceneInteractor.SetCooldownPeriod(itsParser.GetSceneSwitchCooldownPeriodInSeconds());
 
         currentScene = "";
     }
