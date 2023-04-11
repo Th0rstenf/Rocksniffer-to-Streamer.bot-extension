@@ -695,6 +695,7 @@ public class CPHInline
                         // In this case we will log a warning, and ignore this data for the accumulation. It should fix itself next cycle
                         if ((additionalNotes < 0) || (additionalNotesHit < 0) || (additionalNotesMissed < 0))
                         {
+                            CPH.LogWarn(Constants.AppName + "Leaving pause lead to inconsistency in note data. they will be ignored for accumulation");
                             CPH.LogWarn(Constants.AppName +
                                         $"additionalNotes is negative! additionalNotes={additionalNotes} additionalNotesHit={additionalNotesHit} additionalNotesMissed={additionalNotesMissed} totalNotesThisStream={totalNotesThisStream} totalNotesHitThisStream={totalNotesHitThisStream} totalNotesMissedThisStream={totalNotesMissedThisStream}");
                         }
@@ -902,14 +903,6 @@ public class CPHInline
             {
                 CPH.LogDebug("currentScene IsSongScene");
                 CPH.LogVerbose($"songSceneAutoSwitchMode={songSceneAutoSwitchMode}");
-
-                if (songTimer < lastSongTimer)
-                {
-                    // When leaving pause, it is either a restart, in that case lastNoteData is from previous playthrough
-                    // or the timer roll back when resuming could lead to unexpected deltas.
-                    // In both cases we want to reset the lastNoteData to the current one to prevent underflows
-                    lastNoteData = currentResponse.MemoryReadout.NoteData;
-                }
 
                 if (switchScenes && ItsTimeToSwitchScene() && (songScenes.Length > 1))
                 {
