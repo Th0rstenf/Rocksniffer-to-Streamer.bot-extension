@@ -561,12 +561,6 @@ public class CPHInline
             return Array.Find(songScenes, s => s.Equals(scene)) != null;
         }
 
-        private bool IsNotSongScene(string scene)
-        {
-            return !IsSongScene(scene);
-        }
-
-
         private void SaveSongMetaData()
         {
             try
@@ -843,7 +837,7 @@ public class CPHInline
                 lastNoteData = currentResponse.MemoryReadout.NoteData;
             }
 
-            if (IsNotSongScene(currentScene))
+            if (IsSongScene(currentScene) == false)
             {
                 if (!songTimer.Equals(lastSongTimer))
                 {
