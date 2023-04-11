@@ -345,7 +345,7 @@ public class CPHInline
         private UInt32 highestStreakSinceLaunch;
 
         private string menuScene = null!;
-        private string[]? songScenes = null!;
+        private SongScene[]? songScenes = null!;
         private string songPausedScene = null!;
 
         private int sameTimeCounter;
@@ -392,7 +392,35 @@ public class CPHInline
         public void UpdateConfig()
         {
             menuScene = GetGlobalVarAsString(Constants.GlobalVarNameMenuScene);
-            songScenes = GetGlobalVarAsStringArray(Constants.GlobalVarNameMenuSongScenes);
+            string[] songScenesRaw = GetGlobalVarAsStringArray(Constants.GlobalVarNameMenuSongScenes);
+            songScenes = new SongScene[songScenesRaw.Length];
+            for (int i = 0;i < songScenesRaw.Length; ++i)
+            {
+                if (songScenesRaw[i].Contains("#"))
+                {
+                    string[] temp = songScenesRaw[i].Split("#");
+                    songScenes[i].Name = temp[0];
+                    if (temp[1].Contains("-"))
+                    {
+                        string[] temp2 = temp[1].Split("-");
+                        songScenes[i].period = SongScene.Period.RANGE;
+                        songScenes[i].minimumPeriod = int.Parse(temp2[0]);
+                        songScenes[i].maximumPeriod = int.Parse(temp2[1]);
+                    }
+                    else
+                    {
+                        songScenes[i].period = SongScene.Period.FIXED;
+                        songScenes[i].minimumPeriod = songScenes[i].maximumPeriod = int.Parse(temp[1]);
+                    }
+
+                }
+                else
+                {
+                    songScenes[i].Name = songScenesRaw[i];
+                    songScenes[i].period = SongScene.Period.FIXED;
+                    songScenes[i].minimumPeriod = songScenes[i].maximumPeriod = defaultSceneSwitchPeriodInSeconds;
+                }
+            }
             songPausedScene = GetGlobalVarAsString(Constants.GlobalVarNamePauseScene);
 
             switchScenes = GetGlobalVarAsBool(Constants.GlobalVarNameSwitchScenes);
@@ -569,7 +597,10 @@ public class CPHInline
 
         private bool IsSongScene(string scene)
         {
-            return Array.Find(songScenes, s => s.Equals(scene)) != null;
+           foreach (SongScene s in songScenes)
+                if (s.Name.Equals(scene))
+                    return true;
+           return false;
         }
 
         private void SaveSongMetaData()
@@ -854,7 +885,7 @@ public class CPHInline
                             RunAction(Constants.ActionNameLeavePause);
                         }
 
-                        itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex], switchScenes);
+                        itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex].Name, switchScenes);
                     }
                 }
             }
@@ -908,7 +939,7 @@ public class CPHInline
                 currentSongSceneIndex = 0;
             }
 
-            itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex], switchScenes);
+            itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex].Name, switchScenes);
         }
 
         private void DoRandomSceneSwitch()
@@ -926,7 +957,7 @@ public class CPHInline
             } while (newSongSceneIndex == currentSongSceneIndex);
 
             currentSongSceneIndex = newSongSceneIndex;
-            itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex], switchScenes);
+            itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex].Name, switchScenes);
         }
 
         private void RunAction(string actionName)
