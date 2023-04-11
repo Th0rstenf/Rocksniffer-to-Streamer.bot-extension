@@ -177,7 +177,7 @@ public class CPHInline
             else
             {
                 _streamApp = null;
-                CPH.LogDebug(MessageNoStreamAppConnectionAvailable);
+                CPH.LogWarn(MessageNoStreamAppConnectionAvailable);
             }
         }
 
@@ -208,7 +208,7 @@ public class CPHInline
                         CPH.SlobsSetScene(scene);
                         break;
                     default:
-                        CPH.LogDebug(MessageNoStreamAppConnectionAvailable);
+                        CPH.LogWarn(MessageNoStreamAppConnectionAvailable);
                         break;
                 }
 
