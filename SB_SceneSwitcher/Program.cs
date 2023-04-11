@@ -221,7 +221,7 @@ public class CPHInline
         public double GetTimeSinceLastSceneChange()
         {
             var timeSinceLastSceneChange = DateTime.Now.Subtract(lastSceneChange).TotalSeconds;
-            CPH.LogVerbose($"timeSinceLastSceneChange={timeSinceLastSceneChange}");
+            CPH.LogVerbose($"{Constants.AppName}timeSinceLastSceneChange={timeSinceLastSceneChange}");
             return timeSinceLastSceneChange;
         }
     }
@@ -887,8 +887,7 @@ public class CPHInline
             var songTimer = currentResponse.MemoryReadout.SongTimer;
             CPH.LogVerbose(Constants.AppName + $"songTimer={songTimer} | lastSongTimer={lastSongTimer}");
 
-
-            if (IsSongScene(currentScene) == false)
+            if (!IsSongScene(currentScene))
             {
                 if (!songTimer.Equals(lastSongTimer))
                 {
@@ -906,8 +905,8 @@ public class CPHInline
             }
             else if (IsSongScene(currentScene))
             {
-                CPH.LogDebug("currentScene IsSongScene");
-                CPH.LogVerbose($"songSceneAutoSwitchMode={songSceneAutoSwitchMode}");
+                CPH.LogDebug($"{Constants.AppName}currentScene IsSongScene");
+                CPH.LogVerbose($"{Constants.AppName}songSceneAutoSwitchMode={songSceneAutoSwitchMode}");
 
                 if (switchScenes && ItsTimeToSwitchScene() && (songScenes.Length > 1))
                 {
