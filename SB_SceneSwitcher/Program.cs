@@ -1032,6 +1032,7 @@ public class CPHInline
         itsFetcher = new ResponseFetcher(CPH, snifferIp, snifferPort);
         itsParser = new ResponseParser(CPH, itsSceneInteractor);
         itsParser.Init();
+        
 
         currentScene = "";
     }
@@ -1042,7 +1043,6 @@ public class CPHInline
         snifferIp = GetSnifferIp();
         // TODO in case snifferIp is null, no need to do anything after this as, Sniffer could be not connected/used.
         snifferPort = GetSnifferPort();
-        itsParser.UpdateConfig();
     }
 
     private string GetSnifferIp()
@@ -1066,6 +1066,7 @@ public class CPHInline
 
         UpdateCurrentScene();
         UpdateConfig();
+        itsParser.UpdateConfig();
 
         if (itsParser.IsRelevantScene())
         {
