@@ -144,7 +144,7 @@ public class CPHInline
         private int cooldownPeriod;
         private DateTime lastSceneChange;
         private IInlineInvokeProxy CPH;
-        private StreamApp? _streamApp;
+        private StreamApp? itsStreamApp;
 
         public SceneInteractor(IInlineInvokeProxy cph)
         {
@@ -157,17 +157,17 @@ public class CPHInline
         {
             if (CPH.ObsIsConnected())
             {
-                _streamApp = StreamApp.OBS;
+                itsStreamApp = StreamApp.OBS;
                 CPH.LogDebug(Constants.AppName + $"Connected to {StreamApp.OBS}");
             }
             else if (CPH.SlobsIsConnected())
             {
-                _streamApp = StreamApp.SLOBS;
+                itsStreamApp = StreamApp.SLOBS;
                 CPH.LogDebug(Constants.AppName + $"Connected to {StreamApp.SLOBS}");
             }
             else
             {
-                _streamApp = null;
+                itsStreamApp = null;
                 CPH.LogDebug(MessageNoStreamAppConnectionAvailable);
             }
         }
@@ -176,7 +176,7 @@ public class CPHInline
         {
             DetermineAndSetConnectedStreamApp();
 
-            return _streamApp switch
+            return itsStreamApp switch
             {
                 StreamApp.OBS => CPH.ObsGetCurrentScene(),
                 StreamApp.SLOBS => CPH.SlobsGetCurrentScene(),
@@ -188,7 +188,7 @@ public class CPHInline
         {
             if (switchScenes && IsNotInCooldown())
             {
-                switch (_streamApp)
+                switch (itsStreamApp)
                 {
                     case StreamApp.OBS:
                         CPH.LogInfo(Constants.AppName + $"Switching to OBS scene: {scene}");
@@ -316,7 +316,16 @@ public class CPHInline
             ,RANGE}
             public Period period;
             public int minimumPeriod;
+            public int currentSwitchPeriod;
             public int maximumPeriod;
+
+            public void randomizePeriodIfNecessary()
+            {
+                if (period == SongScene.Period.RANGE)
+                {
+                    currentSwitchPeriod = new Random().Next(minimumPeriod, maximumPeriod + 1);
+                }
+            }
         }
 
         private GameStage currentGameStage;
@@ -410,7 +419,7 @@ public class CPHInline
                     else
                     {
                         songScenes[i].period = SongScene.Period.FIXED;
-                        songScenes[i].minimumPeriod = songScenes[i].maximumPeriod = int.Parse(temp[1]);
+                        songScenes[i].currentSwitchPeriod = int.Parse(temp[1]);
                     }
 
                 }
@@ -418,7 +427,7 @@ public class CPHInline
                 {
                     songScenes[i].Name = songScenesRaw[i];
                     songScenes[i].period = SongScene.Period.FIXED;
-                    songScenes[i].minimumPeriod = songScenes[i].maximumPeriod = defaultSceneSwitchPeriodInSeconds;
+                    songScenes[i].currentSwitchPeriod = defaultSceneSwitchPeriodInSeconds;
                 }
             }
             songPausedScene = GetGlobalVarAsString(Constants.GlobalVarNamePauseScene);
@@ -929,7 +938,7 @@ public class CPHInline
 
         private bool ItsTimeToSwitchScene()
         {
-            return itsSceneInterActor.GetTimeSinceLastSceneChange() >= defaultSceneSwitchPeriodInSeconds;
+            return itsSceneInterActor.GetTimeSinceLastSceneChange() >= songScenes[currentSongSceneIndex].currentSwitchPeriod;
         }
 
         private void DoSequentialSceneSwitch()
@@ -940,6 +949,8 @@ public class CPHInline
             }
 
             itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex].Name, switchScenes);
+            songScenes[currentSongSceneIndex].randomizePeriodIfNecessary();
+            
         }
 
         private void DoRandomSceneSwitch()
@@ -958,6 +969,7 @@ public class CPHInline
 
             currentSongSceneIndex = newSongSceneIndex;
             itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex].Name, switchScenes);
+            songScenes[currentSongSceneIndex].randomizePeriodIfNecessary();
         }
 
         private void RunAction(string actionName)
