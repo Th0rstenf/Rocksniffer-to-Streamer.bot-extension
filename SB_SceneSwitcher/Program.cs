@@ -865,7 +865,7 @@ public class CPHInline
                 lastNoteData = currentResponse.MemoryReadout.NoteData;
             }
 
-            if (IsSongScene(currentScene) == false)
+            if (!IsSongScene(currentScene))
             {
                 if (!songTimer.Equals(lastSongTimer))
                 {
