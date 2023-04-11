@@ -827,6 +827,7 @@ public class CPHInline
                 arrangementIdentified = IdentifyArrangement();
                 SaveSongMetaData();
             }
+
             var songTimer = currentResponse.MemoryReadout.SongTimer;
             CPH.LogVerbose(Constants.AppName + $"songTimer={songTimer} | lastSongTimer={lastSongTimer}");
             if (songTimer < lastSongTimer)
@@ -836,11 +837,11 @@ public class CPHInline
                 // In both cases we want to reset the lastNoteData to the current one to prevent underflows
                 lastNoteData = currentResponse.MemoryReadout.NoteData;
             }
+
             if (IsNotSongScene(currentScene))
             {
-               
                 if (!songTimer.Equals(lastSongTimer))
-                {    
+                {
                     sameTimeCounter = 0;
                     if (itsSceneInterActor.IsNotInCooldown())
                     {
