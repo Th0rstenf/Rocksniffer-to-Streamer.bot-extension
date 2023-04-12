@@ -213,8 +213,8 @@ public class CPHInline
             var isNotInCooldown = !(timeSinceLastSceneChange < cooldownPeriod);
             CPH.LogVerbose(
                 $"{Constants.AppName}isNotInCooldown={isNotInCooldown} - " +
-                           $"timeSinceLastSceneChange={timeSinceLastSceneChange} " +
-                           $"cooldownPeriod={cooldownPeriod} ");
+                $"timeSinceLastSceneChange={timeSinceLastSceneChange} " +
+                $"cooldownPeriod={cooldownPeriod} ");
             return isNotInCooldown;
         }
 
@@ -320,8 +320,8 @@ public class CPHInline
 
             public Period period;
             public int minimumPeriod;
-            public int currentSwitchPeriod;
             public int maximumPeriod;
+            public int currentSwitchPeriod;
 
             public void RandomizePeriodIfNecessary()
             {
@@ -329,6 +329,16 @@ public class CPHInline
                 {
                     currentSwitchPeriod = new Random().Next(minimumPeriod, maximumPeriod + 1);
                 }
+            }
+
+            public override string ToString()
+            {
+                return
+                    $"{nameof(Name)}: {Name}, " +
+                    $"{nameof(period)}: {period}, " +
+                    $"{nameof(minimumPeriod)}: {minimumPeriod}, " +
+                    $"{nameof(maximumPeriod)}: {maximumPeriod}, " +
+                    $"{nameof(currentSwitchPeriod)}: {currentSwitchPeriod}";
             }
         }
 
@@ -411,19 +421,20 @@ public class CPHInline
             {
                 if (songScenesRaw[i].Contains("#"))
                 {
-                    string[] temp = songScenesRaw[i].Split('#');
-                    songScenes[i].Name = temp[0];
-                    if (temp[1].Contains("-"))
+                    string[] songSceneRaw = songScenesRaw[i].Split('#');
+                    songScenes[i].Name = songSceneRaw[0];
+                    if (songSceneRaw[1].Contains("-"))
                     {
-                        string[] temp2 = temp[1].Split('-');
+                        string[] minMax = songSceneRaw[1].Split('-');
                         songScenes[i].period = SongScene.Period.RANGE;
-                        songScenes[i].minimumPeriod = int.Parse(temp2[0]);
-                        songScenes[i].maximumPeriod = int.Parse(temp2[1]);
+                        songScenes[i].minimumPeriod = int.Parse(minMax[0]);
+                        songScenes[i].maximumPeriod = int.Parse(minMax[1]);
+                        songScenes[i].RandomizePeriodIfNecessary();
                     }
                     else
                     {
                         songScenes[i].period = SongScene.Period.FIXED;
-                        songScenes[i].currentSwitchPeriod = int.Parse(temp[1]);
+                        songScenes[i].currentSwitchPeriod = int.Parse(songSceneRaw[1]);
                     }
                 }
                 else
@@ -938,8 +949,10 @@ public class CPHInline
 
         private bool ItsTimeToSwitchScene()
         {
-            return itsSceneInterActor.GetTimeSinceLastSceneChange() >=
-                   songScenes[currentSongSceneIndex].currentSwitchPeriod;
+            var timeSinceLastSceneChange = itsSceneInterActor.GetTimeSinceLastSceneChange();
+            CPH.LogVerbose($"{Constants.AppName}songScene={songScenes[currentSongSceneIndex]}");
+            CPH.LogVerbose($"{Constants.AppName}timeSinceLastSceneChange={timeSinceLastSceneChange}");
+            return timeSinceLastSceneChange >= songScenes[currentSongSceneIndex].currentSwitchPeriod;
         }
 
         private void DoSequentialSceneSwitch()
