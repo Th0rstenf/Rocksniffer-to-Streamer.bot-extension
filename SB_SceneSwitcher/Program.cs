@@ -213,8 +213,8 @@ public class CPHInline
             var isNotInCooldown = !(timeSinceLastSceneChange < cooldownPeriod);
             CPH.LogVerbose(
                 $"{Constants.AppName}isNotInCooldown={isNotInCooldown} - " +
-                $"timeSinceLastSceneChange={timeSinceLastSceneChange} " +
-                $"cooldownPeriod={cooldownPeriod} ");
+                           $"timeSinceLastSceneChange={timeSinceLastSceneChange} " +
+                           $"cooldownPeriod={cooldownPeriod} ");
             return isNotInCooldown;
         }
 
@@ -908,27 +908,30 @@ public class CPHInline
                 CPH.LogDebug($"{Constants.AppName}currentScene IsSongScene");
                 CPH.LogVerbose($"{Constants.AppName}songSceneAutoSwitchMode={songSceneAutoSwitchMode}");
 
-                if (switchScenes && ItsTimeToSwitchScene() && (songScenes.Length > 1))
-                {
-                    switch (songSceneAutoSwitchMode)
-                    {
-                        case SongSceneAutoSwitchMode.Sequential:
-                            DoSequentialSceneSwitch();
-                            break;
-                        case SongSceneAutoSwitchMode.Random:
-                            DoRandomSceneSwitch();
-                            break;
-                        case SongSceneAutoSwitchMode.Off:
-                        default:
-                            // Nothing to do
-                            break;
-                    }
-                }
-
                 if (IsInPause())
                 {
+                    CPH.LogDebug($"Is in Pause, switching to scene={songPausedScene}");
                     RunAction(Constants.ActionNameEnterPause);
                     itsSceneInterActor.SwitchToScene(songPausedScene, switchScenes);
+                }
+                else
+                {
+                    if (switchScenes && ItsTimeToSwitchScene() && songScenes.Length > 1)
+                    {
+                        switch (songSceneAutoSwitchMode)
+                        {
+                            case SongSceneAutoSwitchMode.Sequential:
+                                DoSequentialSceneSwitch();
+                                break;
+                            case SongSceneAutoSwitchMode.Random:
+                                DoRandomSceneSwitch();
+                                break;
+                            case SongSceneAutoSwitchMode.Off:
+                            default:
+                                // Nothing to do
+                                break;
+                        }
+                    }
                 }
             }
         }
