@@ -220,7 +220,7 @@ public class CPHInline
         {
             var timeSinceLastSceneChange = GetTimeSinceLastSceneChange();
             var notInCooldown = !(timeSinceLastSceneChange < cooldownPeriod);
-            CPH.LogDebug($"Is in cooldown={!notInCooldown}");
+            CPH.LogDebug($"{Constants.AppName}Is in cooldown={!notInCooldown}");
             CPH.LogVerbose($"{Constants.AppName}isNotInCooldown={notInCooldown} - " +
                            $"timeSinceLastSceneChange={timeSinceLastSceneChange} " +
                            $"cooldownPeriod={cooldownPeriod} ");
