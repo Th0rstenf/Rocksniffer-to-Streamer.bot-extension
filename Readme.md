@@ -70,7 +70,16 @@ In addition to that, actions for entering/leaving a pause, the tuner and startin
 Inside the SceneSwitcher action, there are several global parameters that can/need to be changed:
 For scene switching:
 * menuScene - this should be the scene you want to load when you're in the menu or tuner
-* songScenes - a comma separated list of scenes you could switch to during a song play (at start, the first is used)
+* songScenes - a comma separated list of scenes you could switch to during a song play (at start, the first is used)  
+    * Song scenes can be switched automatically (see section scene switching)
+    * The configured global songSwitchPeriod can be overriden for each scene individually.
+    * It is possible to define a range, and have a randomized time each cycle  
+    * Example: Scene1,Scene2#5-10,Scene3,Scene4#7
+        * Scene1 would be active according to songSwitchPeriod
+        * Scene2 would be active between 5 and 10 seconds, randomized each time
+        * Scene3 would be active according to songSwitchPeriod
+        * Scene4 would be active for 7 seconds
+
 * pauseScene - the scene that will be loaded when pausing during a song
 
 For the sniffer connection:
