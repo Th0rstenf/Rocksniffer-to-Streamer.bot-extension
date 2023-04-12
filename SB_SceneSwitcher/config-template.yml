@@ -15,14 +15,17 @@ snifferPort: <Port of your RockSniffer. Usually 9938>
 behavior: <The following options are available - Whitelist, Blacklist, AlwaysOn>
 blackList: <Blacklisted scenes>
 
+# Scene switching
+switchScenes: <True/False - enable or disable scene switching>
+sceneSwitchPeriod: <Automatic switching time between songScenes in seconds>
+sceneSwitchCooldownPeriod: <Cooldown time to wait after one scene change in seconds>
+songSceneAutoSwitchMode: <Off/Sequential/Random the mode of the automatic switching between the given song scenes after reached the songSwitchPeriod>
+
 # Other
-sceneSwitchPeriod: 5
-switchScenes: True
-sectionDetection: True
 sectionActions: True
 
 # Logging
 # Possible values: VERBOSE, DEBUG, INFO, WARN, ERROR
 # Default logLevel: INFO | logLevelSB: DEBUG
-logLevel: 
-logLevelSB: 
+logLevel: DEBUG
+logLevelSB: DEBUG

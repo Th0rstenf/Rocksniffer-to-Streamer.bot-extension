@@ -5,6 +5,9 @@ using static MockConstants;
 public static class MockConstants
 {
     public const string MockAppName = "[MOCK] ";
+
+    public const string DefaultSceneSwitchPeriod = "5";
+    public const string DefaultSceneSwitchCooldownPeriod = "3";
 }
 
 public class CPHmock : IInlineInvokeProxy
@@ -115,11 +118,11 @@ public class CPHmock : IInlineInvokeProxy
             "songScenes" => _config?.songScenes,
             "menuScene" => _config?.menuScene,
             "pauseScene" => _config?.pauseScene,
-            "sectionDetection" => _config?.sectionDetection,
             "behavior" => _config?.behavior,
             "switchScenes" => _config?.switchScenes,
             "songSceneAutoSwitchMode" => _config?.songSceneAutoSwitchMode,
-            "sceneSwitchPeriod" => _config?.sceneSwitchPeriod,
+            "sceneSwitchPeriod" => GetConfigSceneSwitchPeriod(),
+            "sceneSwitchCooldownPeriod" => GetConfigSceneSwitchCooldownPeriod(),
             "sectionActions" => _config?.sectionActions,
             "blackList" => _config?.blackList,
             "logLevel" => _config == null ? DefaultLogLevel.ToString() : _config.logLevel,
@@ -129,6 +132,20 @@ public class CPHmock : IInlineInvokeProxy
         if (value == null) Console.WriteLine($"{MockAppName}Key {key} is not found in config.yml!");
 
         return value;
+    }
+
+    private static string GetConfigSceneSwitchPeriod()
+    {
+        return string.IsNullOrEmpty(_config?.sceneSwitchPeriod)
+            ? DefaultSceneSwitchPeriod
+            : _config.sceneSwitchPeriod;
+    }
+
+    private static string GetConfigSceneSwitchCooldownPeriod()
+    {
+        return string.IsNullOrEmpty(_config?.sceneSwitchCooldownPeriod)
+            ? DefaultSceneSwitchCooldownPeriod
+            : _config.sceneSwitchCooldownPeriod;
     }
 
     public void SetGlobalVar(string varName, object value, bool persisted = true)
@@ -201,10 +218,10 @@ public class CPHmock : IInlineInvokeProxy
         public string? pauseScene { get; set; }
         public string? blackList { get; set; }
         public string? behavior { get; set; }
-        public string? sectionDetection { get; set; }
         public string? switchScenes { get; set; }
         public string? songSceneAutoSwitchMode { get; set; }
         public string? sceneSwitchPeriod { get; set; }
+        public string? sceneSwitchCooldownPeriod { get; set; }
         public string? sectionActions { get; set; }
         public string? logLevel { get; set; }
         public string? logLevelSB { get; set; }
@@ -212,20 +229,20 @@ public class CPHmock : IInlineInvokeProxy
         public override string ToString()
         {
             return $"----------- CONFIG ------------------------------------{Environment.NewLine}" +
-                   $"{nameof(snifferIp)}: {snifferIp}, {Environment.NewLine}" +
-                   $"{nameof(snifferPort)}: {snifferPort}, {Environment.NewLine}" +
-                   $"{nameof(menuScene)}: {menuScene}, {Environment.NewLine}" +
-                   $"{nameof(songScenes)}: {songScenes}, {Environment.NewLine}" +
-                   $"{nameof(pauseScene)}: {pauseScene}, {Environment.NewLine}" +
-                   $"{nameof(blackList)}: {blackList}, {Environment.NewLine}" +
-                   $"{nameof(behavior)}: {behavior}, {Environment.NewLine}" +
-                   $"{nameof(sectionDetection)}: {sectionDetection}, {Environment.NewLine}" +
-                   $"{nameof(switchScenes)}: {switchScenes}, {Environment.NewLine}" +
-                   $"{nameof(songSceneAutoSwitchMode)}: {songSceneAutoSwitchMode}, {Environment.NewLine}" +
-                   $"{nameof(sceneSwitchPeriod)}: {sceneSwitchPeriod}, {Environment.NewLine}" +
-                   $"{nameof(sectionActions)}: {sectionActions}, {Environment.NewLine}" +
-                   $"{nameof(logLevel)}: {logLevel}, {Environment.NewLine}" +
-                   $"{nameof(logLevelSB)}: {logLevelSB} {Environment.NewLine}" +
+                   $"{nameof(snifferIp)}: {snifferIp}{Environment.NewLine}" +
+                   $"{nameof(snifferPort)}: {snifferPort}{Environment.NewLine}" +
+                   $"{nameof(menuScene)}: {menuScene}{Environment.NewLine}" +
+                   $"{nameof(songScenes)}: {songScenes}{Environment.NewLine}" +
+                   $"{nameof(pauseScene)}: {pauseScene}{Environment.NewLine}" +
+                   $"{nameof(blackList)}: {blackList}{Environment.NewLine}" +
+                   $"{nameof(behavior)}: {behavior}{Environment.NewLine}" +
+                   $"{nameof(switchScenes)}: {switchScenes}{Environment.NewLine}" +
+                   $"{nameof(songSceneAutoSwitchMode)}: {songSceneAutoSwitchMode}{Environment.NewLine}" +
+                   $"{nameof(sceneSwitchPeriod)}: {sceneSwitchPeriod}{Environment.NewLine}" +
+                   $"{nameof(sceneSwitchCooldownPeriod)}: {sceneSwitchCooldownPeriod}{Environment.NewLine}" +
+                   $"{nameof(sectionActions)}: {sectionActions}{Environment.NewLine}" +
+                   $"{nameof(logLevel)}: {logLevel}{Environment.NewLine}" +
+                   $"{nameof(logLevelSB)}: {logLevelSB}{Environment.NewLine}" +
                    "-------------------------------------------------------";
         }
     }

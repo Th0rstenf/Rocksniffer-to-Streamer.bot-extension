@@ -95,7 +95,8 @@ For determining when it is active:
 
 Scene switching:
 * switchScenes - True/False - enable or disable scene switching
-* songSwitchPeriod - Automatic switching time between songScenes in seconds
+* sceneSwitchPeriod - Automatic switching time between songScenes in seconds
+* sceneSwitchCooldownPeriod - Cooldown time to wait after one scene change in seconds
 * songSceneAutoSwitchMode - the mode of the automatic switching between the given song scenes after reached the songSwitchPeriod 
   * Off - automatic switching is disabled
   * Sequential - runs over the song scene list sequentially
