@@ -109,7 +109,7 @@ public class CPHInline
         InSong,
         InTuner
     }
-
+    
     enum SectionType
     {
         Default,
@@ -133,12 +133,12 @@ public class CPHInline
     {
         private const string MessageNoStreamAppConnectionAvailable =
             Constants.AppName +
-            "No stream app connection available! Please set and connect either to OBS or SLOBS under 'Stream Apps' in SB!";
+            "No stream app connection available! Please set and connect either to Obs or Slobs under 'Stream Apps' in SB!";
 
         enum StreamApp
         {
-            OBS,
-            SLOBS
+            Obs,
+            Slobs
         }
 
         private int cooldownPeriod;
@@ -157,13 +157,13 @@ public class CPHInline
         {
             if (CPH.ObsIsConnected())
             {
-                itsStreamApp = StreamApp.OBS;
-                CPH.LogDebug(Constants.AppName + $"Connected to {StreamApp.OBS}");
+                itsStreamApp = StreamApp.Obs;
+                CPH.LogDebug(Constants.AppName + $"Connected to {StreamApp.Obs}");
             }
             else if (CPH.SlobsIsConnected())
             {
-                itsStreamApp = StreamApp.SLOBS;
-                CPH.LogDebug(Constants.AppName + $"Connected to {StreamApp.SLOBS}");
+                itsStreamApp = StreamApp.Slobs;
+                CPH.LogDebug(Constants.AppName + $"Connected to {StreamApp.Slobs}");
             }
             else
             {
@@ -178,8 +178,8 @@ public class CPHInline
 
             return itsStreamApp switch
             {
-                StreamApp.OBS => CPH.ObsGetCurrentScene(),
-                StreamApp.SLOBS => CPH.SlobsGetCurrentScene(),
+                StreamApp.Obs => CPH.ObsGetCurrentScene(),
+                StreamApp.Slobs => CPH.SlobsGetCurrentScene(),
                 _ => ""
             };
         }
@@ -190,12 +190,12 @@ public class CPHInline
             {
                 switch (itsStreamApp)
                 {
-                    case StreamApp.OBS:
-                        CPH.LogInfo(Constants.AppName + $"Switching to OBS scene: {scene}");
+                    case StreamApp.Obs:
+                        CPH.LogInfo(Constants.AppName + $"Switching to Obs scene: {scene}");
                         CPH.ObsSetScene(scene);
                         break;
-                    case StreamApp.SLOBS:
-                        CPH.LogInfo(Constants.AppName + $"Switching to SLOBS scene: {scene}");
+                    case StreamApp.Slobs:
+                        CPH.LogInfo(Constants.AppName + $"Switching to Slobs scene: {scene}");
                         CPH.SlobsSetScene(scene);
                         break;
                     default:
@@ -314,8 +314,8 @@ public class CPHInline
 
             public enum Period
             {
-                FIXED,
-                RANGE
+                Fixed,
+                Range
             }
 
             public Period period;
@@ -325,7 +325,7 @@ public class CPHInline
 
             public void RandomizePeriodIfNecessary()
             {
-                if (period == SongScene.Period.RANGE)
+                if (period == Period.Range)
                 {
                     currentSwitchPeriod = new Random().Next(minimumPeriod, maximumPeriod + 1);
                 }
@@ -426,21 +426,21 @@ public class CPHInline
                     if (songSceneRaw[1].Contains("-"))
                     {
                         string[] minMax = songSceneRaw[1].Split('-');
-                        songScenes[i].period = SongScene.Period.RANGE;
+                        songScenes[i].period = SongScene.Period.Range;
                         songScenes[i].minimumPeriod = int.Parse(minMax[0]);
                         songScenes[i].maximumPeriod = int.Parse(minMax[1]);
                         songScenes[i].RandomizePeriodIfNecessary();
                     }
                     else
                     {
-                        songScenes[i].period = SongScene.Period.FIXED;
+                        songScenes[i].period = SongScene.Period.Fixed;
                         songScenes[i].currentSwitchPeriod = int.Parse(songSceneRaw[1]);
                     }
                 }
                 else
                 {
                     songScenes[i].Name = songScenesRaw[i];
-                    songScenes[i].period = SongScene.Period.FIXED;
+                    songScenes[i].period = SongScene.Period.Fixed;
                     songScenes[i].currentSwitchPeriod = defaultSceneSwitchPeriodInSeconds;
                 }
             }
@@ -927,7 +927,7 @@ public class CPHInline
                 }
                 else
                 {
-                    if (switchScenes && ItsTimeToSwitchScene() && songScenes.Length > 1)
+                    if (switchScenes && songScenes.Length > 1 && ItsTimeToSwitchScene())
                     {
                         switch (songSceneAutoSwitchMode)
                         {
