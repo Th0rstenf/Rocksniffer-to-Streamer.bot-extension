@@ -888,7 +888,12 @@ public class CPHInline
                     lastNoteData = currentResponse.MemoryReadout.NoteData;
                 }
 
-                if (switchScenes && ItsTimeToSwitchScene() && (songScenes.Length > 1))
+                if (IsInPause())
+                {
+                    RunAction(Constants.ActionNameEnterPause);
+                    itsSceneInterActor.SwitchToScene(songPausedScene, switchScenes);
+                }
+                else if (switchScenes && ItsTimeToSwitchScene() && (songScenes.Length > 1))
                 {
                     switch (songSceneAutoSwitchMode)
                     {
@@ -903,12 +908,6 @@ public class CPHInline
                             // Nothing to do
                             break;
                     }
-                }
-
-                if (IsInPause())
-                {
-                    RunAction(Constants.ActionNameEnterPause);
-                    itsSceneInterActor.SwitchToScene(songPausedScene, switchScenes);
                 }
             }
         }
