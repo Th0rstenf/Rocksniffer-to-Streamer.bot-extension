@@ -129,7 +129,7 @@ public class CPHmock : IInlineInvokeProxy
             _ => null
         };
 
-        if (value == null) Console.WriteLine($"Key {key} is not found in config.yml!");
+        if (value == null) Console.WriteLine($"{MockAppName}Key {key} is not found in config.yml!");
 
         return value;
     }
@@ -191,7 +191,7 @@ public class CPHmock : IInlineInvokeProxy
     {
         if (string.IsNullOrEmpty(config.logLevel))
         {
-            Console.WriteLine("logLevel not found! Will use default Level: " + DefaultLogLevel);
+            Console.WriteLine($"{MockAppName}logLevel not found! Will use default Level: {DefaultLogLevel}");
             config.logLevel = DefaultLogLevel.ToString();
         }
 
@@ -202,8 +202,7 @@ public class CPHmock : IInlineInvokeProxy
     {
         if (string.IsNullOrEmpty(config.logLevelSB))
         {
-            Console.WriteLine(MockAppName + "logLevelSB not found! Will use default Level: " +
-                              DefaultLogLevelSB);
+            Console.WriteLine($"{MockAppName}logLevelSB not found! Will use default Level: {DefaultLogLevelSB}");
             config.logLevelSB = DefaultLogLevelSB.ToString();
         }
 
