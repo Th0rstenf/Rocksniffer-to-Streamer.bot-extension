@@ -113,7 +113,7 @@ public class CPHInline
         InSong,
         InTuner
     }
-    
+
     enum SectionType
     {
         Default,
@@ -953,7 +953,7 @@ public class CPHInline
                     RunAction(Constants.ActionNameEnterPause);
                     itsSceneInterActor.SwitchToScene(songPausedScene, switchScenes);
                 }
-                else if (switchScenes &&  (songScenes.Length > 1) && ItsTimeToSwitchScene())
+                else if (HasToSwitchScene())
                 {
                     switch (songSceneAutoSwitchMode)
                     {
@@ -967,9 +967,14 @@ public class CPHInline
                         default:
                             // Nothing to do
                             break;
-                    }                    
+                    }
                 }
             }
+        }
+
+        private bool HasToSwitchScene()
+        {
+            return switchScenes && HasMoreThan1Scenes() && ItsTimeToSwitchScene();
         }
 
         private bool ItsTimeToSwitchScene()
@@ -996,7 +1001,7 @@ public class CPHInline
             int newSongSceneIndex;
             do
             {
-                if (songScenes.Length == 1)
+                if (HasOnly1Scene())
                 {
                     newSongSceneIndex = 0;
                     break;
@@ -1008,6 +1013,16 @@ public class CPHInline
             currentSongSceneIndex = newSongSceneIndex;
             itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex].Name, switchScenes);
             songScenes[currentSongSceneIndex].RandomizePeriodIfNecessary();
+        }
+
+        private bool HasOnly1Scene()
+        {
+            return songScenes.Length == 1;
+        }
+
+        private bool HasMoreThan1Scenes()
+        {
+            return songScenes.Length > 1;
         }
 
         private void RunAction(string actionName)
