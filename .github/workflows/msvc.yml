@@ -16,9 +16,9 @@ on:
 #  schedule:
 #    - cron: '22 0 * * 5'
 
-env:
+#env:
   # Path to the CMake build directory.
-  build: '${{ github.workspace }}/build'
+#  build: '${{ github.workspace }}/build'
 
 permissions:
   contents: read
@@ -36,8 +36,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Configure CMake
-        run: cmake -B ${{ env.build }}
+#      - name: Configure CMake
+#        run: cmake -B ${{ env.build }}
 
       # Build is not required unless generated source files are used
       # - name: Build CMake
