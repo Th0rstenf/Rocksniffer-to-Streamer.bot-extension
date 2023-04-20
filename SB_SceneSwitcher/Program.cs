@@ -31,6 +31,11 @@ public struct Constants
 
     public const int DefaultSceneSwitchPeriod = 5;
     public const int DefaultSceneSwitchCooldownPeriod = 3;
+
+    public const string GlobalVarNameTotalNotesLifeTime = "totalNotesLifeTime";
+    public const string GlobalVarNameTotalNotesHitLifeTime = "totalNotesHitLifeTime";
+    public const string GlobalVarNameTotalNotesMissedLifeTime = "totalNotesMissedLifeTime";
+    public const string GlobalVarNameAccuracyLifeTime = "accuracyLifeTime";
 }
 
 internal enum SongSceneAutoSwitchMode
@@ -377,6 +382,11 @@ public class CPHInline
         private UInt32 totalNotesMissedThisStream;
         private double accuracyThisStream;
         private UInt32 highestStreakSinceLaunch;
+        private UInt32 totalNotesLifeTime;
+        private UInt32 totalNotesHitLifeTime;
+        private UInt32 totalNotesMissedLifeTime;
+        private double accuracyLifeTime;
+
 
         private string menuScene = null!;
         private SongScene[]? songScenes = null!;
@@ -420,6 +430,10 @@ public class CPHInline
             totalNotesHitThisStream = 0;
             totalNotesMissedThisStream = 0;
             accuracyThisStream = 0;
+            totalNotesLifeTime = GetGlobalVarAsUInt32(Constants.GlobalVarNameTotalNotesLifeTime);
+            totalNotesHitLifeTime = GetGlobalVarAsUInt32(Constants.GlobalVarNameTotalNotesHitLifeTime);
+            totalNotesMissedLifeTime = GetGlobalVarAsUInt32(Constants.GlobalVarNameTotalNotesMissedLifeTime);
+            accuracyLifeTime = GetGlobalVarAsDouble(Constants.GlobalVarNameAccuracyLifeTime);
             highestStreakSinceLaunch = 0;
             currentSectionIndex = -1;
             currentSongSceneIndex = 0;
@@ -547,6 +561,18 @@ public class CPHInline
         {
             var globalVar = CPH.GetGlobalVar<string>(name);
             return string.IsNullOrEmpty(globalVar) ? def : int.Parse(globalVar);
+        }
+
+        private UInt32 GetGlobalVarAsUInt32(string name, UInt32 def = 0)
+        {
+            var globalVar = CPH.GetGlobalVar<string>(name);
+            return string.IsNullOrEmpty(globalVar) ? def : UInt32.Parse(globalVar);
+        }
+
+        private double GetGlobalVarAsDouble(string name, double def = 0)
+        {
+            var globalVar = CPH.GetGlobalVar<string>(name);
+            return string.IsNullOrEmpty(globalVar) ? def : double.Parse(globalVar);
         }
 
         private int GetGlobalVarSceneSwitchPeriod()
