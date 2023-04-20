@@ -382,9 +382,9 @@ public class CPHInline
         private UInt32 totalNotesMissedThisStream;
         private double accuracyThisStream;
         private UInt32 highestStreakSinceLaunch;
-        private UInt32 totalNotesLifeTime;
-        private UInt32 totalNotesHitLifeTime;
-        private UInt32 totalNotesMissedLifeTime;
+        private UInt64 totalNotesLifeTime;
+        private UInt64 totalNotesHitLifeTime;
+        private UInt64 totalNotesMissedLifeTime;
         private double accuracyLifeTime;
 
 
@@ -430,9 +430,9 @@ public class CPHInline
             totalNotesHitThisStream = 0;
             totalNotesMissedThisStream = 0;
             accuracyThisStream = 0;
-            totalNotesLifeTime = GetGlobalVarAsUInt32(Constants.GlobalVarNameTotalNotesLifeTime);
-            totalNotesHitLifeTime = GetGlobalVarAsUInt32(Constants.GlobalVarNameTotalNotesHitLifeTime);
-            totalNotesMissedLifeTime = GetGlobalVarAsUInt32(Constants.GlobalVarNameTotalNotesMissedLifeTime);
+            totalNotesLifeTime = GetGlobalVarAsUInt64(Constants.GlobalVarNameTotalNotesLifeTime);
+            totalNotesHitLifeTime = GetGlobalVarAsUInt64(Constants.GlobalVarNameTotalNotesHitLifeTime);
+            totalNotesMissedLifeTime = GetGlobalVarAsUInt64(Constants.GlobalVarNameTotalNotesMissedLifeTime);
             accuracyLifeTime = GetGlobalVarAsDouble(Constants.GlobalVarNameAccuracyLifeTime);
             highestStreakSinceLaunch = 0;
             currentSectionIndex = -1;
@@ -563,10 +563,10 @@ public class CPHInline
             return string.IsNullOrEmpty(globalVar) ? def : int.Parse(globalVar);
         }
 
-        private UInt32 GetGlobalVarAsUInt32(string name, UInt32 def = 0)
+        private UInt64 GetGlobalVarAsUInt64(string name, UInt64 def = 0)
         {
             var globalVar = CPH.GetGlobalVar<string>(name);
-            return string.IsNullOrEmpty(globalVar) ? def : UInt32.Parse(globalVar);
+            return string.IsNullOrEmpty(globalVar) ? def : UInt64.Parse(globalVar);
         }
 
         private double GetGlobalVarAsDouble(string name, double def = 0)
@@ -775,15 +775,26 @@ public class CPHInline
                             totalNotesHitThisStream += (uint)additionalNotesHit;
                             totalNotesMissedThisStream += (uint)additionalNotesMissed;
                             totalNotesThisStream += (uint)additionalNotes;
+                            
                             CPH.SetGlobalVar("totalNotesSinceLaunch", totalNotesThisStream, false);
                             CPH.SetGlobalVar("totalNotesHitSinceLaunch", totalNotesHitThisStream, false);
                             CPH.SetGlobalVar("totalNotesMissedSinceLaunch", totalNotesMissedThisStream, false);
+
+                            totalNotesHitLifeTime += (UInt64)additionalNotesHit;
+                            totalNotesMissedLifeTime += (uint)additionalNotesMissed;
+                            totalNotesLifeTime += (uint)additionalNotes;
+                            CPH.SetGlobalVar(Constants.GlobalVarNameTotalNotesLifeTime, totalNotesLifeTime, true);
+                            CPH.SetGlobalVar(Constants.GlobalVarNameTotalNotesHitLifeTime, totalNotesHitLifeTime, true);
+                            CPH.SetGlobalVar(Constants.GlobalVarNameTotalNotesMissedLifeTime, totalNotesMissedLifeTime, true);
+
                             if (totalNotesThisStream > 0)
                             {
                                 accuracyThisStream = 100.0 * ((double)totalNotesHitThisStream / totalNotesThisStream);
+                                accuracyLifeTime = 100.0 * ((double)totalNotesHitLifeTime / totalNotesLifeTime);
                             }
 
                             CPH.SetGlobalVar("accuracySinceLaunch", accuracyThisStream, false);
+                            CPH.SetGlobalVar(Constants.GlobalVarNameAccuracyLifeTime, accuracyLifeTime, true);
                         }
 
                         lastNoteData = currentResponse.MemoryReadout.NoteData;
