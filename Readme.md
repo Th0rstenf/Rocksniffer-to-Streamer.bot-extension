@@ -23,7 +23,7 @@ The following data is written to global variables whenever they change:
 * totalNotesMissedSinceLaunch
 * accuracySinceLaunch
 * totalNotesLifeTime
-* totalNoteshitLifeTime
+* totalNotesHitLifeTime
 * totalNotesMissedLifeTime
 * accuracyLifeTime
 * songLength (raw seconds)
