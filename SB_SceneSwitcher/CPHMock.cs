@@ -75,13 +75,15 @@ public class CPHmock : IInlineInvokeProxy
 
     public void ObsSetScene(string str)
     {
-        Console.WriteLine(MockAppName + $"Setting OBS scene to {str}");
+        Console.WriteLine(MockAppName + $"Setting OBS scene to: {str}");
         currentScene = str;
     }
 
     public string ObsGetCurrentScene()
     {
-        return currentScene ??= _config?.menuScene ?? "";
+        var obsGetCurrentScene = currentScene ??= _config?.menuScene ?? "";
+        Console.WriteLine(MockAppName + $"OBS current scene is: {obsGetCurrentScene}");
+        return obsGetCurrentScene;
     }
 
     public bool SlobsIsConnected(int connection = 0)
