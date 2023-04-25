@@ -131,7 +131,7 @@ public class CPHmock : IInlineInvokeProxy
             Constants.GlobalVarNameTotalNotesLifeTime => "0",
             Constants.GlobalVarNameTotalNotesHitLifeTime => "0",
             Constants.GlobalVarNameTotalNotesMissedLifeTime => "0",
-            Constants.GlobalVarNameAccuracyLifeTime => "0.0",
+            Constants.GlobalVarNameAccuracyLifeTime => "0,0",
             _ => null
         };
 
