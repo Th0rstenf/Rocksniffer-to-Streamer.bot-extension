@@ -75,13 +75,15 @@ public class CPHmock : IInlineInvokeProxy
 
     public void ObsSetScene(string str)
     {
-        Console.WriteLine(MockAppName + $"Setting OBS scene to {str}");
+        Console.WriteLine(MockAppName + $"Setting OBS scene to: {str}");
         currentScene = str;
     }
 
     public string ObsGetCurrentScene()
     {
-        return currentScene ??= _config?.menuScene ?? "";
+        var obsGetCurrentScene = currentScene ??= _config?.menuScene ?? "";
+        Console.WriteLine(MockAppName + $"OBS current scene is: {obsGetCurrentScene}");
+        return obsGetCurrentScene;
     }
 
     public bool SlobsIsConnected(int connection = 0)
@@ -126,6 +128,10 @@ public class CPHmock : IInlineInvokeProxy
             "sectionActions" => _config?.sectionActions,
             "blackList" => _config?.blackList,
             "logLevel" => _config == null ? DefaultLogLevel.ToString() : _config.logLevel,
+            Constants.GlobalVarNameTotalNotesLifeTime => "0",
+            Constants.GlobalVarNameTotalNotesHitLifeTime => "0",
+            Constants.GlobalVarNameTotalNotesMissedLifeTime => "0",
+            Constants.GlobalVarNameAccuracyLifeTime => "0,0",
             _ => null
         };
 

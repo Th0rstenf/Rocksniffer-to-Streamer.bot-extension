@@ -31,6 +31,11 @@ public struct Constants
 
     public const int DefaultSceneSwitchPeriod = 5;
     public const int DefaultSceneSwitchCooldownPeriod = 3;
+
+    public const string GlobalVarNameTotalNotesLifeTime = "totalNotesLifeTime";
+    public const string GlobalVarNameTotalNotesHitLifeTime = "totalNotesHitLifeTime";
+    public const string GlobalVarNameTotalNotesMissedLifeTime = "totalNotesMissedLifeTime";
+    public const string GlobalVarNameAccuracyLifeTime = "accuracyLifeTime";
 }
 
 internal enum SongSceneAutoSwitchMode
@@ -377,6 +382,11 @@ public class CPHInline
         private UInt32 totalNotesMissedThisStream;
         private double accuracyThisStream;
         private UInt32 highestStreakSinceLaunch;
+        private UInt64 totalNotesLifeTime;
+        private UInt64 totalNotesHitLifeTime;
+        private UInt64 totalNotesMissedLifeTime;
+        private double accuracyLifeTime;
+
 
         private string menuScene = null!;
         private SongScene[]? songScenes = null!;
@@ -420,6 +430,10 @@ public class CPHInline
             totalNotesHitThisStream = 0;
             totalNotesMissedThisStream = 0;
             accuracyThisStream = 0;
+            totalNotesLifeTime = GetGlobalVarAsUInt64(Constants.GlobalVarNameTotalNotesLifeTime);
+            totalNotesHitLifeTime = GetGlobalVarAsUInt64(Constants.GlobalVarNameTotalNotesHitLifeTime);
+            totalNotesMissedLifeTime = GetGlobalVarAsUInt64(Constants.GlobalVarNameTotalNotesMissedLifeTime);
+            accuracyLifeTime = GetGlobalVarAsDouble(Constants.GlobalVarNameAccuracyLifeTime);
             highestStreakSinceLaunch = 0;
             currentSectionIndex = -1;
             currentSongSceneIndex = 0;
@@ -547,6 +561,18 @@ public class CPHInline
         {
             var globalVar = CPH.GetGlobalVar<string>(name);
             return string.IsNullOrEmpty(globalVar) ? def : int.Parse(globalVar);
+        }
+
+        private UInt64 GetGlobalVarAsUInt64(string name, UInt64 def = 0)
+        {
+            var globalVar = CPH.GetGlobalVar<string>(name);
+            return string.IsNullOrEmpty(globalVar) ? def : UInt64.Parse(globalVar);
+        }
+
+        private double GetGlobalVarAsDouble(string name, double def = 0)
+        {
+            var globalVar = CPH.GetGlobalVar<string>(name);
+            return string.IsNullOrEmpty(globalVar) ? def : double.Parse(globalVar);
         }
 
         private int GetGlobalVarSceneSwitchPeriod()
@@ -749,15 +775,26 @@ public class CPHInline
                             totalNotesHitThisStream += (uint)additionalNotesHit;
                             totalNotesMissedThisStream += (uint)additionalNotesMissed;
                             totalNotesThisStream += (uint)additionalNotes;
+                            
                             CPH.SetGlobalVar("totalNotesSinceLaunch", totalNotesThisStream, false);
                             CPH.SetGlobalVar("totalNotesHitSinceLaunch", totalNotesHitThisStream, false);
                             CPH.SetGlobalVar("totalNotesMissedSinceLaunch", totalNotesMissedThisStream, false);
+
+                            totalNotesHitLifeTime += (UInt64)additionalNotesHit;
+                            totalNotesMissedLifeTime += (uint)additionalNotesMissed;
+                            totalNotesLifeTime += (uint)additionalNotes;
+                            CPH.SetGlobalVar(Constants.GlobalVarNameTotalNotesLifeTime, totalNotesLifeTime, true);
+                            CPH.SetGlobalVar(Constants.GlobalVarNameTotalNotesHitLifeTime, totalNotesHitLifeTime, true);
+                            CPH.SetGlobalVar(Constants.GlobalVarNameTotalNotesMissedLifeTime, totalNotesMissedLifeTime, true);
+
                             if (totalNotesThisStream > 0)
                             {
                                 accuracyThisStream = 100.0 * ((double)totalNotesHitThisStream / totalNotesThisStream);
+                                accuracyLifeTime = 100.0 * ((double)totalNotesHitLifeTime / totalNotesLifeTime);
                             }
 
                             CPH.SetGlobalVar("accuracySinceLaunch", accuracyThisStream, false);
+                            CPH.SetGlobalVar(Constants.GlobalVarNameAccuracyLifeTime, accuracyLifeTime, true);
                         }
 
                         lastNoteData = currentResponse.MemoryReadout.NoteData;
