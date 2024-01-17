@@ -36,6 +36,8 @@ public struct Constants
     public const string GlobalVarNameTotalNotesHitLifeTime = "totalNotesHitLifeTime";
     public const string GlobalVarNameTotalNotesMissedLifeTime = "totalNotesMissedLifeTime";
     public const string GlobalVarNameAccuracyLifeTime = "accuracyLifeTime";
+
+    public const string GlobalVarNameGuessingDictionary = "guessingDictionary";
 }
 
 internal enum SongSceneAutoSwitchMode
@@ -1146,15 +1148,23 @@ public class CPHInline
             AcceptingGuesses,
             WaitingForTheSongToFinish
         }
-
+        //ToDo: introduce variable to deactivate
         private Boolean isActive;
         private State state;
-
-
-
+       
         //Unfortunately guesses will be entered via separate actions in streamer.bot. Therefore we cannot access any contents here directly and need to work with variables
         // JsonConvert shall be used to store/extract in in a variable.
         Dictionary<string, float> guesses;
+
+        public void Init()
+        {
+            guesses = new Dictionary<string, float>();
+            string DictAsString = JsonConvert.SerializeObject(guesses);
+            CPH.SetGlobalVar<string>(Constants.GlobalVarNameGuessingDictionary, DictAsString, false);
+
+            isActive = true;
+            state = State.InActive;
+        }
     }
 
     // -------------------------------------------------
