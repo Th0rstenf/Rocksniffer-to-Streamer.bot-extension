@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
@@ -38,6 +39,8 @@ public struct Constants
     public const string GlobalVarNameAccuracyLifeTime = "accuracyLifeTime";
 
     public const string GlobalVarNameGuessingDictionary = "guessingDictionary";
+    public const string GlobalVarNameGuessingIsActive = "guessingIsActive";
+    public const String GlobalVarNameGuessingState = "guessingState";
 }
 
 internal enum SongSceneAutoSwitchMode
@@ -402,11 +405,13 @@ public class CPHInline
         private bool reactingToSections = true;
         private bool arrangementIdentified = false;
         private IInlineInvokeProxy CPH;
+        private GuessingGame itsGuessingGame;
 
-        public ResponseParser(IInlineInvokeProxy cph, SceneInteractor interactor)
+        public ResponseParser(IInlineInvokeProxy cph, SceneInteractor interactor, GuessingGame guessing)
         {
             CPH = cph;
             itsSceneInterActor = interactor;
+            itsGuessingGame = guessing;
         }
 
         public void SetResponse(Response response)
@@ -1148,22 +1153,56 @@ public class CPHInline
             AcceptingGuesses,
             WaitingForTheSongToFinish
         }
-        //ToDo: introduce variable to deactivate
+        
         private Boolean isActive;
-        private State state;
-       
+        private State itsState;
+
+        private int timeOut; 
+        private IInlineInvokeProxy CPH;
+
         //Unfortunately guesses will be entered via separate actions in streamer.bot. Therefore we cannot access any contents here directly and need to work with variables
         // JsonConvert shall be used to store/extract in in a variable.
         Dictionary<string, float> guesses;
+
+        public GuessingGame(IInlineInvokeProxy cph)
+        {
+            CPH = cph;
+        }
 
         public void Init()
         {
             guesses = new Dictionary<string, float>();
             string DictAsString = JsonConvert.SerializeObject(guesses);
-            CPH.SetGlobalVar<string>(Constants.GlobalVarNameGuessingDictionary, DictAsString, false);
+            CPH.SetGlobalVar(Constants.GlobalVarNameGuessingDictionary, DictAsString, false);
 
+            //ToDo: introduce variables to configure this behavior for the user
             isActive = true;
-            state = State.InActive;
+            timeOut = 30;
+            itsState = State.InActive;
+
+        }
+
+        public void startAcceptingGuesses()
+        {
+            itsState = State.AcceptingGuesses;
+            CPH.SetGlobalVar(Constants.GlobalVarNameGuessingState, State.AcceptingGuesses.ToString(), false);
+        }
+
+        public void stopAcceptingGuesses()
+        {
+            //this should probably depend on current timing and defined timeout period.
+            itsState = State.WaitingForTheSongToFinish;
+            CPH.SetGlobalVar(Constants.GlobalVarNameGuessingState, State.WaitingForTheSongToFinish.ToString(), false);
+
+            string temp = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingDictionary);
+
+            guesses = (Dictionary<string, float>)JsonConvert.DeserializeObject(temp); 
+
+        }
+
+        public void finishAndEvaluate()
+        {
+            
         }
     }
 
@@ -1175,6 +1214,7 @@ public class CPHInline
     private SceneInteractor itsSceneInteractor = null!;
     private ResponseFetcher itsFetcher = null!;
     private ResponseParser itsParser = null!;
+    private GuessingGame itsGuessingGame = null!;
 
     private string snifferIp = null!;
     private string snifferPort = null!;
@@ -1203,7 +1243,8 @@ public class CPHInline
         CPH.LogInfo($"{Constants.AppName}Sniffer ip configured as {snifferIp}:{snifferPort}");
         itsSceneInteractor = new SceneInteractor(CPH);
         itsFetcher = new ResponseFetcher(CPH, snifferIp, snifferPort);
-        itsParser = new ResponseParser(CPH, itsSceneInteractor);
+        itsParser = new ResponseParser(CPH, itsSceneInteractor,itsGuessingGame);
+        itsGuessingGame = new GuessingGame(CPH);
         itsParser.Init();
         itsSceneInteractor.SetCooldownPeriod(itsParser.GetSceneSwitchCooldownPeriodInSeconds());
 
