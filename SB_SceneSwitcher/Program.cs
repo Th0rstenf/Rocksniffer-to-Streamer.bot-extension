@@ -1138,6 +1138,25 @@ public class CPHInline
         }
     }
 
+    public class GuessingGame
+    {
+        enum State
+        {
+            InActive,
+            AcceptingGuesses,
+            WaitingForTheSongToFinish
+        }
+
+        private Boolean isActive;
+        private State state;
+
+
+
+        //Unfortunately guesses will be entered via separate actions in streamer.bot. Therefore we cannot access any contents here directly and need to work with variables
+        // JsonConvert shall be used to store/extract in in a variable.
+        Dictionary<string, float> guesses;
+    }
+
     // -------------------------------------------------
     // Needs to be commented out in streamer bot!
     private CPHmock CPH = new CPHmock();
