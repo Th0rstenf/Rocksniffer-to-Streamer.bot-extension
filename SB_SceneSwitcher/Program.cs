@@ -40,7 +40,7 @@ public struct Constants
 
     public const string GlobalVarNameGuessingDictionary = "guessingDictionary";
     public const string GlobalVarNameGuessingIsActive = "guessingIsActive";
-    public const String GlobalVarNameGuessingState = "guessingState";
+    public const string GlobalVarNameGuessingState = "guessingState";
 }
 
 internal enum SongSceneAutoSwitchMode
@@ -1157,6 +1157,7 @@ public class CPHInline
         private Boolean isActive;
         private State itsState;
 
+        private int minimumGuesses = 2;
         private int timeOut; 
         private IInlineInvokeProxy CPH;
 
@@ -1200,9 +1201,19 @@ public class CPHInline
 
         }
 
-        public void finishAndEvaluate()
+        public void finishAndEvaluate(float accuracy)
         {
-            
+            Tuple<string, float> winner = new Tuple<string, float>("WINNER", 100.0);
+            foreach (KeyValuePair<string, float> guess in guesses)
+            {
+                float deviation = Math.Abs(accuracy - guess.Value);
+                if (deviation < winner.Item2)
+                {
+                    winner.Item1 = guess.Key;
+                    winner.Item2 = deviation;
+                }
+            } 
+
         }
     }
 
