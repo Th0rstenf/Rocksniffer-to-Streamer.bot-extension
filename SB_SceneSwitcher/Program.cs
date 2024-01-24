@@ -1170,11 +1170,16 @@ public class CPHInline
             CPH = cph;
         }
 
-        public void Init()
+        private void resetGuesses()
         {
             guesses = new Dictionary<string, float>();
             string DictAsString = JsonConvert.SerializeObject(guesses);
             CPH.SetGlobalVar(Constants.GlobalVarNameGuessingDictionary, DictAsString, false);
+        }
+
+        public void Init()
+        {
+            resetGuesses();
 
             //ToDo: introduce variables to configure this behavior for the user
             isActive = true;
@@ -1203,14 +1208,15 @@ public class CPHInline
 
         public void finishAndEvaluate(float accuracy)
         {
-            Tuple<string, float> winner = new Tuple<string, float>("WINNER", 100.0);
+            string winnerName = "";
+            float minimumDeviation = 100.0f;
             foreach (KeyValuePair<string, float> guess in guesses)
             {
                 float deviation = Math.Abs(accuracy - guess.Value);
-                if (deviation < winner.Item2)
+                if (deviation < minimumDeviation)
                 {
-                    winner.Item1 = guess.Key;
-                    winner.Item2 = deviation;
+                    winnerName = guess.Key;
+                    minimumDeviation = deviation;
                 }
             } 
 
