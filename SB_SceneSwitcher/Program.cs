@@ -284,19 +284,17 @@ public class CPHInline
             catch (HttpRequestException e)
             {
                 CPH.LogWarn(Constants.AppName + $"Exception, when trying to get response from sniffer: {e.Message}");
-                throw;
             }
             catch (ObjectDisposedException e)
             {
                 CPH.LogWarn(Constants.AppName + $"HttpClient was disposed. Exception: {e.Message} Reinitialising.");
-                throw;
             }
             catch (Exception e)
             {
                 CPH.LogWarn(
-                    Constants.AppName + $"Caught an Exception, when trying to read from HttpClient: {e.Message}");
-                throw;
+                    Constants.AppName + $"Caught an Exception, when trying to read from HttpClient: {e.Message}");                
             }
+
 
             return responseString;
         }
@@ -1351,6 +1349,7 @@ public class CPHInline
         else
         {
             CPH.LogWarn(Constants.AppName + "Fetching response failed, exiting action.");
+            
             return false;
         }
 
