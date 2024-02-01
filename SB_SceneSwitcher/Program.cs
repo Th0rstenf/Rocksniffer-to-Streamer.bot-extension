@@ -1171,6 +1171,7 @@ public class CPHInline
         {
             CPH = cph;
             resetGuesses();
+            setState(State.InActive);
         }
 
         private void resetGuesses()
@@ -1178,6 +1179,12 @@ public class CPHInline
             guesses = new Dictionary<string, float>();
             string DictAsString = JsonConvert.SerializeObject(guesses);
             CPH.SetGlobalVar(Constants.GlobalVarNameGuessingDictionary, DictAsString, false);
+        }
+
+        private void setState(GuessingGame.State state)
+        {
+            itsState = state;
+            CPH.SetGlobalVar(Constants.GlobalVarNameGuessingState, state.ToString(), false);
         }
 
         public void Init()
@@ -1193,24 +1200,23 @@ public class CPHInline
 
         public void startAcceptingGuesses()
         {
-            itsState = State.AcceptingGuesses;
-            CPH.SetGlobalVar(Constants.GlobalVarNameGuessingState, State.AcceptingGuesses.ToString(), false);
+            setState(State.AcceptingGuesses);
         }
 
         public void stopAcceptingGuesses()
         {
             //this should probably depend on current timing and defined timeout period.
-            itsState = State.WaitingForTheSongToFinish;
-            CPH.SetGlobalVar(Constants.GlobalVarNameGuessingState, State.WaitingForTheSongToFinish.ToString(), false);
+            setState(State.WaitingForTheSongToFinish);
 
             string temp = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingDictionary);
 
-            guesses = (Dictionary<string, float>)JsonConvert.DeserializeObject(temp);
+            guesses = JsonConvert.DeserializeObject<Dictionary<string, float>>(temp);
 
         }
 
         public void finishAndEvaluate(float accuracy)
         {
+            setState(State.InActive);
             string winnerName = "";
             float minimumDeviation = 100.0f;
             foreach (KeyValuePair<string, float> guess in guesses)
