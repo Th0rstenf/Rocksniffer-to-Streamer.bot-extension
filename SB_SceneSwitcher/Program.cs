@@ -1172,6 +1172,7 @@ public class CPHInline
         public GuessingGame(IInlineInvokeProxy cph)
         {
             CPH = cph;
+            resetGuesses();
         }
 
         private void resetGuesses()
