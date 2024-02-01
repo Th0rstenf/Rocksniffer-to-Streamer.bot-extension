@@ -630,7 +630,7 @@ public class CPHInline
             currentSongTimer = currentResponse.MemoryReadout.SongTimer;
         }
 
-        public bool IsRelevantScene()
+        private bool IsRelevantScene()
         {
             var isRelevant = false;
 
@@ -638,38 +638,38 @@ public class CPHInline
             switch (itsBehavior)
             {
                 case ActivityBehavior.WhiteList:
-                {
-                    CPH.LogDebug(Constants.AppName + "IsRelevantScene - case ActivityBehavior.WhiteList");
-                    if (currentScene.Equals(menuScene)
-                        || IsSongScene(currentScene)
-                        || currentScene.Equals(songPausedScene))
                     {
-                        isRelevant = true;
-                    }
-
-                    break;
-                }
-                case ActivityBehavior.BlackList:
-                {
-                    CPH.LogDebug(Constants.AppName + "IsRelevantScene - case ActivityBehavior.BlackList");
-                    isRelevant = true;
-                    foreach (string str in blackListedScenes)
-                    {
-                        if (str.Trim().ToLower().Equals(currentScene.ToLower()))
+                        CPH.LogDebug(Constants.AppName + "IsRelevantScene - case ActivityBehavior.WhiteList");
+                        if (currentScene.Equals(menuScene)
+                            || IsSongScene(currentScene)
+                            || currentScene.Equals(songPausedScene))
                         {
-                            isRelevant = false;
-                            break;
+                            isRelevant = true;
                         }
-                    }
 
-                    break;
-                }
+                        break;
+                    }
+                case ActivityBehavior.BlackList:
+                    {
+                        CPH.LogDebug(Constants.AppName + "IsRelevantScene - case ActivityBehavior.BlackList");
+                        isRelevant = true;
+                        foreach (string str in blackListedScenes)
+                        {
+                            if (str.Trim().ToLower().Equals(currentScene.ToLower()))
+                            {
+                                isRelevant = false;
+                                break;
+                            }
+                        }
+
+                        break;
+                    }
                 case ActivityBehavior.AlwaysOn:
-                {
-                    CPH.LogDebug(Constants.AppName + "IsRelevantScene - case ActivityBehavior.AlwaysOn");
-                    isRelevant = true;
-                    break;
-                }
+                    {
+                        CPH.LogDebug(Constants.AppName + "IsRelevantScene - case ActivityBehavior.AlwaysOn");
+                        isRelevant = true;
+                        break;
+                    }
 
                 default:
                     CPH.LogDebug(Constants.AppName + "IsRelevantScene - case default --> not relevant");
@@ -782,7 +782,7 @@ public class CPHInline
                             totalNotesHitThisStream += (uint)additionalNotesHit;
                             totalNotesMissedThisStream += (uint)additionalNotesMissed;
                             totalNotesThisStream += (uint)additionalNotes;
-                            
+
                             CPH.SetGlobalVar("totalNotesSinceLaunch", totalNotesThisStream, false);
                             CPH.SetGlobalVar("totalNotesHitSinceLaunch", totalNotesHitThisStream, false);
                             CPH.SetGlobalVar("totalNotesMissedSinceLaunch", totalNotesMissedThisStream, false);
@@ -934,6 +934,8 @@ public class CPHInline
 
         public void PerformSceneSwitchIfNecessary()
         {
+            if (!IsRelevantScene())
+                return;
             CheckTunerActions();
 
             switch (currentGameStage)
@@ -1105,6 +1107,8 @@ public class CPHInline
 
         public void CheckSectionActions()
         {
+            if (!IsRelevantScene())
+                return;
             if (currentArrangement != null && reactingToSections)
             {
                 bool isSectionChanged = false;
@@ -1153,12 +1157,12 @@ public class CPHInline
             AcceptingGuesses,
             WaitingForTheSongToFinish
         }
-        
+
         private Boolean isActive;
         private State itsState;
 
         private int minimumGuesses = 2;
-        private int timeOut; 
+        private int timeOut;
         private IInlineInvokeProxy CPH;
 
         //Unfortunately guesses will be entered via separate actions in streamer.bot. Therefore we cannot access any contents here directly and need to work with variables
@@ -1202,7 +1206,7 @@ public class CPHInline
 
             string temp = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingDictionary);
 
-            guesses = (Dictionary<string, float>)JsonConvert.DeserializeObject(temp); 
+            guesses = (Dictionary<string, float>)JsonConvert.DeserializeObject(temp);
 
         }
 
@@ -1218,7 +1222,7 @@ public class CPHInline
                     winnerName = guess.Key;
                     minimumDeviation = deviation;
                 }
-            } 
+            }
 
         }
     }
@@ -1260,7 +1264,7 @@ public class CPHInline
         CPH.LogInfo($"{Constants.AppName}Sniffer ip configured as {snifferIp}:{snifferPort}");
         itsSceneInteractor = new SceneInteractor(CPH);
         itsFetcher = new ResponseFetcher(CPH, snifferIp, snifferPort);
-        itsParser = new ResponseParser(CPH, itsSceneInteractor,itsGuessingGame);
+        itsParser = new ResponseParser(CPH, itsSceneInteractor, itsGuessingGame);
         itsGuessingGame = new GuessingGame(CPH);
         itsParser.Init();
         itsSceneInteractor.SetCooldownPeriod(itsParser.GetSceneSwitchCooldownPeriodInSeconds());
@@ -1299,62 +1303,54 @@ public class CPHInline
         UpdateConfig();
         itsParser.UpdateConfig();
 
-        if (itsParser.IsRelevantScene())
+        string response = itsFetcher.Fetch();
+
+        if (response != string.Empty)
         {
-            CPH.LogVerbose(Constants.AppName + "Scene is relevant, fetching data from sniffer...");
-            string response = itsFetcher.Fetch();
+            CPH.LogVerbose(Constants.AppName + "Valid response received.");
+            Response currentResponse = itsFetcher.ExtractResponse(response);
 
-            if (response != string.Empty)
+            if (currentResponse != null)
             {
-                CPH.LogVerbose(Constants.AppName + "Valid response received.");
-                Response currentResponse = itsFetcher.ExtractResponse(response);
+                itsParser.SetResponse(currentResponse);
+                itsParser.UpdateStageAndTimer();
 
-                if (currentResponse != null)
+                try
                 {
-                    itsParser.SetResponse(currentResponse);
-                    itsParser.UpdateStageAndTimer();
-
-                    try
-                    {
-                        itsParser.SaveNoteDataIfNecessary();
-                    }
-                    catch (ObjectDisposedException e)
-                    {
-                        CPH.LogWarn(Constants.AppName +
-                                    $"Caught object disposed exception when trying to save note data: {e.Message}");
-                        CPH.LogWarn(Constants.AppName + "Trying to reinitialize");
-                        Init();
-                    }
-                    catch (Exception e)
-                    {
-                        throw new Exception(
-                            Constants.AppName +
-                            $"Caught unknown exception when trying to write song meta data: {e.Message}", e);
-                    }
-
-                    try
-                    {
-                        itsParser.PerformSceneSwitchIfNecessary();
-                    }
-                    catch (NullReferenceException e)
-                    {
-                        CPH.LogWarn(Constants.AppName + $"Caught null reference in scene switch: {e.Message}");
-                        CPH.LogWarn(Constants.AppName + "Reinitialising to fix the issue");
-                        Init();
-                    }
-
-                    itsParser.CheckSectionActions();
+                    itsParser.SaveNoteDataIfNecessary();
                 }
-            }
-            else
-            {
-                CPH.LogWarn(Constants.AppName + "Fetching response failed, exiting action.");
-                return false;
+                catch (ObjectDisposedException e)
+                {
+                    CPH.LogWarn(Constants.AppName +
+                                $"Caught object disposed exception when trying to save note data: {e.Message}");
+                    CPH.LogWarn(Constants.AppName + "Trying to reinitialize");
+                    Init();
+                }
+                catch (Exception e)
+                {
+                    throw new Exception(
+                        Constants.AppName +
+                        $"Caught unknown exception when trying to write song meta data: {e.Message}", e);
+                }
+
+                try
+                {
+                    itsParser.PerformSceneSwitchIfNecessary();
+                }
+                catch (NullReferenceException e)
+                {
+                    CPH.LogWarn(Constants.AppName + $"Caught null reference in scene switch: {e.Message}");
+                    CPH.LogWarn(Constants.AppName + "Reinitialising to fix the issue");
+                    Init();
+                }
+
+                itsParser.CheckSectionActions();
             }
         }
         else
         {
-            CPH.LogVerbose(Constants.AppName + "Scene is not relevant, skipping.");
+            CPH.LogWarn(Constants.AppName + "Fetching response failed, exiting action.");
+            return false;
         }
 
         CPH.LogDebug(Constants.AppName + "------- END! -------");
