@@ -54,6 +54,12 @@ Assuming the song has properly named sections, the following section types are r
 For each of those sections, an enter and leave action is provided. Those will automatically be called by the SceneSwitcher action. Feel free to fill them with whatever you like.  
 In addition to that, actions for entering/leaving a pause, the tuner and starting or ending a song are provided. 
 
+## Guessing Game
+
+Check the action *guessConfigure* to configure the guessing game:
+(Introduced in release v0.3.0)
+
+
 ## Installation and configuration
 
 ### Add to Streamer.bot
