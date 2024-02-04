@@ -111,7 +111,8 @@ public class CPHmock : IInlineInvokeProxy
         Console.WriteLine(MockAppName + $"Running action: {str}");
     }
 
-    public string? GetGlobalVar<Type>(string key)
+
+    public string? GetGlobalVar<Type>(string key, bool persisted = true)
     {
         var value = key switch
         {

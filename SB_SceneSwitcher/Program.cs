@@ -42,6 +42,9 @@ public struct Constants
     public const string GlobalVarNameGuessingDictionary = "guessingDictionary";
     public const string GlobalVarNameGuessingIsActive = "guessingIsActive";
     public const string GlobalVarNameGuessingState = "guessingState";
+    public const string GlobalVarNameGuessingMinGuesser = "guessMinGuesserCount";
+    public const string GlobalVarNameGuessingGuessTime = "guessTime";
+
 }
 
 internal enum SongSceneAutoSwitchMode
@@ -143,6 +146,7 @@ public class CPHInline
         BlackList,
         AlwaysOn
     }
+
 
     public class SceneInteractor
     {
@@ -248,6 +252,7 @@ public class CPHInline
 
     private class ResponseFetcher
     {
+
         private IInlineInvokeProxy CPH;
         private readonly string ip;
         private readonly string port;
@@ -1182,6 +1187,19 @@ public class CPHInline
             CPH.SetGlobalVar(Constants.GlobalVarNameGuessingDictionary, DictAsString, false);
         }
 
+        private void readConfig()
+        {
+            //TODO: refactor accessing globals to its own subclass and make it available here
+            string temp = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingIsActive, false);
+            isActive = temp.ToLower().Contains("true");
+
+            temp = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingMinGuesser, false);
+            minimumGuesses = string.IsNullOrEmpty(temp) ? 2 : int.Parse(temp);
+
+            temp = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingGuessTime, false);
+            timeOut =  string.IsNullOrEmpty(temp) ? 30 : int.Parse(temp);
+        }
+
         private void setState(GuessingGame.State state)
         {
             itsState = state;
@@ -1191,11 +1209,9 @@ public class CPHInline
         public void Init()
         {
             resetGuesses();
-
+            readConfig();
             //ToDo: introduce variables to configure this behavior for the user
-            isActive = true;
-            timeOut = 30;
-            itsState = State.InActive;
+            timeOut = 30;        
 
         }
 
@@ -1220,6 +1236,7 @@ public class CPHInline
             setState(State.InActive);
             string winnerName = "";
             float minimumDeviation = 100.0f;
+            
             foreach (KeyValuePair<string, float> guess in guesses)
             {
                 float deviation = Math.Abs(accuracy - guess.Value);
@@ -1229,6 +1246,7 @@ public class CPHInline
                     minimumDeviation = deviation;
                 }
             }
+
 
         }
     }
