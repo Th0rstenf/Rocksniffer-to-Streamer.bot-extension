@@ -966,6 +966,7 @@ public class CPHInline
             if (lastGameStage != GameStage.InSong)
             {
                 RunAction(Constants.ActionNameSongStart);
+                itsGuessingGame.startAcceptingGuesses();
             }
 
             if (!arrangementIdentified)
@@ -1093,6 +1094,7 @@ public class CPHInline
                 arrangementIdentified = false;
                 lastNoteData = null!;
                 RunAction(Constants.ActionNameSongEnd);
+                itsGuessingGame.finishAndEvaluate( (float)currentResponse.MemoryReadout.NoteData.Accuracy);
             }
         }
 
@@ -1210,9 +1212,6 @@ public class CPHInline
         {
             resetGuesses();
             readConfig();
-            //ToDo: introduce variables to configure this behavior for the user
-            timeOut = 30;        
-
         }
 
         public void startAcceptingGuesses()
@@ -1222,7 +1221,6 @@ public class CPHInline
 
         public void stopAcceptingGuesses()
         {
-            //this should probably depend on current timing and defined timeout period.
             setState(State.WaitingForTheSongToFinish);
 
             string temp = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingDictionary);
