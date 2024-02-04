@@ -298,7 +298,7 @@ public class CPHInline
             catch (Exception e)
             {
                 CPH.LogWarn(
-                    Constants.AppName + $"Caught an Exception, when trying to read from HttpClient: {e.Message}");                
+                    Constants.AppName + $"Caught an Exception, when trying to read from HttpClient: {e.Message}");
             }
 
 
@@ -1099,7 +1099,7 @@ public class CPHInline
                 arrangementIdentified = false;
                 lastNoteData = null!;
                 RunAction(Constants.ActionNameSongEnd);
-                itsGuessingGame.FinishAndEvaluate( (float)currentResponse.MemoryReadout.NoteData.Accuracy);
+                itsGuessingGame.FinishAndEvaluate((float)currentResponse.MemoryReadout.NoteData.Accuracy);
             }
         }
 
@@ -1209,7 +1209,7 @@ public class CPHInline
             minimumGuesses = string.IsNullOrEmpty(temp) ? 2 : int.Parse(temp);
 
             temp = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingGuessTime, false);
-            timeOut =  string.IsNullOrEmpty(temp) ? 30 : int.Parse(temp);
+            timeOut = string.IsNullOrEmpty(temp) ? 30 : int.Parse(temp);
         }
 
         private void SetState(GuessingGame.State state)
@@ -1225,7 +1225,7 @@ public class CPHInline
         }
 
         public void StartAcceptingGuesses()
-        {           
+        {
             ResetGuesses();
             SetState(State.AcceptingGuesses);
         }
@@ -1257,7 +1257,7 @@ public class CPHInline
             SetState(State.InActive);
             string winnerName = "";
             float minimumDeviation = 100.0f;
-            
+
             foreach (KeyValuePair<string, float> guess in guesses)
             {
                 float deviation = Math.Abs(accuracy - guess.Value);
@@ -1267,8 +1267,6 @@ public class CPHInline
                     minimumDeviation = deviation;
                 }
             }
-
-
         }
     }
 
@@ -1361,7 +1359,7 @@ public class CPHInline
                 itsParser.SetResponse(currentResponse);
                 itsParser.UpdateStageAndTimer();
                 itsGuessingGame.CheckTimeout((int)itsParser.GetCurrentTimer());
-                
+
 
                 try
                 {
@@ -1398,7 +1396,7 @@ public class CPHInline
         else
         {
             CPH.LogWarn(Constants.AppName + "Fetching response failed, exiting action.");
-            
+
             return false;
         }
 
