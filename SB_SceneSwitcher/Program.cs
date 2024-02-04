@@ -1232,11 +1232,12 @@ public class CPHInline
 
         public void CheckTimeout(int currentTimer)
         {
-            if (isActive && itsState == State.WaitingForTheSongToFinish)
+            if (isActive && itsState == State.AcceptingGuesses)
             {
                 if (currentTimer >= timeOut)
                 {
                     SetState(State.WaitingForTheSongToFinish);
+                    StopAcceptingGuesses();
                 }
             }
         }
