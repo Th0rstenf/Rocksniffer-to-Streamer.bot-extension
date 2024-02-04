@@ -971,7 +971,7 @@ public class CPHInline
             if (lastGameStage != GameStage.InSong)
             {
                 RunAction(Constants.ActionNameSongStart);
-                itsGuessingGame.startAcceptingGuesses();
+                itsGuessingGame.StartAcceptingGuesses();
             }
 
             if (!arrangementIdentified)
@@ -1099,7 +1099,7 @@ public class CPHInline
                 arrangementIdentified = false;
                 lastNoteData = null!;
                 RunAction(Constants.ActionNameSongEnd);
-                itsGuessingGame.finishAndEvaluate( (float)currentResponse.MemoryReadout.NoteData.Accuracy);
+                itsGuessingGame.FinishAndEvaluate( (float)currentResponse.MemoryReadout.NoteData.Accuracy);
             }
         }
 
@@ -1183,18 +1183,23 @@ public class CPHInline
         public GuessingGame(IInlineInvokeProxy cph)
         {
             CPH = cph;
-            resetGuesses();
-            setState(State.InActive);
+            ResetGuesses();
+            SetState(State.InActive);
         }
 
-        private void resetGuesses()
+        public void UpdateConfig()
+        {
+            ReadConfig();
+        }
+
+        private void ResetGuesses()
         {
             guesses = new Dictionary<string, float>();
             string DictAsString = JsonConvert.SerializeObject(guesses);
             CPH.SetGlobalVar(Constants.GlobalVarNameGuessingDictionary, DictAsString, false);
         }
 
-        private void readConfig()
+        private void ReadConfig()
         {
             //TODO: refactor accessing globals to its own subclass and make it available here
             string temp = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingIsActive, false);
@@ -1207,7 +1212,7 @@ public class CPHInline
             timeOut =  string.IsNullOrEmpty(temp) ? 30 : int.Parse(temp);
         }
 
-        private void setState(GuessingGame.State state)
+        private void SetState(GuessingGame.State state)
         {
             itsState = state;
             CPH.SetGlobalVar(Constants.GlobalVarNameGuessingState, state.ToString(), false);
@@ -1215,29 +1220,30 @@ public class CPHInline
 
         public void Init()
         {
-            resetGuesses();
-            readConfig();
+            ResetGuesses();
+            ReadConfig();
         }
 
-        public void startAcceptingGuesses()
-        {
-            setState(State.AcceptingGuesses);
+        public void StartAcceptingGuesses()
+        {           
+            ResetGuesses();
+            SetState(State.AcceptingGuesses);
         }
 
-        public void checkTimeout(int currentTimer)
+        public void CheckTimeout(int currentTimer)
         {
             if (isActive && itsState == State.WaitingForTheSongToFinish)
             {
                 if (currentTimer >= timeOut)
                 {
-                    setState(State.WaitingForTheSongToFinish);
+                    SetState(State.WaitingForTheSongToFinish);
                 }
             }
         }
 
-        private void stopAcceptingGuesses()
+        private void StopAcceptingGuesses()
         {
-            setState(State.WaitingForTheSongToFinish);
+            SetState(State.WaitingForTheSongToFinish);
 
             string temp = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingDictionary);
 
@@ -1245,9 +1251,9 @@ public class CPHInline
 
         }
 
-        public void finishAndEvaluate(float accuracy)
+        public void FinishAndEvaluate(float accuracy)
         {
-            setState(State.InActive);
+            SetState(State.InActive);
             string winnerName = "";
             float minimumDeviation = 100.0f;
             
@@ -1340,6 +1346,7 @@ public class CPHInline
         UpdateCurrentScene();
         UpdateConfig();
         itsParser.UpdateConfig();
+        itsGuessingGame.UpdateConfig();
 
         string response = itsFetcher.Fetch();
 
@@ -1352,7 +1359,7 @@ public class CPHInline
             {
                 itsParser.SetResponse(currentResponse);
                 itsParser.UpdateStageAndTimer();
-                itsGuessingGame.checkTimeout((int)itsParser.GetCurrentTimer());
+                itsGuessingGame.CheckTimeout((int)itsParser.GetCurrentTimer());
                 
 
                 try
