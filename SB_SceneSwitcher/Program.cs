@@ -418,6 +418,11 @@ public class CPHInline
             itsGuessingGame = guessing;
         }
 
+        public double GetCurrentTimer()
+        {
+            return currentSongTimer;
+        }
+
         public void SetResponse(Response response)
         {
             currentResponse = response;
@@ -1219,7 +1224,18 @@ public class CPHInline
             setState(State.AcceptingGuesses);
         }
 
-        public void stopAcceptingGuesses()
+        public void checkTimeout(int currentTimer)
+        {
+            if (isActive && itsState == State.WaitingForTheSongToFinish)
+            {
+                if (currentTimer >= timeOut)
+                {
+                    setState(State.WaitingForTheSongToFinish);
+                }
+            }
+        }
+
+        private void stopAcceptingGuesses()
         {
             setState(State.WaitingForTheSongToFinish);
 
@@ -1336,6 +1352,8 @@ public class CPHInline
             {
                 itsParser.SetResponse(currentResponse);
                 itsParser.UpdateStageAndTimer();
+                itsGuessingGame.checkTimeout((int)itsParser.GetCurrentTimer());
+                
 
                 try
                 {
