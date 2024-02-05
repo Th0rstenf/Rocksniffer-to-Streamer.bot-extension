@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 
@@ -47,6 +48,10 @@ public struct Constants
 
     public const string GlobalVarNameGuessingStartedText = "guessStartingText";
     public const string GlobalVarNameGuessingTimeoutText = "guessTimeoutText";
+    public const string GlobarVarNameGuessingWinner = "guessWinner";
+    public const string GlobarVarNameGuessingWinningGuess = "guessWinningGuess";
+
+    public const string ActionNameGuessingFinished = "guessWinner";
 
 
 }
@@ -1256,23 +1261,32 @@ public class CPHInline
             string temp = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingDictionary);
 
             guesses = JsonConvert.DeserializeObject<Dictionary<string, float>>(temp);
-
         }
 
         public void FinishAndEvaluate(float accuracy)
         {
             SetState(State.InActive);
-            string winnerName = "";
-            float minimumDeviation = 100.0f;
 
-            foreach (KeyValuePair<string, float> guess in guesses)
+            if (guesses.Count < minimumGuesses)
             {
-                float deviation = Math.Abs(accuracy - guess.Value);
-                if (deviation < minimumDeviation)
+                CPH.SendMessage(string.Format("Unfortunately only {0} out of required {1} people have guessed"));
+            }
+            else
+            {
+                string winnerName = "";
+                float minimumDeviation = 1000000.0f;
+                foreach (KeyValuePair<string, float> guess in guesses)
                 {
-                    winnerName = guess.Key;
-                    minimumDeviation = deviation;
+                    float deviation = Math.Abs(accuracy - guess.Value);
+                    if (deviation < minimumDeviation)
+                    {
+                        winnerName = guess.Key;
+                        minimumDeviation = deviation;
+                    }
                 }
+                CPH.SetGlobalVar(Constants.GlobarVarNameGuessingWinner, winnerName, false);
+                CPH.SetGlobalVar(Constants.GlobarVarNameGuessingWinningGuess, guesses[winnerName], false);
+                CPH.RunAction(Constants.ActionNameGuessingFinished);
             }
         }
     }
