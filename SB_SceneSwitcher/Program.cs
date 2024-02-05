@@ -1275,7 +1275,7 @@ public class CPHInline
 
             if (guesses.Count < minimumGuesses)
             {
-                CPH.SendMessage(string.Format("Unfortunately only {0} out of required {1} people have guessed"));
+                CPH.SendMessage(string.Format("Unfortunately only {0} out of required {1} people have guessed",guesses.Count, minimumGuesses));
             }
             else
             {
