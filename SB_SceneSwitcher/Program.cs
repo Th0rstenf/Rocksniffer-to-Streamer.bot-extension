@@ -1231,14 +1231,19 @@ public class CPHInline
         {
             ResetGuesses();
             ReadConfig();
+
         }
 
         public void StartAcceptingGuesses()
         {
-            ResetGuesses();
-            SetState(State.AcceptingGuesses);
-            string message = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingStartedText, false);
-            CPH.SendMessage(message);
+            //Plausability check
+            if (itsState != State.AcceptingGuesses)
+            {
+                ResetGuesses();
+                SetState(State.AcceptingGuesses);
+                string message = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingStartedText, false);
+                CPH.SendMessage(message);
+            }
         }
 
         public void CheckTimeout(int currentTimer)
@@ -1255,17 +1260,20 @@ public class CPHInline
 
         private void StopAcceptingGuesses()
         {
-            SetState(State.WaitingForTheSongToFinish);
-            string message = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingTimeoutText, false);
-            CPH.SendMessage(message);
-            string temp = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingDictionary);
-            if (temp != null)
+            if (itsState == State.AcceptingGuesses)
             {
-                guesses = JsonConvert.DeserializeObject<Dictionary<string, float>>(temp);
-            }
-            else
-            {
-                guesses = new Dictionary<string, float>();
+                SetState(State.WaitingForTheSongToFinish);
+                string message = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingTimeoutText, false);
+                CPH.SendMessage(message);
+                string temp = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingDictionary);
+                if (temp != null)
+                {
+                    guesses = JsonConvert.DeserializeObject<Dictionary<string, float>>(temp);
+                }
+                else
+                {
+                    guesses = new Dictionary<string, float>();
+                }
             }
         }
 
