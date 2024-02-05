@@ -130,6 +130,8 @@ public class CPHmock : IInlineInvokeProxy
             "blackList" => _config?.blackList,
             "logLevel" => _config == null ? DefaultLogLevel.ToString() : _config.logLevel,
             "guessingIsActive" => "True",
+            "guessMinGuesserCount" => _config == null ? "1" : _config.guessMinGuesserCount,
+            "guessTime" => _config == null ? "30" : _config.guessTime,
             Constants.GlobalVarNameTotalNotesLifeTime => "0",
             Constants.GlobalVarNameTotalNotesHitLifeTime => "0",
             Constants.GlobalVarNameTotalNotesMissedLifeTime => "0",
