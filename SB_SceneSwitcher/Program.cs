@@ -1433,7 +1433,7 @@ public class CPHInline
         {
             CPH.LogWarn(Constants.AppName + "Fetching response failed, exiting action.");
 
-            return false;
+            return true;
         }
 
         CPH.LogDebug(Constants.AppName + "------- END! -------");
