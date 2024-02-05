@@ -1259,8 +1259,14 @@ public class CPHInline
             string message = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingTimeoutText, false);
             CPH.SendMessage(message);
             string temp = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingDictionary);
-
-            guesses = JsonConvert.DeserializeObject<Dictionary<string, float>>(temp);
+            if (temp != null)
+            {
+                guesses = JsonConvert.DeserializeObject<Dictionary<string, float>>(temp);
+            }
+            else
+            {
+                guesses = new Dictionary<string, float>();
+            }
         }
 
         public void FinishAndEvaluate(float accuracy)
