@@ -45,6 +45,10 @@ public struct Constants
     public const string GlobalVarNameGuessingMinGuesser = "guessMinGuesserCount";
     public const string GlobalVarNameGuessingGuessTime = "guessTime";
 
+    public const string GlobalVarNameGuessingStartedText = "guessStartingText";
+    public const string GlobalVarNameGuessingTimeoutText = "guessTimeoutText";
+
+
 }
 
 internal enum SongSceneAutoSwitchMode
@@ -1228,6 +1232,8 @@ public class CPHInline
         {
             ResetGuesses();
             SetState(State.AcceptingGuesses);
+            string message = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingStartedText, false);
+            CPH.SendMessage(message);
         }
 
         public void CheckTimeout(int currentTimer)
@@ -1245,7 +1251,8 @@ public class CPHInline
         private void StopAcceptingGuesses()
         {
             SetState(State.WaitingForTheSongToFinish);
-
+            string message = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingTimeoutText, false);
+            CPH.SendMessage(message);
             string temp = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingDictionary);
 
             guesses = JsonConvert.DeserializeObject<Dictionary<string, float>>(temp);
