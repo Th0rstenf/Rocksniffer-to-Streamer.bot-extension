@@ -129,12 +129,13 @@ public class CPHmock : IInlineInvokeProxy
             "sectionActions" => _config?.sectionActions,
             "blackList" => _config?.blackList,
             "logLevel" => _config == null ? DefaultLogLevel.ToString() : _config.logLevel,
+            "guessingIsActive" => "True",
             Constants.GlobalVarNameTotalNotesLifeTime => "0",
             Constants.GlobalVarNameTotalNotesHitLifeTime => "0",
             Constants.GlobalVarNameTotalNotesMissedLifeTime => "0",
             Constants.GlobalVarNameAccuracyLifeTime => "0,0",
             _ => null
-        };
+        }; ;
 
         if (value == null) Console.WriteLine($"{MockAppName}Key {key} is not found in config.yml!");
 
@@ -232,6 +233,8 @@ public class CPHmock : IInlineInvokeProxy
         public string? sectionActions { get; set; }
         public string? logLevel { get; set; }
         public string? logLevelSB { get; set; }
+        public string? guessMinGuesserCount { get; set; }
+        public string? guessTime { get; set; }
 
         public override string ToString()
         {

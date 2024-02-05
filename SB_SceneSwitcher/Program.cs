@@ -1328,8 +1328,9 @@ public class CPHInline
         CPH.LogInfo($"{Constants.AppName}Sniffer ip configured as {snifferIp}:{snifferPort}");
         itsSceneInteractor = new SceneInteractor(CPH);
         itsFetcher = new ResponseFetcher(CPH, snifferIp, snifferPort);
-        itsParser = new ResponseParser(CPH, itsSceneInteractor, itsGuessingGame);
         itsGuessingGame = new GuessingGame(CPH);
+        itsParser = new ResponseParser(CPH, itsSceneInteractor, itsGuessingGame);
+        
         itsParser.Init();
         itsSceneInteractor.SetCooldownPeriod(itsParser.GetSceneSwitchCooldownPeriodInSeconds());
 
