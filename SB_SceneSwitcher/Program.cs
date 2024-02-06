@@ -1320,6 +1320,14 @@ public class CPHInline
                 CPH.RunAction(Constants.ActionNameGuessingFinished);
 
                 ++guessWinningCountDict[winnerName];
+                if (guessWinningCountDict.TryGetValue(winnerName, out int currentCount))
+                {
+                    guessWinningCountDict[winnerName] = currentCount + 1;
+                }
+                else
+                {
+                    guessWinningCountDict[winnerName] = 1;
+                }
                 string temp = JsonConvert.SerializeObject(guessWinningCountDict);
                 CPH.SetGlobalVar(Constants.GlobalVarNameGuessingWinnersCount, temp, true);
             }
