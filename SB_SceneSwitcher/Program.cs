@@ -1270,7 +1270,6 @@ public class CPHInline
             {
                 if (currentTimer >= timeOut)
                 {
-                    SetState(State.WaitingForTheSongToFinish);
                     StopAcceptingGuesses();
                 }
             }
