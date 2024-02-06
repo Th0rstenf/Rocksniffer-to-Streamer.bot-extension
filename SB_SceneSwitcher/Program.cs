@@ -1199,7 +1199,16 @@ public class CPHInline
             SetState(State.InActive);
 
             string temp = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingWinnersCount, true);
-            guessWinningCountDict = (temp == null) ? new Dictionary<string, int>() : JsonConvert.DeserializeObject<Dictionary<string, int>>(temp);
+            if (temp == null)
+            {
+                guessWinningCountDict = new Dictionary<string, int>();
+                CPH.SetGlobalVar(Constants.GlobalVarNameGuessingWinnersCount, JsonConvert.SerializeObject(guessWinningCountDict), true);
+            }
+            else
+            {
+                guessWinningCountDict = JsonConvert.DeserializeObject<Dictionary<string, int>>(temp);
+            }
+            
         }
 
         
