@@ -1283,7 +1283,7 @@ public class CPHInline
                 SetState(State.WaitingForTheSongToFinish);
                 string message = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingTimeoutText, false);
                 CPH.SendMessage(message);
-                string temp = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingDictionary);
+                string temp = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingDictionary, false);
                 if (temp != null)
                 {
                     guesses = JsonConvert.DeserializeObject<Dictionary<string, float>>(temp);
