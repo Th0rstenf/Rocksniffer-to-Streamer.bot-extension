@@ -50,6 +50,7 @@ public struct Constants
     public const string GlobalVarNameGuessingTimeoutText = "guessTimeoutText";
     public const string GlobarVarNameGuessingWinner = "guessWinner";
     public const string GlobarVarNameGuessingWinningGuess = "guessWinningGuess";
+    public const string GlobalVarNameGuessingWinnersCount = "guessWinnersCount";
 
     public const string ActionNameGuessingFinished = "guessWinner";
 
@@ -1188,13 +1189,21 @@ public class CPHInline
         //Unfortunately guesses will be entered via separate actions in streamer.bot. Therefore we cannot access any contents here directly and need to work with variables
         // JsonConvert shall be used to store/extract in in a variable.
         Dictionary<string, float> guesses;
+        Dictionary<string, int> guessWinningCountDict;
+
 
         public GuessingGame(IInlineInvokeProxy cph)
         {
-            CPH = cph;
+            CPH = cph;    
             ResetGuesses();
             SetState(State.InActive);
+
+            string temp = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingWinnersCount, true);
+            guessWinningCountDict = (temp == null) ? new Dictionary<string, int>() : JsonConvert.DeserializeObject<Dictionary<string, int>>(temp);
         }
+
+        
+
 
         public void UpdateConfig()
         {
@@ -1301,6 +1310,10 @@ public class CPHInline
                 CPH.SetGlobalVar(Constants.GlobarVarNameGuessingWinner, winnerName, false);
                 CPH.SetGlobalVar(Constants.GlobarVarNameGuessingWinningGuess, guesses[winnerName], false);
                 CPH.RunAction(Constants.ActionNameGuessingFinished);
+
+                ++guessWinningCountDict[winnerName];
+                string temp = JsonConvert.SerializeObject(guessWinningCountDict);
+                CPH.SetGlobalVar(Constants.GlobalVarNameGuessingWinnersCount, temp, true);
             }
         }
     }
