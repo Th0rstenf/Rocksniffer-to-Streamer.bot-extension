@@ -1319,7 +1319,6 @@ public class CPHInline
                 CPH.SetGlobalVar(Constants.GlobarVarNameGuessingWinningGuess, guesses[winnerName], false);
                 CPH.RunAction(Constants.ActionNameGuessingFinished);
 
-                ++guessWinningCountDict[winnerName];
                 if (guessWinningCountDict.TryGetValue(winnerName, out int currentCount))
                 {
                     guessWinningCountDict[winnerName] = currentCount + 1;

@@ -132,6 +132,7 @@ public class CPHmock : IInlineInvokeProxy
             "guessingIsActive" => "True",
             "guessMinGuesserCount" => _config == null ? "1" : _config.guessMinGuesserCount,
             "guessTime" => _config == null ? "30" : _config.guessTime,
+            "guessingDictionary" => _config == null ? "{{Th0lamin : 90}}" :_config.guessingDictionary,
             Constants.GlobalVarNameTotalNotesLifeTime => "0",
             Constants.GlobalVarNameTotalNotesHitLifeTime => "0",
             Constants.GlobalVarNameTotalNotesMissedLifeTime => "0",
@@ -237,6 +238,7 @@ public class CPHmock : IInlineInvokeProxy
         public string? logLevelSB { get; set; }
         public string? guessMinGuesserCount { get; set; }
         public string? guessTime { get; set; }
+        public string? guessingDictionary { get; set; }
 
         public override string ToString()
         {
