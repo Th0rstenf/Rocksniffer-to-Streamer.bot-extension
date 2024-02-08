@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
@@ -51,6 +52,8 @@ public struct Constants
     public const string GlobarVarNameGuessingWinner = "guessWinner";
     public const string GlobarVarNameGuessingWinningGuess = "guessWinningGuess";
     public const string GlobalVarNameGuessingWinnersCount = "guessWinnersCount";
+    public const string GlobalVarNameGuessingWinningDeviation = "guessWinningDeviation";
+    public const string GlobalVarNameGuessingFinalAccuracy = "guessFinalAccuracy";
 
     public const string ActionNameGuessingFinished = "guessWinner";
 
@@ -1317,6 +1320,9 @@ public class CPHInline
                 }
                 CPH.SetGlobalVar(Constants.GlobarVarNameGuessingWinner, winnerName, false);
                 CPH.SetGlobalVar(Constants.GlobarVarNameGuessingWinningGuess, guesses[winnerName], false);
+                CPH.SetGlobalVar(Constants.GlobalVarNameGuessingWinningDeviation, minimumDeviation, false);
+                CPH.SetGlobalVar(Constants.GlobalVarNameGuessingFinalAccuracy, accuracy, false);
+
                 CPH.RunAction(Constants.ActionNameGuessingFinished);
 
                 if (guessWinningCountDict.TryGetValue(winnerName, out int currentCount))
