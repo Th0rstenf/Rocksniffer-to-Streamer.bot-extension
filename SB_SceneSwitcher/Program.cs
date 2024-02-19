@@ -1111,7 +1111,9 @@ public class CPHInline
                 arrangementIdentified = false;
                 lastNoteData = null!;
                 RunAction(Constants.ActionNameSongEnd);
-                itsGuessingGame.FinishAndEvaluate((float)currentResponse.MemoryReadout.NoteData.Accuracy);
+
+                itsGuessingGame.FinishAndEvaluate((float)currentResponse.MemoryReadout.NoteData.Accuracy, currentResponse.SongDetails.SongLength, currentResponse.MemoryReadout.SongTimer);
+
             }
         }
 
@@ -1302,17 +1304,18 @@ public class CPHInline
             }
         }
 
-        public void FinishAndEvaluate(float accuracy)
+        public void FinishAndEvaluate(float accuracy, double totalLength, double currentTimer)
         {
             
-            if (itsState != State.WaitingForTheSongToFinish)
+            if (totalLength < timeOut)
             {
-                SetState(State.InActive);
-                return;
+                SendToChats("This song was too short to count for the guessing game");
             }
-            
-            SetState(State.InActive);
-            if (guesses.Count < minimumGuesses)
+            else if ((totalLength - currentTimer) > 3)
+            {
+                SendToChats("It seems the song was not played to the end, guessing game is not counting this one.");
+            }          
+            else if (guesses.Count < minimumGuesses)
             {
                SendToChats(string.Format("Unfortunately only {0} out of required {1} people have guessed",guesses.Count, minimumGuesses));
             }
@@ -1347,6 +1350,7 @@ public class CPHInline
                 string temp = JsonConvert.SerializeObject(guessWinningCountDict);
                 CPH.SetGlobalVar(Constants.GlobalVarNameGuessingWinnersCount, temp, true);
             }
+            SetState(State.InActive);
         }
     }
 
