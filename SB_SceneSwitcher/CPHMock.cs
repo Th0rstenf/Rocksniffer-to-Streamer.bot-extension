@@ -82,7 +82,7 @@ public class CPHmock : IInlineInvokeProxy
     public string ObsGetCurrentScene()
     {
         var obsGetCurrentScene = currentScene ??= _config?.menuScene ?? "";
-        Console.WriteLine(MockAppName + $"OBS current scene is: {obsGetCurrentScene}");
+        //Console.WriteLine(MockAppName + $"OBS current scene is: {obsGetCurrentScene}");
         return obsGetCurrentScene;
     }
 

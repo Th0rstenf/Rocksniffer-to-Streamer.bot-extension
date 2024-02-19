@@ -518,14 +518,12 @@ public class CPHInline
         private string GetGlobalVarAsString(string name)
         {
             var globalVar = CPH.GetGlobalVar<string>(name);
-            CPH.LogInfo($"{Constants.AppName}{name}={globalVar}");
             return globalVar;
         }
 
         private bool GetGlobalVarAsBool(string name)
         {
             var globalVar = CPH.GetGlobalVar<string>(name).ToLower().Contains("true");
-            CPH.LogInfo($"{Constants.AppName}{name}={globalVar}");
             return globalVar;
         }
 
@@ -537,7 +535,6 @@ public class CPHInline
             if (string.IsNullOrEmpty(rawValue)) return null;
 
             var trimmedValues = Regex.Split(rawValue.Trim(), @"\s*[,;]\s*");
-            CPH.LogInfo($"{Constants.AppName}{name}=[{string.Join(",", trimmedValues)}]");
 
             return trimmedValues;
         }
@@ -545,7 +542,7 @@ public class CPHInline
         private ActivityBehavior GetGlobalVarBehavior()
         {
             var behavior = GetBehavior(CPH.GetGlobalVar<string>(Constants.GlobalVarNameBehavior));
-            CPH.LogInfo($"{Constants.AppName}{nameof(behavior)}={behavior}");
+
             return behavior;
         }
 
@@ -567,7 +564,6 @@ public class CPHInline
         {
             var autoSwitchMode =
                 GetSongSceneAutoSwitchMode(CPH.GetGlobalVar<string>(Constants.GlobalVarNameSongSceneAutoSwitchMode));
-            CPH.LogInfo($"{Constants.AppName}{nameof(autoSwitchMode)}={autoSwitchMode}");
             return autoSwitchMode;
         }
 
@@ -607,7 +603,6 @@ public class CPHInline
         {
             var globalVar = GetGlobalVarAsInt(Constants.GlobalVarNameSceneSwitchPeriod,
                 Constants.DefaultSceneSwitchPeriod);
-            CPH.LogInfo($"{Constants.AppName}{Constants.GlobalVarNameSceneSwitchPeriod}={globalVar}");
             return globalVar;
         }
 
@@ -615,7 +610,6 @@ public class CPHInline
         {
             var globalVar = GetGlobalVarAsInt(Constants.GlobalVarNameSceneSwitchCooldownPeriod,
                 Constants.DefaultSceneSwitchCooldownPeriod);
-            CPH.LogInfo($"{Constants.AppName}{Constants.GlobalVarNameSceneSwitchCooldownPeriod}={globalVar}");
             return globalVar;
         }
 
@@ -1411,7 +1405,6 @@ public class CPHInline
     private string GetSnifferIp()
     {
         var globalVar = CPH.GetGlobalVar<string>(Constants.GlobalVarNameSnifferIP);
-        CPH.LogInfo($"{Constants.AppName}{Constants.GlobalVarNameSnifferIP}={globalVar}");
         // TODO in case not found, return null, or return default localhost?
         return string.IsNullOrEmpty(globalVar) ? null : globalVar.Replace('"', ' ').Trim();
     }
@@ -1419,7 +1412,6 @@ public class CPHInline
     private string GetSnifferPort()
     {
         var globalVar = CPH.GetGlobalVar<string>(Constants.GlobalVarNameSnifferPort);
-        CPH.LogInfo($"{Constants.AppName}{Constants.GlobalVarNameSnifferPort}={globalVar}");
         return string.IsNullOrEmpty(globalVar) ? Constants.SnifferPortDefault : globalVar.Trim();
     }
 
