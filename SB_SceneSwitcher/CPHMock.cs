@@ -138,6 +138,8 @@ public class CPHmock : IInlineInvokeProxy
             "guessMinGuesserCount" => _config == null ? "1" : _config.guessMinGuesserCount,
             "guessTime" => _config == null ? "30" : _config.guessTime,
             "guessingDictionary" => _config == null ? "{{Th0lamin : 90}}" :_config.guessingDictionary,
+            "guessStartingText" => "Starting to accept guesses",
+            "guessTimeoutText" => "No more guesses allowed",
             Constants.GlobalVarNameTotalNotesLifeTime => "0",
             Constants.GlobalVarNameTotalNotesHitLifeTime => "0",
             Constants.GlobalVarNameTotalNotesMissedLifeTime => "0",
