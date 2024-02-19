@@ -101,9 +101,14 @@ public class CPHmock : IInlineInvokeProxy
         return currentScene;
     }
 
-    public void SendMessage(string str)
+    public void SendMessage(string str, bool bot = true)
     {
         Console.WriteLine(MockAppName + $"SendMessage: {str}");
+    }
+
+    public void SendYouTubeMessage(string str, bool bot = true)
+    {
+
     }
 
     public void RunAction(string str)

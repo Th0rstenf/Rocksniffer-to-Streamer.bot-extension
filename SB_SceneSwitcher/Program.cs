@@ -1221,6 +1221,12 @@ public class CPHInline
             ReadConfig();
         }
 
+        private void SendToChats(string str)
+        {
+            CPH.SendMessage(str, true);
+            CPH.SendYouTubeMessage(str, true);
+        }
+        
         private void ResetGuesses()
         {
             guesses = new Dictionary<string, float>();
@@ -1262,7 +1268,7 @@ public class CPHInline
                 ResetGuesses();
                 SetState(State.AcceptingGuesses);
                 string message = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingStartedText, false);
-                CPH.SendMessage(message);
+                SendToChats(message);
             }
         }
 
@@ -1283,7 +1289,7 @@ public class CPHInline
             {
                 SetState(State.WaitingForTheSongToFinish);
                 string message = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingTimeoutText, false);
-                CPH.SendMessage(message);
+                SendToChats(message);
                 string temp = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingDictionary, false);
                 if (temp != null)
                 {
@@ -1298,11 +1304,17 @@ public class CPHInline
 
         public void FinishAndEvaluate(float accuracy)
         {
+            
+            if (itsState != State.WaitingForTheSongToFinish)
+            {
+                SetState(State.InActive);
+                return;
+            }
+            
             SetState(State.InActive);
-
             if (guesses.Count < minimumGuesses)
             {
-                CPH.SendMessage(string.Format("Unfortunately only {0} out of required {1} people have guessed",guesses.Count, minimumGuesses));
+               SendToChats(string.Format("Unfortunately only {0} out of required {1} people have guessed",guesses.Count, minimumGuesses));
             }
             else
             {
