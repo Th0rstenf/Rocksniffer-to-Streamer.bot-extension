@@ -1105,8 +1105,8 @@ public class CPHInline
                 arrangementIdentified = false;
                 lastNoteData = null!;
                 RunAction(Constants.ActionNameSongEnd);
-
-                itsGuessingGame.FinishAndEvaluate((float)currentResponse.MemoryReadout.NoteData.Accuracy, currentResponse.SongDetails.SongLength, currentResponse.MemoryReadout.SongTimer);
+                // It is necessary to pass lastSongTimer for evaluation, as currentSongTimer is already reset to 0 at this stage
+                itsGuessingGame.FinishAndEvaluate((float)currentResponse.MemoryReadout.NoteData.Accuracy, currentResponse.SongDetails.SongLength, lastSongTimer);
 
             }
         }
