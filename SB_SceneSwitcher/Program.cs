@@ -1259,7 +1259,7 @@ public class CPHInline
         public void StartAcceptingGuesses()
         {
             //Plausability check
-            if (itsState != State.AcceptingGuesses)
+            if (isActive && itsState != State.AcceptingGuesses)
             {
                 ResetGuesses();
                 SetState(State.AcceptingGuesses);
@@ -1281,7 +1281,7 @@ public class CPHInline
 
         private void StopAcceptingGuesses()
         {
-            if (itsState == State.AcceptingGuesses)
+            if (isActive && itsState == State.AcceptingGuesses)
             {
                 SetState(State.WaitingForTheSongToFinish);
                 string message = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingTimeoutText, false);
@@ -1300,7 +1300,9 @@ public class CPHInline
 
         public void FinishAndEvaluate(float accuracy, double totalLength, double currentTimer)
         {
-            
+            SetState(State.InActive);
+            if (!isActive)
+                return;
             if (totalLength < timeOut)
             {
                 SendToChats("This song was too short to count for the guessing game");
@@ -1344,7 +1346,7 @@ public class CPHInline
                 string temp = JsonConvert.SerializeObject(guessWinningCountDict);
                 CPH.SetGlobalVar(Constants.GlobalVarNameGuessingWinnersCount, temp, true);
             }
-            SetState(State.InActive);
+            
         }
     }
 
