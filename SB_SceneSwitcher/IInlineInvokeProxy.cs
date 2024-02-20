@@ -8,7 +8,7 @@
     string ObsGetCurrentScene();
     bool ObsIsConnected(int connection = 0);
     void ObsSetScene(string str);
-    void RunAction(string str);
+    void RunAction(string str, bool runImmediately = true);
     void SendMessage(string str, bool bot = true);
     void SendYouTubeMessage(string str, bool bot = true);
     void SetGlobalVar(string varName, object value, bool persisted = true);

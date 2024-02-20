@@ -111,9 +111,10 @@ public class CPHmock : IInlineInvokeProxy
 
     }
 
-    public void RunAction(string str)
+    public void RunAction(string str, bool runImmediately = true)
     {
-        Console.WriteLine(MockAppName + $"Running action: {str}");
+        string when = runImmediately ? "immediately" : "consecutively";
+        Console.WriteLine(MockAppName + $"Running action: {str} {when}");
     }
 
 

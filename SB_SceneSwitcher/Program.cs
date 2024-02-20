@@ -1087,10 +1087,10 @@ public class CPHInline
             return songScenes.Length > 1;
         }
 
-        private void RunAction(string actionName)
+        private void RunAction(string actionName, bool immediately = false)
         {
             CPH.LogInfo(Constants.AppName + $"RunAction: {actionName}");
-            CPH.RunAction(actionName);
+            CPH.RunAction(actionName, immediately);
         }
 
         private void CheckGameStageMenu()
