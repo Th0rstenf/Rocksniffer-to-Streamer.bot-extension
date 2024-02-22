@@ -1087,10 +1087,13 @@ public class CPHInline
             return songScenes.Length > 1;
         }
 
-        private void RunAction(string actionName, bool immediately = false)
+        private void RunAction(string actionName, bool immediately = true)
         {
             CPH.LogInfo(Constants.AppName + $"RunAction: {actionName}");
+            var actionStart = DateTime.Now;
             CPH.RunAction(actionName, immediately);
+            var actionEnd = DateTime.Now;
+            CPH.LogDebug(Constants.AppName + $"Action {actionName} took {(actionEnd - actionStart).TotalMilliseconds}");
         }
 
         private void CheckGameStageMenu()
@@ -1419,6 +1422,7 @@ public class CPHInline
 
     public bool Execute()
     {
+        var executionStart = DateTime.Now;
         CPH.LogDebug(Constants.AppName + "------- START! -------");
 
         UpdateCurrentScene();
@@ -1480,7 +1484,8 @@ public class CPHInline
         }
 
         CPH.LogDebug(Constants.AppName + "------- END! -------");
-
+        var executionEnd = DateTime.Now;
+        CPH.LogDebug(Constants.AppName + $"Main engine started at {executionStart} and took a total of {(executionEnd - executionStart).TotalMilliseconds} ms");
         return true;
     }
 }
