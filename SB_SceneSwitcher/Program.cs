@@ -1089,7 +1089,7 @@ public class CPHInline
 
         private void RunAction(string actionName, bool immediately = true)
         {
-            CPH.LogInfo(Constants.AppName + $"RunAction: {actionName}");
+            CPH.LogDebug(Constants.AppName + $"Action trigger: {actionName}");
             var actionStart = DateTime.Now;
             CPH.RunAction(actionName, immediately);
             var actionEnd = DateTime.Now;
@@ -1423,7 +1423,7 @@ public class CPHInline
     public bool Execute()
     {
         var executionStart = DateTime.Now;
-        CPH.LogDebug(Constants.AppName + "------- START! -------");
+        CPH.LogDebug(Constants.AppName + "Action main ------- START! -------");
 
         UpdateCurrentScene();
         UpdateConfig();
@@ -1478,14 +1478,14 @@ public class CPHInline
         }
         else
         {
-            CPH.LogWarn(Constants.AppName + "Fetching response failed, exiting action.");
+            CPH.LogWarn(Constants.AppName + "Action main: Fetching response failed, exiting action.");
 
             return true;
         }
 
         CPH.LogDebug(Constants.AppName + "------- END! -------");
         var executionEnd = DateTime.Now;
-        CPH.LogDebug(Constants.AppName + $"Main engine started at {executionStart} and took a total of {(executionEnd - executionStart).TotalMilliseconds} ms");
+        CPH.LogDebug(Constants.AppName + $"Action main started at {executionStart} and took a total of {(executionEnd - executionStart).TotalMilliseconds} ms");
         return true;
     }
 }
