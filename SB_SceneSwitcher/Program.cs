@@ -476,7 +476,6 @@ public class CPHInline
                         CPH.LogDebug(Constants.AppName + $"Response: {property.Name} changed from {oldValue ?? "null"} to {newValue ?? "null"}");
                     }
                 }
-            
             }
 
             var readoutProperties = typeof(MemoryReadout).GetProperties();
@@ -1179,7 +1178,7 @@ public class CPHInline
                 lastNoteData = null!;
                 RunAction(Constants.ActionNameSongEnd);
                 // It is necessary to pass lastSongTimer for evaluation, as currentSongTimer is already reset to 0 at this stage
-                itsGuessingGame.FinishAndEvaluate((float)currentResponse.MemoryReadout.NoteData.Accuracy, currentResponse.SongDetails.SongLength, lastSongTimer);
+                itsGuessingGame.FinishAndEvaluate(currentResponse.SongDetails.SongLength, currentResponse.MemoryReadout.NoteData);
 
             }
         }
@@ -1256,6 +1255,7 @@ public class CPHInline
         private int minimumGuesses = 2;
         private int timeOut;
         private IInlineInvokeProxy CPH;
+        private DataHandler itsDataHandler;
 
         //Unfortunately guesses will be entered via separate actions in streamer.bot. Therefore we cannot access any contents here directly and need to work with variables
         // JsonConvert shall be used to store/extract in in a variable.
@@ -1263,9 +1263,10 @@ public class CPHInline
         Dictionary<string, int> guessWinningCountDict;
 
 
-        public GuessingGame(IInlineInvokeProxy cph)
+        public GuessingGame(IInlineInvokeProxy cph, DataHandler dataHandler)
         {
-            CPH = cph;    
+            CPH = cph;
+            itsDataHandler = dataHandler;
             ResetGuesses();
             SetState(State.InActive);
 
@@ -1371,7 +1372,7 @@ public class CPHInline
             }
         }
 
-        public void FinishAndEvaluate(float accuracy, double totalLength, double currentTimer)
+        public void FinishAndEvaluate(double totalLength, NoteData currentNoteData)
         {
             SetState(State.InActive);
             if (!isActive)
@@ -1380,7 +1381,7 @@ public class CPHInline
             {
                 SendToChats("This song was too short to count for the guessing game");
             }
-            else if ((totalLength - currentTimer) > 3)
+            else if (currentNoteData.TotalNotes > (currentNoteData.TotalNotesHit + currentNoteData.TotalNotesMissed))
             {
                 SendToChats("It seems the song was not played to the end, guessing game is not counting this one.");
             }          
@@ -1394,7 +1395,7 @@ public class CPHInline
                 float minimumDeviation = 1000000.0f;
                 foreach (KeyValuePair<string, float> guess in guesses)
                 {
-                    float deviation = Math.Abs(accuracy - guess.Value);
+                    float deviation = Math.Abs((float)currentNoteData.Accuracy - guess.Value);
                     if (deviation < minimumDeviation)
                     {
                         winnerName = guess.Key;
@@ -1404,7 +1405,7 @@ public class CPHInline
                 CPH.SetGlobalVar(Constants.GlobarVarNameGuessingWinner, winnerName, false);
                 CPH.SetGlobalVar(Constants.GlobarVarNameGuessingWinningGuess, guesses[winnerName], false);
                 CPH.SetGlobalVar(Constants.GlobalVarNameGuessingWinningDeviation, minimumDeviation, false);
-                CPH.SetGlobalVar(Constants.GlobalVarNameGuessingFinalAccuracy, accuracy, false);
+                CPH.SetGlobalVar(Constants.GlobalVarNameGuessingFinalAccuracy, currentNoteData.Accuracy, false);
 
                 CPH.RunAction(Constants.ActionNameGuessingFinished);
 
@@ -1450,6 +1451,21 @@ public class CPHInline
             return ReadArgument(name)?.ToString() ?? "";
         }
 
+        public int ReadArgumentAsInt(string name)
+        {
+            return int.TryParse(ReadArgumentAsString(name), out var result) ? result : 0;
+        }
+
+        public float ReadArgumentAsFloat(string name)
+        {
+            return float.TryParse(ReadArgumentAsString(name), out var result) ? result : 0;
+        }
+
+        public bool ReadArgumentAsBool(string name)
+        {
+            return bool.TryParse(ReadArgumentAsString(name), out var result) && result;
+        }
+
     }
 
     private SceneInteractor itsSceneInteractor = null!;
@@ -1482,12 +1498,13 @@ public class CPHInline
     public void Init()
     {
         CPH.LogInfo($"{Constants.AppName}!!! Initialising RockSniffer to SB plugin !!!");
-               
+
+        itsDataHandler = new DataHandler(CPH, args);
         itsSceneInteractor = new SceneInteractor(CPH);
         itsFetcher = new ResponseFetcher(CPH, snifferIp, snifferPort);
-        itsGuessingGame = new GuessingGame(CPH);
+        itsGuessingGame = new GuessingGame(CPH, itsDataHandler);
         itsParser = new ResponseParser(CPH, itsSceneInteractor, itsGuessingGame);
-        itsDataHandler = new DataHandler(CPH, args);
+        
         
         itsParser.Init();
         UpdateConfig();
