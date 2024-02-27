@@ -1156,7 +1156,7 @@ public class CPHInline
             return songScenes.Length > 1;
         }
 
-        private void RunAction(string actionName, bool immediately = true)
+        private void RunAction(string actionName, bool immediately = false)
         {
             CPH.LogDebug(Constants.AppName + $"Action trigger: {actionName}");
             var actionStart = DateTime.Now;
