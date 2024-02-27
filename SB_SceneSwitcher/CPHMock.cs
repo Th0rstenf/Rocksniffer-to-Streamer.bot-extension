@@ -20,6 +20,8 @@ public class CPHmock : IInlineInvokeProxy
     private static LogLevels LogLevelSB;
     private string? currentScene;
 
+    public static Dictionary<string, object> args;
+
     public enum LogLevels
     {
         Verbose,
@@ -28,6 +30,30 @@ public class CPHmock : IInlineInvokeProxy
         Warn,
         Error_
     }
+
+    public CPHmock()
+    {
+        LogLevel = GetLogLevel(_config?.logLevel);
+        LogLevelSB = GetLogLevel(_config?.logLevelSB);
+        args = new Dictionary<string, object>();
+
+
+        args.Add(Constants.GlobalVarNameSnifferIP, _config.snifferIp);
+        args.Add(Constants.GlobalVarNameSnifferPort, _config.snifferPort);
+        args.Add(Constants.GlobalVarNameMenuScene, _config.menuScene);
+        args.Add(Constants.GlobalVarNameSongScenes, _config.songScenes);
+        args.Add(Constants.GlobalVarNamePauseScene, _config?.pauseScene);
+        args.Add(Constants.GlobalVarNameSwitchScenes, _config?.switchScenes);
+        args.Add(Constants.GlobalVarNameSceneSwitchPeriod, _config?.sceneSwitchPeriod);
+        args.Add(Constants.GlobalVarNameSceneSwitchCooldownPeriod, _config.sceneSwitchCooldownPeriod);
+        args.Add(Constants.GlobalVarNameSongSceneAutoSwitchMode, _config?.songSceneAutoSwitchMode);
+        args.Add(Constants.GlobalVarNameSectionActions, _config?.sectionActions);
+        args.Add(Constants.GlobalVarNameBehavior, _config?.behavior);
+        args.Add(Constants.GlobalVarNameBlackList, _config?.blackList);
+
+
+
+}
 
     public void LogWarn(string str)
     {

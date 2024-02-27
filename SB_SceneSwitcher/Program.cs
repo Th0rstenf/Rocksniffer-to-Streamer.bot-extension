@@ -13,7 +13,7 @@ public struct Constants
     public const string GlobalVarNameSnifferIP = "snifferIP";
     public const string GlobalVarNameSnifferPort = "snifferPort";
     public const string GlobalVarNameMenuScene = "menuScene";
-    public const string GlobalVarNameMenuSongScenes = "songScenes";
+    public const string GlobalVarNameSongScenes = "songScenes";
     public const string GlobalVarNamePauseScene = "pauseScene";
     public const string GlobalVarNameSwitchScenes = "switchScenes";
     public const string GlobalVarNameSceneSwitchPeriod = "sceneSwitchPeriod";
@@ -280,6 +280,24 @@ public class CPHInline
             client = new HttpClient();
         }
 
+        public void setIp(string ip)
+        {
+            if (ip != this.ip)
+            {
+                CPH.LogDebug(Constants.AppName + $"Setting ip to {ip}");
+            }
+            this.ip = ip;
+        }
+
+        public void setPort(string port)
+        {
+            if (port != this.port)
+            {
+                CPH.LogDebug(Constants.AppName + $"Setting port to {port}");
+            }
+            this.port = port;
+        }   
+
         public string Fetch()
         {
             string responseString = string.Empty;
@@ -473,7 +491,7 @@ public class CPHInline
         public void UpdateConfig()
         {
             menuScene = GetGlobalVarAsString(Constants.GlobalVarNameMenuScene);
-            string[] songScenesRaw = GetGlobalVarAsStringArray(Constants.GlobalVarNameMenuSongScenes);
+            string[] songScenesRaw = GetGlobalVarAsStringArray(Constants.GlobalVarNameSongScenes);
             songScenes = new SongScene[songScenesRaw.Length];
             for (var i = 0; i < songScenesRaw.Length; ++i)
             {
@@ -1358,10 +1376,33 @@ public class CPHInline
     private CPHmock CPH = new CPHmock();
     // -------------------------------------------------
 
+    public class DataHandler
+    {
+
+        private IInlineInvokeProxy CPH;
+
+        public DataHandler(IInlineInvokeProxy cph) { CPH = cph; }
+
+        public object ReadArgument(string name)
+        {
+            // the CPHmock. needs to be commented out in SB
+            CPHmock.args.TryGetValue(name, out var arg);
+
+            return arg;
+        }
+
+        public string ReadArgumentAsString(string name)
+        {
+            return ReadArgument(name)?.ToString() ?? "";
+        }
+
+    }
+
     private SceneInteractor itsSceneInteractor = null!;
     private ResponseFetcher itsFetcher = null!;
     private ResponseParser itsParser = null!;
     private GuessingGame itsGuessingGame = null!;
+    private DataHandler itsDataHandler = null!;
 
     private string snifferIp = null!;
     private string snifferPort = null!;
@@ -1436,6 +1477,8 @@ public class CPHInline
         {
             CPH.LogVerbose(Constants.AppName + "Valid response received.");
             Response currentResponse = itsFetcher.ExtractResponse(response);
+
+
 
             if (currentResponse != null)
             {
