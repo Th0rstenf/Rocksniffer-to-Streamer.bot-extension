@@ -455,7 +455,7 @@ public class CPHInline
 
         private void LogResponseChange(Response oldResponse, Response newResponse)
         {
-            CPH.LogDebug(Constants.AppName + $"Received new Response from Rocksniffer");
+            CPH.LogDebug(Constants.AppName + $"Response received from Rocksniffer");
 
             if (oldResponse == null || newResponse == null)
             {
@@ -463,15 +463,46 @@ public class CPHInline
                 return;
             }
 
-            var properties = typeof(Response).GetProperties();
-            foreach (var property in properties)
+            var songDetailproperties = typeof(SongDetails).GetProperties();
+            foreach (var property in songDetailproperties)
             {
-                var oldValue = property.GetValue(oldResponse);
-                var newValue = property.GetValue(newResponse);
+                var oldValue = (oldResponse != null && oldResponse.SongDetails != null)? property.GetValue(oldResponse.SongDetails) : "";
+                var newValue = (newResponse.SongDetails != null)? property.GetValue(newResponse.SongDetails) : "";
 
                 if ((oldValue == null && newValue != null) || (oldValue != null && !oldValue.Equals(newValue)))
                 {
-                    CPH.LogDebug($"Response {property.Name} changed from {oldValue ?? "null"} to {newValue ?? "null"}");
+                    if (property.Name != "Arrangements")
+                    {
+                        CPH.LogDebug(Constants.AppName + $"Response: {property.Name} changed from {oldValue ?? "null"} to {newValue ?? "null"}");
+                    }
+                }
+            
+            }
+
+            var readoutProperties = typeof(MemoryReadout).GetProperties();
+            foreach (var property in readoutProperties)
+            {                 
+                var oldValue = (oldResponse.MemoryReadout != null)? property.GetValue(oldResponse.MemoryReadout) : "";
+                var newValue = (newResponse.MemoryReadout != null)? property.GetValue(newResponse.MemoryReadout) : "";
+                if ((oldValue == null && newValue != null) || (oldValue != null && !oldValue.Equals(newValue)))
+                {
+                    if (property.Name != "NoteData")
+                    {
+                        CPH.LogDebug(Constants.AppName + $"Response: {property.Name} changed from {oldValue ?? "null"} to {newValue ?? "null"}");
+                    }
+                    else
+                    {
+                        var noteDataProperties = typeof(NoteData).GetProperties();
+                        foreach (var noteDataProperty in noteDataProperties)
+                        {
+                            var oldNoteDataValue = (oldResponse.MemoryReadout.NoteData != null)? noteDataProperty.GetValue(oldResponse.MemoryReadout.NoteData) : "";
+                            var newNoteDataValue = (newResponse.MemoryReadout.NoteData != null)? noteDataProperty.GetValue(newResponse.MemoryReadout.NoteData) : "";
+                            if ((oldNoteDataValue == null && newNoteDataValue != null) || (oldNoteDataValue != null && !oldNoteDataValue.Equals(newNoteDataValue)))
+                            {
+                                CPH.LogDebug(Constants.AppName + $"Response: {noteDataProperty.Name} changed from {oldNoteDataValue ?? "null"} to {newNoteDataValue ?? "null"}");
+                            }
+                        }
+                    }
                 }
             }
 
@@ -698,19 +729,16 @@ public class CPHInline
             {
                 case ActivityBehavior.WhiteList:
                     {
-                        CPH.LogDebug(Constants.AppName + "IsRelevantScene - case ActivityBehavior.WhiteList");
                         if (currentScene.Equals(menuScene)
                             || IsSongScene(currentScene)
                             || currentScene.Equals(songPausedScene))
                         {
                             isRelevant = true;
                         }
-
                         break;
                     }
                 case ActivityBehavior.BlackList:
                     {
-                        CPH.LogDebug(Constants.AppName + "IsRelevantScene - case ActivityBehavior.BlackList");
                         isRelevant = true;
                         foreach (string str in blackListedScenes)
                         {
@@ -725,18 +753,16 @@ public class CPHInline
                     }
                 case ActivityBehavior.AlwaysOn:
                     {
-                        CPH.LogDebug(Constants.AppName + "IsRelevantScene - case ActivityBehavior.AlwaysOn");
                         isRelevant = true;
                         break;
                     }
 
                 default:
-                    CPH.LogDebug(Constants.AppName + "IsRelevantScene - case default --> not relevant");
                     isRelevant = false;
                     break;
             }
 
-            CPH.LogVerbose(Constants.AppName + $"IsRelevantScene - itsBehavior={itsBehavior} isRelevant={isRelevant}");
+            CPH.LogDebug(Constants.AppName + $"IsRelevantScene - itsBehavior={itsBehavior} isRelevant={isRelevant}");
             return isRelevant;
         }
 
@@ -1507,7 +1533,6 @@ public class CPHInline
 
         if (response != string.Empty)
         {
-            CPH.LogVerbose(Constants.AppName + "Valid response received.");
             Response currentResponse = itsFetcher.ExtractResponse(response);
 
 
