@@ -266,8 +266,8 @@ public class CPHInline
     {
 
         private IInlineInvokeProxy CPH;
-        private readonly string ip;
-        private readonly string port;
+        private string ip;
+        private string port;
         private HttpResponseMessage response = null!;
         private HttpClient client = null!;
 
@@ -453,8 +453,34 @@ public class CPHInline
             return currentSongTimer;
         }
 
-        public void SetResponse(Response response)
+        private void LogResponseChange(Response oldResponse, Response newResponse)
         {
+            CPH.LogDebug(Constants.AppName + $"Received new Response from Rocksniffer");
+
+            if (oldResponse == null || newResponse == null)
+            {
+                CPH.LogDebug("One of the responses is null.");
+                return;
+            }
+
+            var properties = typeof(Response).GetProperties();
+            foreach (var property in properties)
+            {
+                var oldValue = property.GetValue(oldResponse);
+                var newValue = property.GetValue(newResponse);
+
+                if ((oldValue == null && newValue != null) || (oldValue != null && !oldValue.Equals(newValue)))
+                {
+                    CPH.LogDebug($"Property {property.Name} changed from {oldValue ?? "null"} to {newValue ?? "null"}");
+                }
+            }
+
+        }
+
+
+       public void SetResponse(Response response)
+        {
+            LogResponseChange(currentResponse, response);           
             currentResponse = response;
         }
 
@@ -1374,19 +1400,21 @@ public class CPHInline
     // -------------------------------------------------
     // Needs to be commented out in streamer bot!
     private CPHmock CPH = new CPHmock();
+    private Dictionary<string, object> args = CPHmock.args;
     // -------------------------------------------------
 
     public class DataHandler
     {
 
         private IInlineInvokeProxy CPH;
+        Dictionary<string, object> arguments;
 
-        public DataHandler(IInlineInvokeProxy cph) { CPH = cph; }
+        public DataHandler(IInlineInvokeProxy cph, Dictionary<string, object> args) { CPH = cph; arguments = args; }
 
         public object ReadArgument(string name)
         {
             // the CPHmock. needs to be commented out in SB
-            CPHmock.args.TryGetValue(name, out var arg);
+            arguments.TryGetValue(name, out var arg);
 
             return arg;
         }
@@ -1433,6 +1461,7 @@ public class CPHInline
         itsFetcher = new ResponseFetcher(CPH, snifferIp, snifferPort);
         itsGuessingGame = new GuessingGame(CPH);
         itsParser = new ResponseParser(CPH, itsSceneInteractor, itsGuessingGame);
+        itsDataHandler = new DataHandler(CPH, args);
         
         itsParser.Init();
         itsSceneInteractor.SetCooldownPeriod(itsParser.GetSceneSwitchCooldownPeriodInSeconds());
@@ -1444,8 +1473,10 @@ public class CPHInline
     {
         // Init happens before arguments are passed, therefore temporary globals are used.
         snifferIp = GetSnifferIp();
+        itsFetcher.setIp(snifferIp);
         // TODO in case snifferIp is null, no need to do anything after this as, Sniffer could be not connected/used.
         snifferPort = GetSnifferPort();
+        itsFetcher.setPort(snifferPort);
     }
 
     private string GetSnifferIp()
