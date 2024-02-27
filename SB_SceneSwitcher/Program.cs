@@ -471,7 +471,7 @@ public class CPHInline
 
                 if ((oldValue == null && newValue != null) || (oldValue != null && !oldValue.Equals(newValue)))
                 {
-                    CPH.LogDebug($"Property {property.Name} changed from {oldValue ?? "null"} to {newValue ?? "null"}");
+                    CPH.LogDebug($"Response {property.Name} changed from {oldValue ?? "null"} to {newValue ?? "null"}");
                 }
             }
 
@@ -1439,6 +1439,7 @@ public class CPHInline
 
     private void UpdateCurrentScene()
     {
+        if (itsSceneInteractor == null) { CPH.LogDebug(Constants.AppName + $"SceneInteractor is null!"); }
         var newCurrentScene = itsSceneInteractor.GetCurrentScene();
 
         if (newCurrentScene.Equals(currentScene))
@@ -1455,8 +1456,7 @@ public class CPHInline
     public void Init()
     {
         CPH.LogInfo($"{Constants.AppName}!!! Initialising RockSniffer to SB plugin !!!");
-        UpdateConfig();
-        CPH.LogInfo($"{Constants.AppName}Sniffer ip configured as {snifferIp}:{snifferPort}");
+               
         itsSceneInteractor = new SceneInteractor(CPH);
         itsFetcher = new ResponseFetcher(CPH, snifferIp, snifferPort);
         itsGuessingGame = new GuessingGame(CPH);
@@ -1464,6 +1464,7 @@ public class CPHInline
         itsDataHandler = new DataHandler(CPH, args);
         
         itsParser.Init();
+        UpdateConfig();
         itsSceneInteractor.SetCooldownPeriod(itsParser.GetSceneSwitchCooldownPeriodInSeconds());
 
         currentScene = "";
