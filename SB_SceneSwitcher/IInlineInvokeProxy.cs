@@ -16,4 +16,8 @@
     bool SlobsIsConnected(int connection = 0);
     void SlobsSetScene(string str);
     void UnsetGlobalVar(string varName, bool persisted = true);
+
+    bool RegisterCustomTrigger(string triggerName, string eventName, String[] categories);
+    void TriggerCodeEvent(string eventName, bool useArgs = true);
+    void TriggerCodeEvent(string eventName, Dictionary<string,object> args);
 }

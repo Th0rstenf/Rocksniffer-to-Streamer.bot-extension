@@ -516,7 +516,7 @@ public class CPHInline
             }
             catch (Exception e)
             {
-                CPH.LogError(Constants.AppName + "Error in SetResponse: " + e.Message);
+                CPH.LogWarn(Constants.AppName + "Error in SetResponse: " + e.Message);
             }
             currentResponse = response;
         }
@@ -549,6 +549,9 @@ public class CPHInline
             lastSectionType = currentSectionType = SectionType.Default;
             lastGameStage = currentGameStage = GameStage.Menu;
             sameTimeCounter = 0;
+
+            arrangementIdentified = false;
+            
         }
 
         public void UpdateConfig()
