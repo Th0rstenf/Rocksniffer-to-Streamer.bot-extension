@@ -510,7 +510,14 @@ public class CPHInline
 
        public void SetResponse(Response response)
         {
-            LogResponseChange(currentResponse, response);           
+            try
+            {
+                LogResponseChange(currentResponse, response);
+            }
+            catch (Exception e)
+            {
+                CPH.LogError(Constants.AppName + "Error in SetResponse: " + e.Message);
+            }
             currentResponse = response;
         }
 
