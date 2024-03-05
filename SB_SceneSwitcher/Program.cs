@@ -551,7 +551,25 @@ public class CPHInline
             sameTimeCounter = 0;
 
             arrangementIdentified = false;
-            
+
+            String[] categories = new[] { "Twitch" };
+            // Register "enter" and "leave" actions for each SectionType
+            foreach (SectionType sectionType in Enum.GetValues(typeof(SectionType)))
+            {
+                string enterAction = $"enter{sectionType}";
+                string leaveAction = $"leave{sectionType}";
+
+                // Register actions
+                // Assuming there are methods to register actions
+                CPH.RegisterCustomTrigger($"Entering section {sectionType}", enterAction, categories);
+                CPH.RegisterCustomTrigger($"Leaving section {sectionType}", leaveAction, categories);
+            }
+            CPH.RegisterCustomTrigger($"Entering Song", Constants.ActionNameSongStart, categories);
+            CPH.RegisterCustomTrigger($"Leaving Song", Constants.ActionNameSongEnd, categories);
+            CPH.RegisterCustomTrigger($"Entering Tuner", Constants.ActionNameEnterTuner, categories );
+            CPH.RegisterCustomTrigger($"Leaving Tuner", Constants.ActionNameLeaveTuner, categories);
+            CPH.RegisterCustomTrigger($"Entering Pause", Constants.ActionNameEnterPause, categories);
+            CPH.RegisterCustomTrigger($"Leaving Pause", Constants.ActionNameLeavePause, categories);
         }
 
         public void UpdateConfig()
@@ -1055,7 +1073,7 @@ public class CPHInline
         {
             if (lastGameStage != GameStage.InSong)
             {
-                RunAction(Constants.ActionNameSongStart);
+                TriggerAction(Constants.ActionNameSongStart);
                 itsGuessingGame.StartAcceptingGuesses();
             }
 
@@ -1077,7 +1095,7 @@ public class CPHInline
                     {
                         if (currentScene.Equals(songPausedScene))
                         {
-                            RunAction(Constants.ActionNameLeavePause);
+                            TriggerAction(Constants.ActionNameLeavePause);
                         }
 
                         itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex].Name, switchScenes);
@@ -1091,7 +1109,7 @@ public class CPHInline
 
                 if (IsInPause())
                 {
-                    RunAction(Constants.ActionNameEnterPause);
+                    TriggerAction(Constants.ActionNameEnterPause);
                     itsSceneInterActor.SwitchToScene(songPausedScene, switchScenes);
                 }
                 else if (HasToSwitchScene())
@@ -1166,7 +1184,7 @@ public class CPHInline
             return songScenes.Length > 1;
         }
 
-        private void RunAction(string actionName, bool immediately = false)
+        private void TriggerAction(string actionName, bool immediately = false)
         {
             CPH.LogDebug(Constants.AppName + $"Action trigger: {actionName}");
             var actionStart = DateTime.Now;
@@ -1186,7 +1204,7 @@ public class CPHInline
             {
                 arrangementIdentified = false;
                 lastNoteData = null!;
-                RunAction(Constants.ActionNameSongEnd);
+                TriggerAction(Constants.ActionNameSongEnd);
                 // It is necessary to pass lastSongTimer for evaluation, as currentSongTimer is already reset to 0 at this stage
                 itsGuessingGame.FinishAndEvaluate(currentResponse.SongDetails.SongLength, currentResponse.MemoryReadout.NoteData);
 
@@ -1197,12 +1215,12 @@ public class CPHInline
         {
             if ((currentGameStage == GameStage.InTuner) && (lastGameStage != GameStage.InTuner))
             {
-                RunAction(Constants.ActionNameEnterTuner);
+                TriggerAction(Constants.ActionNameEnterTuner);
             }
 
             if ((currentGameStage != GameStage.InTuner) && (lastGameStage == GameStage.InTuner))
             {
-                RunAction(Constants.ActionNameLeaveTuner);
+                TriggerAction(Constants.ActionNameLeaveTuner);
             }
         }
 
@@ -1236,8 +1254,8 @@ public class CPHInline
                     IdentifySection();
                     if (currentSectionType != lastSectionType)
                     {
-                        RunAction($"leave{Enum.GetName(typeof(SectionType), lastSectionType)}");
-                        RunAction($"enter{Enum.GetName(typeof(SectionType), currentSectionType)}");
+                        TriggerAction($"leave{Enum.GetName(typeof(SectionType), lastSectionType)}");
+                        TriggerAction($"enter{Enum.GetName(typeof(SectionType), currentSectionType)}");
                         lastSectionType = currentSectionType;
                     }
                 }

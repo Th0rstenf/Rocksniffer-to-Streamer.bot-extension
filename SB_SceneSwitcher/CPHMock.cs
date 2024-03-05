@@ -22,7 +22,7 @@ public class CPHmock : IInlineInvokeProxy
 
     public static Dictionary<string, object> args;
 
-    private static Dictionary<string, Tuple<string, >> triggers;
+    private static Dictionary<string, Tuple<string, String[]>> triggers;
 
     public enum LogLevels
     {
@@ -38,7 +38,7 @@ public class CPHmock : IInlineInvokeProxy
         LogLevel = GetLogLevel(_config?.logLevel);
         LogLevelSB = GetLogLevel(_config?.logLevelSB);
         args = new Dictionary<string, object>();
-        triggers = new Dictionary<string, Tuple<string, string>>();
+        triggers = new Dictionary<string, Tuple<string, String[]>>();
 
 
         args.Add(Constants.GlobalVarNameSnifferIP, _config.snifferIp);
@@ -210,7 +210,7 @@ public class CPHmock : IInlineInvokeProxy
         Console.WriteLine(MockAppName + $"UnsetGlobalVar var: {varName}");
     }
     
-ic bool RegisterCustomTrigger(string triggerName, string eventName, String[] categories)
+    public bool RegisterCustomTrigger(string triggerName, string eventName, String[] categories)
     {
         if (!triggers.ContainsKey(eventName))
         {
