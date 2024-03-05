@@ -531,6 +531,13 @@ public class CPHInline
             return sceneSwitchCooldownPeriodInSeconds;
         }
 
+        private void RegisterCustomTrigger(string description, string name)
+        {
+            String[] categories = new[] { "Twitch" };
+            bool success = CPH.RegisterCustomTrigger(description, name, categories);
+            CPH.LogDebug(Constants.AppName + $"RegisterCustomTrigger operation of {name} was {(success ? "successful" : "unsuccessful")}");
+        }
+
         public void Init()
         {
             UpdateConfig();
@@ -552,7 +559,7 @@ public class CPHInline
 
             arrangementIdentified = false;
 
-            String[] categories = new[] { "Twitch" };
+            
             // Register "enter" and "leave" actions for each SectionType
             foreach (SectionType sectionType in Enum.GetValues(typeof(SectionType)))
             {
@@ -561,15 +568,16 @@ public class CPHInline
 
                 // Register actions
                 // Assuming there are methods to register actions
-                CPH.RegisterCustomTrigger($"Entering section {sectionType}", enterAction, categories);
-                CPH.RegisterCustomTrigger($"Leaving section {sectionType}", leaveAction, categories);
+                RegisterCustomTrigger($"Entering section {sectionType}", enterAction);
+                RegisterCustomTrigger($"Leaving section {sectionType}", leaveAction);
             }
-            CPH.RegisterCustomTrigger($"Entering Song", Constants.ActionNameSongStart, categories);
-            CPH.RegisterCustomTrigger($"Leaving Song", Constants.ActionNameSongEnd, categories);
-            CPH.RegisterCustomTrigger($"Entering Tuner", Constants.ActionNameEnterTuner, categories );
-            CPH.RegisterCustomTrigger($"Leaving Tuner", Constants.ActionNameLeaveTuner, categories);
-            CPH.RegisterCustomTrigger($"Entering Pause", Constants.ActionNameEnterPause, categories);
-            CPH.RegisterCustomTrigger($"Leaving Pause", Constants.ActionNameLeavePause, categories);
+            RegisterCustomTrigger("Entering Song", Constants.ActionNameSongStart);
+            RegisterCustomTrigger("Leaving Song", Constants.ActionNameSongEnd);
+            RegisterCustomTrigger("Entering Tuner", Constants.ActionNameEnterTuner);
+            RegisterCustomTrigger("Leaving Tuner", Constants.ActionNameLeaveTuner);
+            RegisterCustomTrigger("Entering Pause", Constants.ActionNameEnterPause);
+            RegisterCustomTrigger("Leaving Pause", Constants.ActionNameLeavePause);
+
         }
 
         public void UpdateConfig()
@@ -1184,13 +1192,20 @@ public class CPHInline
             return songScenes.Length > 1;
         }
 
-        private void TriggerAction(string actionName, bool immediately = false)
+        private Dictionary<string, object> CollectParameters()
         {
-            CPH.LogDebug(Constants.AppName + $"Action trigger: {actionName}");
-            var actionStart = DateTime.Now;
-            CPH.RunAction(actionName, immediately);
-            var actionEnd = DateTime.Now;
-            CPH.LogDebug(Constants.AppName + $"Action {actionName} took {(actionEnd - actionStart).TotalMilliseconds}");
+            Dictionary<string,object>  parameters = new Dictionary<string, object>();
+
+            return parameters;
+        }
+
+        private void TriggerAction(string actionName, bool provideData = false)
+        {
+            if (provideData)
+            {            
+                CPH.TriggerCodeEvent(actionName, CollectParameters());
+            }
+            CPH.TriggerCodeEvent(actionName, provideData);
         }
 
         private void CheckGameStageMenu()
