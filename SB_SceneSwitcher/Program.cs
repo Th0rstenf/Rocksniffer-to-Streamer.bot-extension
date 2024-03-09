@@ -533,7 +533,7 @@ public class CPHInline
 
         private void RegisterCustomTrigger(string description, string name)
         {
-            String[] categories = new[] { "Twitch" };
+            String[] categories = new[] { "Rocksmith to Streamer.bot" };
             bool success = CPH.RegisterCustomTrigger(description, name, categories);
             CPH.LogDebug(Constants.AppName + $"RegisterCustomTrigger operation of {name} was {(success ? "successful" : "unsuccessful")}");
         }
