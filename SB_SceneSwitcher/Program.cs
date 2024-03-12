@@ -176,6 +176,7 @@ public class CPHInline
         private DateTime lastSceneChange;
         private IInlineInvokeProxy CPH;
         private StreamApp? itsStreamApp;
+        private StreamApp? itsLastStreamApp;
 
         public SceneInteractor(IInlineInvokeProxy cph)
         {
@@ -194,17 +195,20 @@ public class CPHInline
             if (CPH.ObsIsConnected())
             {
                 itsStreamApp = StreamApp.Obs;
-                CPH.LogDebug(Constants.AppName + $"Connected to {StreamApp.Obs}");
             }
             else if (CPH.SlobsIsConnected())
             {
                 itsStreamApp = StreamApp.Slobs;
-                CPH.LogDebug(Constants.AppName + $"Connected to {StreamApp.Slobs}");
             }
             else
             {
                 itsStreamApp = null;
                 CPH.LogDebug(MessageNoStreamAppConnectionAvailable);
+            }
+            if (itsStreamApp != itsLastStreamApp)
+            {
+                CPH.LogInfo(Constants.AppName + $"Connected to {itsStreamApp}");
+                itsLastStreamApp = itsStreamApp;
             }
         }
 
@@ -400,9 +404,12 @@ public class CPHInline
         private SectionType currentSectionType;
         private SectionType lastSectionType;
         private ActivityBehavior itsBehavior = ActivityBehavior.WhiteList;
+        
         private SceneInteractor itsSceneInterActor;
+        private IInlineInvokeProxy CPH;
+        private GuessingGame itsGuessingGame;
 
-        private string[]? blackListedScenes = null!;
+
         private double currentSongTimer;
         private double lastSongTimer;
 
@@ -426,20 +433,28 @@ public class CPHInline
         private UInt64 totalNotesMissedLifeTime;
         private double accuracyLifeTime;
 
-
+        // Configuration attributes filled by user config!
         private string menuScene = null!;
         private SongScene[]? songScenes = null!;
         private string songPausedScene = null!;
+        private string lastMenuScene = null!;
+        private SongScene[]? lastSongScenes = null!;
+        private string lastSongPausedScene = null!;
+        private string[]? blackListedScenes = null!;
+        private string[]? lastBlackListedScenes = null!;
+        private bool switchScenes = true;
+        private bool lastSwitchScenes = true;
+        private bool reactingToSections = true;
+        private bool lastReactingToSections = true;
 
         private int sameTimeCounter;
         private string currentScene = "";
 
-        private bool switchScenes = true;
+        
         private SongSceneAutoSwitchMode songSceneAutoSwitchMode = SongSceneAutoSwitchMode.Off;
-        private bool reactingToSections = true;
+        
         private bool arrangementIdentified = false;
-        private IInlineInvokeProxy CPH;
-        private GuessingGame itsGuessingGame;
+        
 
         public ResponseParser(IInlineInvokeProxy cph, SceneInteractor interactor, GuessingGame guessing)
         {
