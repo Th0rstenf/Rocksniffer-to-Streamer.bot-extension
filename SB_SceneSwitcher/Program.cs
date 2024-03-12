@@ -403,7 +403,7 @@ public class CPHInline
         private GameStage lastGameStage;
         private SectionType currentSectionType;
         private SectionType lastSectionType;
-        private ActivityBehavior itsBehavior = ActivityBehavior.WhiteList;
+        
         
         private SceneInteractor itsSceneInterActor;
         private IInlineInvokeProxy CPH;
@@ -434,24 +434,25 @@ public class CPHInline
         private double accuracyLifeTime;
 
         // Configuration attributes filled by user config!
-        private string menuScene = null!;
-        private SongScene[]? songScenes = null!;
-        private string songPausedScene = null!;
-        private string lastMenuScene = null!;
-        private SongScene[]? lastSongScenes = null!;
-        private string lastSongPausedScene = null!;
-        private string[]? blackListedScenes = null!;
-        private string[]? lastBlackListedScenes = null!;
-        private bool switchScenes = true;
-        private bool lastSwitchScenes = true;
-        private bool reactingToSections = true;
-        private bool lastReactingToSections = true;
+        struct UserConfig
+        {
+            public ActivityBehavior itsBehavior;
+            public string menuScene;
+            public SongScene[] songScenes;
+            public string songPausedScene;
+            public string[] blackListedScenes;
+            public bool switchScenes;
+            public bool reactingToSections;
+            public int defaultSceneSwitchPeriodInSeconds;
+            public int sceneSwitchCooldownPeriodInSeconds;
+            public SongSceneAutoSwitchMode songSceneAutoSwitchMode;
+        }
+        private UserConfig currentConfig;
+        private UserConfig lastConfig;
 
         private int sameTimeCounter;
         private string currentScene = "";
 
-        
-        private SongSceneAutoSwitchMode songSceneAutoSwitchMode = SongSceneAutoSwitchMode.Off;
         
         private bool arrangementIdentified = false;
         
@@ -597,47 +598,69 @@ public class CPHInline
 
         public void UpdateConfig()
         {
-            menuScene = GetGlobalVarAsString(Constants.GlobalVarNameMenuScene);
+            currentConfig.menuScene = GetGlobalVarAsString(Constants.GlobalVarNameMenuScene);
+
             string[] songScenesRaw = GetGlobalVarAsStringArray(Constants.GlobalVarNameSongScenes);
-            songScenes = new SongScene[songScenesRaw.Length];
+            currentConfig.songScenes = new SongScene[songScenesRaw.Length];
             for (var i = 0; i < songScenesRaw.Length; ++i)
             {
                 if (songScenesRaw[i].Contains("#"))
                 {
                     string[] songSceneRaw = songScenesRaw[i].Split('#');
-                    songScenes[i].Name = songSceneRaw[0];
+                    currentConfig.songScenes[i].Name = songSceneRaw[0];
                     if (songSceneRaw[1].Contains("-"))
                     {
                         string[] minMax = songSceneRaw[1].Split('-');
-                        songScenes[i].period = SongScene.Period.Range;
-                        songScenes[i].minimumPeriod = int.Parse(minMax[0]);
-                        songScenes[i].maximumPeriod = int.Parse(minMax[1]);
-                        songScenes[i].RandomizePeriodIfNecessary();
+                        currentConfig.songScenes[i].period = SongScene.Period.Range;
+                        currentConfig.songScenes[i].minimumPeriod = int.Parse(minMax[0]);
+                        currentConfig.songScenes[i].maximumPeriod = int.Parse(minMax[1]);
+                        currentConfig.songScenes[i].RandomizePeriodIfNecessary();
                     }
                     else
                     {
-                        songScenes[i].period = SongScene.Period.Fixed;
-                        songScenes[i].currentSwitchPeriod = int.Parse(songSceneRaw[1]);
+                        currentConfig.songScenes[i].period = SongScene.Period.Fixed;
+                        currentConfig.songScenes[i].currentSwitchPeriod = int.Parse(songSceneRaw[1]);
                     }
                 }
                 else
                 {
-                    songScenes[i].Name = songScenesRaw[i];
-                    songScenes[i].period = SongScene.Period.Fixed;
-                    songScenes[i].currentSwitchPeriod = defaultSceneSwitchPeriodInSeconds;
+                    currentConfig.songScenes[i].Name = songScenesRaw[i];
+                    currentConfig.songScenes[i].period = SongScene.Period.Fixed;
+                    currentConfig.songScenes[i].currentSwitchPeriod = defaultSceneSwitchPeriodInSeconds;
                 }
             }
 
-            songPausedScene = GetGlobalVarAsString(Constants.GlobalVarNamePauseScene);
+            currentConfig.songPausedScene = GetGlobalVarAsString(Constants.GlobalVarNamePauseScene);
+            currentConfig.switchScenes = GetGlobalVarAsBool(Constants.GlobalVarNameSwitchScenes);
 
-            switchScenes = GetGlobalVarAsBool(Constants.GlobalVarNameSwitchScenes);
-            songSceneAutoSwitchMode = GetGlobalVarSongSceneAutoSwitchMode();
-            reactingToSections = GetGlobalVarAsBool(Constants.GlobalVarNameSectionActions);
+            currentConfig.songSceneAutoSwitchMode = GetGlobalVarSongSceneAutoSwitchMode();
 
-            defaultSceneSwitchPeriodInSeconds = GetGlobalVarSceneSwitchPeriod();
-            sceneSwitchCooldownPeriodInSeconds = GetGlobalVarSceneSwitchCooldownPeriod();
-            itsBehavior = GetGlobalVarBehavior();
-            blackListedScenes = GetGlobalVarBlackListedScenes();
+            currentConfig.reactingToSections = GetGlobalVarAsBool(Constants.GlobalVarNameSectionActions);
+
+            currentConfig.defaultSceneSwitchPeriodInSeconds = GetGlobalVarSceneSwitchPeriod();
+            currentConfig.sceneSwitchCooldownPeriodInSeconds = GetGlobalVarSceneSwitchCooldownPeriod();
+            currentConfig.itsBehavior = GetGlobalVarBehavior();
+
+            currentConfig.blackListedScenes = GetGlobalVarBlackListedScenes();
+
+            LogConfigChangesAndSetLastConfig();
+
+        }
+
+        private void LogConfigChangesAndSetLastConfig()
+        {
+            var properties = typeof(UserConfig).GetProperties();
+            foreach (var property in properties)
+            {
+                var currentValue = property.GetValue(currentConfig);
+                var lastValue = property.GetValue(lastConfig);
+
+                if (!Equals(currentValue, lastValue))
+                {
+                    Console.WriteLine($"Property {property.Name} changed from {lastValue} to {currentValue}");
+                    property.SetValue(lastConfig, currentValue);
+                }
+            }
         }
 
         private string GetGlobalVarAsString(string name)
@@ -740,7 +763,7 @@ public class CPHInline
 
         private string[] GetGlobalVarBlackListedScenes()
         {
-            return (itsBehavior == ActivityBehavior.BlackList
+            return (currentConfig.itsBehavior == ActivityBehavior.BlackList
                 ? GetGlobalVarAsStringArray(Constants.GlobalVarNameBlackList)
                 : new string[1])!;
         }
@@ -774,14 +797,14 @@ public class CPHInline
         {
             var isRelevant = false;
 
-            CPH.LogVerbose(Constants.AppName + $"IsRelevantScene - itsBehavior={itsBehavior}");
-            switch (itsBehavior)
+            CPH.LogVerbose(Constants.AppName + $"IsRelevantScene - itsBehavior={currentConfig.itsBehavior}");
+            switch (currentConfig.itsBehavior)
             {
                 case ActivityBehavior.WhiteList:
                     {
-                        if (currentScene.Equals(menuScene)
+                        if (currentScene.Equals(currentConfig.menuScene)
                             || IsSongScene(currentScene)
-                            || currentScene.Equals(songPausedScene))
+                            || currentScene.Equals(currentConfig.songPausedScene))
                         {
                             isRelevant = true;
                         }
@@ -790,7 +813,7 @@ public class CPHInline
                 case ActivityBehavior.BlackList:
                     {
                         isRelevant = true;
-                        foreach (string str in blackListedScenes)
+                        foreach (string str in currentConfig.blackListedScenes)
                         {
                             if (str.Trim().ToLower().Equals(currentScene.ToLower()))
                             {
@@ -812,13 +835,13 @@ public class CPHInline
                     break;
             }
 
-            CPH.LogDebug(Constants.AppName + $"IsRelevantScene - itsBehavior={itsBehavior} isRelevant={isRelevant}");
+            CPH.LogDebug(Constants.AppName + $"IsRelevantScene - itsBehavior={currentConfig.itsBehavior} isRelevant={isRelevant}");
             return isRelevant;
         }
 
         private bool IsSongScene(string scene)
         {
-            foreach (SongScene s in songScenes)
+            foreach (SongScene s in currentConfig.songScenes)
                 if (s.Name.Equals(scene))
                     return true;
             return false;
@@ -1116,28 +1139,28 @@ public class CPHInline
                     sameTimeCounter = 0;
                     if (itsSceneInterActor.IsNotInCooldown())
                     {
-                        if (currentScene.Equals(songPausedScene))
+                        if (currentScene.Equals(currentConfig.songPausedScene))
                         {
                             TriggerAction(Constants.ActionNameLeavePause);
                         }
 
-                        itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex].Name, switchScenes);
+                        itsSceneInterActor.SwitchToScene(currentConfig.songScenes[currentSongSceneIndex].Name, currentConfig.switchScenes);
                     }
                 }
             }
             else if (IsSongScene(currentScene))
             {
                 CPH.LogDebug($"{Constants.AppName}currentScene IsSongScene");
-                CPH.LogVerbose($"{Constants.AppName}songSceneAutoSwitchMode={songSceneAutoSwitchMode}");
+                CPH.LogVerbose($"{Constants.AppName}songSceneAutoSwitchMode={currentConfig.songSceneAutoSwitchMode}");
 
                 if (IsInPause())
                 {
                     TriggerAction(Constants.ActionNameEnterPause);
-                    itsSceneInterActor.SwitchToScene(songPausedScene, switchScenes);
+                    itsSceneInterActor.SwitchToScene(currentConfig.songPausedScene, currentConfig.switchScenes);
                 }
                 else if (HasToSwitchScene())
                 {
-                    switch (songSceneAutoSwitchMode)
+                    switch (currentConfig.songSceneAutoSwitchMode)
                     {
                         case SongSceneAutoSwitchMode.Sequential:
                             DoSequentialSceneSwitch();
@@ -1156,26 +1179,26 @@ public class CPHInline
 
         private bool HasToSwitchScene()
         {
-            return switchScenes && HasMoreThan1Scenes() && ItsTimeToSwitchScene();
+            return currentConfig.switchScenes && HasMoreThan1Scenes() && ItsTimeToSwitchScene();
         }
 
         private bool ItsTimeToSwitchScene()
         {
             var timeSinceLastSceneChange = itsSceneInterActor.GetTimeSinceLastSceneChange();
-            CPH.LogVerbose($"{Constants.AppName}songScene={songScenes[currentSongSceneIndex]}");
+            CPH.LogVerbose($"{Constants.AppName}songScene={currentConfig.songScenes[currentSongSceneIndex]}");
             CPH.LogVerbose($"{Constants.AppName}timeSinceLastSceneChange={timeSinceLastSceneChange}");
-            return timeSinceLastSceneChange >= songScenes[currentSongSceneIndex].currentSwitchPeriod;
+            return timeSinceLastSceneChange >= currentConfig.songScenes[currentSongSceneIndex].currentSwitchPeriod;
         }
 
         private void DoSequentialSceneSwitch()
         {
-            if (++currentSongSceneIndex >= songScenes.Length)
+            if (++currentSongSceneIndex >= currentConfig.songScenes.Length)
             {
                 currentSongSceneIndex = 0;
             }
 
-            itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex].Name, switchScenes);
-            songScenes[currentSongSceneIndex].RandomizePeriodIfNecessary();
+            itsSceneInterActor.SwitchToScene(currentConfig.songScenes[currentSongSceneIndex].Name, currentConfig.switchScenes);
+            currentConfig.songScenes[currentSongSceneIndex].RandomizePeriodIfNecessary();
         }
 
         private void DoRandomSceneSwitch()
@@ -1189,22 +1212,22 @@ public class CPHInline
                     break;
                 }
 
-                newSongSceneIndex = new Random().Next(0, songScenes.Length);
+                newSongSceneIndex = new Random().Next(0, currentConfig.songScenes.Length);
             } while (newSongSceneIndex == currentSongSceneIndex);
 
             currentSongSceneIndex = newSongSceneIndex;
-            itsSceneInterActor.SwitchToScene(songScenes[currentSongSceneIndex].Name, switchScenes);
-            songScenes[currentSongSceneIndex].RandomizePeriodIfNecessary();
+            itsSceneInterActor.SwitchToScene(currentConfig.songScenes[currentSongSceneIndex].Name, currentConfig.switchScenes);
+            currentConfig.songScenes[currentSongSceneIndex].RandomizePeriodIfNecessary();
         }
 
         private bool HasOnly1Scene()
         {
-            return songScenes.Length == 1;
+            return currentConfig.songScenes.Length == 1;
         }
 
         private bool HasMoreThan1Scenes()
         {
-            return songScenes.Length > 1;
+            return currentConfig.songScenes.Length > 1;
         }
 
         private Dictionary<string, object> CollectParameters()
@@ -1225,9 +1248,9 @@ public class CPHInline
 
         private void CheckGameStageMenu()
         {
-            if (switchScenes && !currentScene.Equals(menuScene))
+            if (currentConfig.switchScenes && !currentScene.Equals(currentConfig.menuScene))
             {
-                itsSceneInterActor.SwitchToScene(menuScene, switchScenes);
+                itsSceneInterActor.SwitchToScene(currentConfig.menuScene, currentConfig.switchScenes);
             }
 
             if (lastGameStage == GameStage.InSong)
@@ -1258,7 +1281,7 @@ public class CPHInline
         {
             if (!IsRelevantScene())
                 return;
-            if (currentArrangement != null && reactingToSections)
+            if (currentArrangement != null && currentConfig.reactingToSections)
             {
                 bool isSectionChanged = false;
                 if (currentSectionIndex == -1)
@@ -1663,4 +1686,5 @@ public class CPHInline
         CPH.LogDebug(Constants.AppName + $"Action main started at {executionStart} and took a total of {(executionEnd - executionStart).TotalMilliseconds} ms");
         return true;
     }
+   
 }
