@@ -643,11 +643,11 @@ public class CPHInline
 
             currentConfig.blackListedScenes = GetGlobalVarBlackListedScenes();
 
-            LogConfigChangesAndSetLastConfig();
+            LogConfigChanges();
 
         }
 
-        private void LogConfigChangesAndSetLastConfig()
+        private void LogConfigChanges()
         {
             var properties = typeof(UserConfig).GetProperties();
             foreach (var property in properties)
@@ -1687,4 +1687,8 @@ public class CPHInline
         return true;
     }
    
+    public void Dispose()
+    {
+        CPH.LogDebug(Constants.AppName + "Disposing RockSniffer to SB plugin");
+    }
 }
