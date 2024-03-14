@@ -229,6 +229,29 @@ public class CPHmock : IInlineInvokeProxy
 
     }
 
+    public bool TryGetArg<T>(string argName, out T value)
+    {
+        if (args.ContainsKey(argName))
+        {
+            value = (T)args[argName];
+            return true;
+        }
+        value = default(T);
+        return false;
+    }
+
+    public bool TryGetArg(string argName, out object value)
+    {
+        if (args.ContainsKey(argName))
+        {
+            value = args[argName];
+            return true;
+        }
+        value = null;
+        return false;
+    }
+   
+
 
     public static void Main(string[] args)
     {

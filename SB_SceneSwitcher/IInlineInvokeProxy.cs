@@ -20,4 +20,7 @@
     bool RegisterCustomTrigger(string triggerName, string eventName, String[] categories);
     void TriggerCodeEvent(string eventName, bool useArgs = true);
     void TriggerCodeEvent(string eventName, Dictionary<string,object> args);
+
+    bool TryGetArg<T>(string argName, out T value);
+    bool TryGetArg(string argName, out object value);
 }

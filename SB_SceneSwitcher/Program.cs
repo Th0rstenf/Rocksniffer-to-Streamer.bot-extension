@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
@@ -300,7 +301,7 @@ public class CPHInline
                 CPH.LogDebug(Constants.AppName + $"Setting port to {port}");
             }
             this.port = port;
-        }   
+        }
 
         public string Fetch()
         {
@@ -403,8 +404,8 @@ public class CPHInline
         private GameStage lastGameStage;
         private SectionType currentSectionType;
         private SectionType lastSectionType;
-        
-        
+
+
         private SceneInteractor itsSceneInterActor;
         private IInlineInvokeProxy CPH;
         private GuessingGame itsGuessingGame;
@@ -453,9 +454,9 @@ public class CPHInline
         private int sameTimeCounter;
         private string currentScene = "";
 
-        
+
         private bool arrangementIdentified = false;
-        
+
 
         public ResponseParser(IInlineInvokeProxy cph, SceneInteractor interactor, GuessingGame guessing)
         {
@@ -482,8 +483,8 @@ public class CPHInline
             var songDetailproperties = typeof(SongDetails).GetProperties();
             foreach (var property in songDetailproperties)
             {
-                var oldValue = (oldResponse != null && oldResponse.SongDetails != null)? property.GetValue(oldResponse.SongDetails) : "";
-                var newValue = (newResponse.SongDetails != null)? property.GetValue(newResponse.SongDetails) : "";
+                var oldValue = (oldResponse != null && oldResponse.SongDetails != null) ? property.GetValue(oldResponse.SongDetails) : "";
+                var newValue = (newResponse.SongDetails != null) ? property.GetValue(newResponse.SongDetails) : "";
 
                 if ((oldValue == null && newValue != null) || (oldValue != null && !oldValue.Equals(newValue)))
                 {
@@ -496,9 +497,9 @@ public class CPHInline
 
             var readoutProperties = typeof(MemoryReadout).GetProperties();
             foreach (var property in readoutProperties)
-            {                 
-                var oldValue = (oldResponse.MemoryReadout != null)? property.GetValue(oldResponse.MemoryReadout) : "";
-                var newValue = (newResponse.MemoryReadout != null)? property.GetValue(newResponse.MemoryReadout) : "";
+            {
+                var oldValue = (oldResponse.MemoryReadout != null) ? property.GetValue(oldResponse.MemoryReadout) : "";
+                var newValue = (newResponse.MemoryReadout != null) ? property.GetValue(newResponse.MemoryReadout) : "";
                 if ((oldValue == null && newValue != null) || (oldValue != null && !oldValue.Equals(newValue)))
                 {
                     if (property.Name != "NoteData")
@@ -510,8 +511,8 @@ public class CPHInline
                         var noteDataProperties = typeof(NoteData).GetProperties();
                         foreach (var noteDataProperty in noteDataProperties)
                         {
-                            var oldNoteDataValue = (oldResponse.MemoryReadout.NoteData != null)? noteDataProperty.GetValue(oldResponse.MemoryReadout.NoteData) : "";
-                            var newNoteDataValue = (newResponse.MemoryReadout.NoteData != null)? noteDataProperty.GetValue(newResponse.MemoryReadout.NoteData) : "";
+                            var oldNoteDataValue = (oldResponse.MemoryReadout.NoteData != null) ? noteDataProperty.GetValue(oldResponse.MemoryReadout.NoteData) : "";
+                            var newNoteDataValue = (newResponse.MemoryReadout.NoteData != null) ? noteDataProperty.GetValue(newResponse.MemoryReadout.NoteData) : "";
                             if ((oldNoteDataValue == null && newNoteDataValue != null) || (oldNoteDataValue != null && !oldNoteDataValue.Equals(newNoteDataValue)))
                             {
                                 CPH.LogDebug(Constants.AppName + $"Response: {noteDataProperty.Name} changed from {oldNoteDataValue ?? "null"} to {newNoteDataValue ?? "null"}");
@@ -524,7 +525,7 @@ public class CPHInline
         }
 
 
-       public void SetResponse(Response response)
+        public void SetResponse(Response response)
         {
             try
             {
@@ -575,7 +576,7 @@ public class CPHInline
 
             arrangementIdentified = false;
 
-            
+
             // Register "enter" and "leave" actions for each SectionType
             foreach (SectionType sectionType in Enum.GetValues(typeof(SectionType)))
             {
@@ -598,9 +599,9 @@ public class CPHInline
 
         public void UpdateConfig()
         {
-            currentConfig.menuScene = GetGlobalVarAsString(Constants.GlobalVarNameMenuScene);
+            currentConfig.menuScene = GetArgumentAsString(Constants.GlobalVarNameMenuScene);
 
-            string[] songScenesRaw = GetGlobalVarAsStringArray(Constants.GlobalVarNameSongScenes);
+            string[] songScenesRaw = GetArgumentAsStringArray(Constants.GlobalVarNameSongScenes);
             currentConfig.songScenes = new SongScene[songScenesRaw.Length];
             for (var i = 0; i < songScenesRaw.Length; ++i)
             {
@@ -630,12 +631,12 @@ public class CPHInline
                 }
             }
 
-            currentConfig.songPausedScene = GetGlobalVarAsString(Constants.GlobalVarNamePauseScene);
-            currentConfig.switchScenes = GetGlobalVarAsBool(Constants.GlobalVarNameSwitchScenes);
+            currentConfig.songPausedScene = GetArgumentAsString(Constants.GlobalVarNamePauseScene);
+            currentConfig.switchScenes = GetArgumentAsBool(Constants.GlobalVarNameSwitchScenes);
 
-            currentConfig.songSceneAutoSwitchMode = GetGlobalVarSongSceneAutoSwitchMode();
+            currentConfig.songSceneAutoSwitchMode = GetArgumentSongSceneAutoSwitchMode();
 
-            currentConfig.reactingToSections = GetGlobalVarAsBool(Constants.GlobalVarNameSectionActions);
+            currentConfig.reactingToSections = GetArgumentAsBool(Constants.GlobalVarNameSectionActions);
 
             currentConfig.defaultSceneSwitchPeriodInSeconds = GetGlobalVarSceneSwitchPeriod();
             currentConfig.sceneSwitchCooldownPeriodInSeconds = GetGlobalVarSceneSwitchCooldownPeriod();
@@ -663,6 +664,17 @@ public class CPHInline
             }
         }
 
+        private object GetArgument(string str)
+        {
+           CPH.TryGetArg(str, out object arg);
+              return arg;
+        }
+
+        private string GetArgumentAsString(string name)
+        {
+            CPH.TryGetArg<string>(name, out string value);
+            return value;
+        }
         private string GetGlobalVarAsString(string name)
         {
             var globalVar = CPH.GetGlobalVar<string>(name);
@@ -673,6 +685,19 @@ public class CPHInline
         {
             var globalVar = CPH.GetGlobalVar<string>(name).ToLower().Contains("true");
             return globalVar;
+        }
+
+        private bool GetArgumentAsBool(string name)
+        {
+            CPH.TryGetArg<bool>(name, out bool value);
+            return value;
+        }
+        private string[]? GetArgumentAsStringArray(string name)
+        {
+            CPH.TryGetArg<string>(name, out string value);
+            if (string.IsNullOrEmpty(value)) return null;
+            var trimmedValues = Regex.Split(value.Trim(), @"\s*[,;]\s*");
+            return trimmedValues;
         }
 
         private string[]? GetGlobalVarAsStringArray(string name)
@@ -708,10 +733,10 @@ public class CPHInline
             };
         }
 
-        private SongSceneAutoSwitchMode GetGlobalVarSongSceneAutoSwitchMode()
+        private SongSceneAutoSwitchMode GetArgumentSongSceneAutoSwitchMode()
         {
             var autoSwitchMode =
-                GetSongSceneAutoSwitchMode(CPH.GetGlobalVar<string>(Constants.GlobalVarNameSongSceneAutoSwitchMode));
+                GetSongSceneAutoSwitchMode(GetArgumentAsString(Constants.GlobalVarNameSongSceneAutoSwitchMode));
             return autoSwitchMode;
         }
 
@@ -1232,7 +1257,7 @@ public class CPHInline
 
         private Dictionary<string, object> CollectParameters()
         {
-            Dictionary<string,object>  parameters = new Dictionary<string, object>();
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
 
             return parameters;
         }
@@ -1240,7 +1265,7 @@ public class CPHInline
         private void TriggerAction(string actionName, bool provideData = false)
         {
             if (provideData)
-            {            
+            {
                 CPH.TriggerCodeEvent(actionName, CollectParameters());
             }
             CPH.TriggerCodeEvent(actionName, provideData);
@@ -1361,12 +1386,30 @@ public class CPHInline
             {
                 guessWinningCountDict = JsonConvert.DeserializeObject<Dictionary<string, int>>(temp);
             }
-            
+
         }
-
         
-
-
+        public bool GetTopGuessers()
+        {
+            var sorted = guessWinningCountDict.OrderByDescending(x => x.Value).ToDictionary(pair => pair.Key, pair => pair.Value);
+            var topTen = sorted.Take(10);
+            int rank = 1;
+            for (int i = 0; i < topTen.Count(); ++i)
+            {
+                var entry = topTen.ElementAt(i);
+                if (i > 0)
+                {
+                    var previousEntry = topTen.ElementAt(i - 1);
+                    if (entry.Value != previousEntry.Value)
+                    {
+                        ++rank;
+                    }
+                }
+                SendToChats($"Rank {rank}: Wins:{entry.Value} {entry.Key}");
+            }
+            return true;
+        }
+        
         public void UpdateConfig()
         {
             ReadConfig();
@@ -1377,7 +1420,7 @@ public class CPHInline
             CPH.SendMessage(str, true);
             CPH.SendYouTubeMessage(str, true);
         }
-        
+
         private void ResetGuesses()
         {
             guesses = new Dictionary<string, float>();
@@ -1465,10 +1508,10 @@ public class CPHInline
             else if (currentNoteData.TotalNotes > (currentNoteData.TotalNotesHit + currentNoteData.TotalNotesMissed))
             {
                 SendToChats("It seems the song was not played to the end, guessing game is not counting this one.");
-            }          
+            }
             else if (guesses.Count < minimumGuesses)
             {
-               SendToChats(string.Format("Unfortunately only {0} out of required {1} people have guessed",guesses.Count, minimumGuesses));
+                SendToChats(string.Format("Unfortunately only {0} out of required {1} people have guessed", guesses.Count, minimumGuesses));
             }
             else
             {
@@ -1501,7 +1544,7 @@ public class CPHInline
                 string temp = JsonConvert.SerializeObject(guessWinningCountDict);
                 CPH.SetGlobalVar(Constants.GlobalVarNameGuessingWinnersCount, temp, true);
             }
-            
+
         }
     }
 
@@ -1585,8 +1628,8 @@ public class CPHInline
         itsFetcher = new ResponseFetcher(CPH, snifferIp, snifferPort);
         itsGuessingGame = new GuessingGame(CPH, itsDataHandler);
         itsParser = new ResponseParser(CPH, itsSceneInteractor, itsGuessingGame);
-        
-        
+
+
         itsParser.Init();
         UpdateConfig();
         itsSceneInteractor.SetCooldownPeriod(itsParser.GetSceneSwitchCooldownPeriodInSeconds());
@@ -1686,9 +1729,14 @@ public class CPHInline
         CPH.LogDebug(Constants.AppName + $"Action main started at {executionStart} and took a total of {(executionEnd - executionStart).TotalMilliseconds} ms");
         return true;
     }
-   
+
     public void Dispose()
     {
         CPH.LogDebug(Constants.AppName + "Disposing RockSniffer to SB plugin");
+    }
+
+    public bool GetTopGuessers()
+    {
+        return itsGuessingGame.GetTopGuessers();
     }
 }
