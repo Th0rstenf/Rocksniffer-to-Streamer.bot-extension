@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
@@ -638,7 +639,7 @@ public class CPHInline
 
             currentConfig.reactingToSections = GetArgumentAsBool(Constants.GlobalVarNameSectionActions);
 
-            currentConfig.defaultSceneSwitchPeriodInSeconds = GetGlobalVarSceneSwitchPeriod();
+            currentConfig.defaultSceneSwitchPeriodInSeconds = GetSceneSwitchPeriod();
             currentConfig.sceneSwitchCooldownPeriodInSeconds = GetGlobalVarSceneSwitchCooldownPeriod();
             currentConfig.itsBehavior = GetBehavior();
 
@@ -772,11 +773,13 @@ public class CPHInline
             return string.IsNullOrEmpty(globalVar) ? def : double.Parse(globalVar);
         }
 
-        private int GetGlobalVarSceneSwitchPeriod()
-        {                   
-            var globalVar = GetGlobalVarAsInt(Constants.GlobalVarNameSceneSwitchPeriod,
-                Constants.DefaultSceneSwitchPeriod);
-            return globalVar;
+        private int GetSceneSwitchPeriod()
+        {
+            var raw = GetArgument(Constants.GlobalVarNameSceneSwitchPeriod);
+            if (!int.TryParse(raw.ToString(), out var period))
+                return Constants.DefaultSceneSwitchPeriod;
+                       
+            return period;
         }
 
         private int GetGlobalVarSceneSwitchCooldownPeriod()
