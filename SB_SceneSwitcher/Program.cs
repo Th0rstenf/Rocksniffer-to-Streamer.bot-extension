@@ -640,7 +640,7 @@ public class CPHInline
             currentConfig.reactingToSections = GetArgumentAsBool(Constants.GlobalVarNameSectionActions);
 
             currentConfig.defaultSceneSwitchPeriodInSeconds = GetSceneSwitchPeriod();
-            currentConfig.sceneSwitchCooldownPeriodInSeconds = GetGlobalVarSceneSwitchCooldownPeriod();
+            currentConfig.sceneSwitchCooldownPeriodInSeconds = GetSceneSwitchCooldownPeriod();
             currentConfig.itsBehavior = GetBehavior();
 
             currentConfig.blackListedScenes = GetGlobalVarBlackListedScenes();
@@ -710,7 +710,6 @@ public class CPHInline
         private string[]? GetGlobalVarAsStringArray(string name)
         {
             var rawValue = CPH.GetGlobalVar<string>(name);
-            CPH.LogVerbose($"{Constants.AppName}{name} raw={rawValue}");
 
             if (string.IsNullOrEmpty(rawValue)) return null;
 
@@ -782,11 +781,13 @@ public class CPHInline
             return period;
         }
 
-        private int GetGlobalVarSceneSwitchCooldownPeriod()
+        private int GetSceneSwitchCooldownPeriod()
         {
-            var globalVar = GetGlobalVarAsInt(Constants.GlobalVarNameSceneSwitchCooldownPeriod,
-                Constants.DefaultSceneSwitchCooldownPeriod);
-            return globalVar;
+            var raw = GetArgument(Constants.GlobalVarNameSceneSwitchCooldownPeriod);
+            if (!int.TryParse(raw.ToString(), out var period))
+                return Constants.DefaultSceneSwitchCooldownPeriod;
+
+            return period;
         }
 
         private string[] GetGlobalVarBlackListedScenes()
