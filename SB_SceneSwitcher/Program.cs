@@ -640,7 +640,7 @@ public class CPHInline
 
             currentConfig.defaultSceneSwitchPeriodInSeconds = GetGlobalVarSceneSwitchPeriod();
             currentConfig.sceneSwitchCooldownPeriodInSeconds = GetGlobalVarSceneSwitchCooldownPeriod();
-            currentConfig.itsBehavior = GetGlobalVarBehavior();
+            currentConfig.itsBehavior = GetBehavior();
 
             currentConfig.blackListedScenes = GetGlobalVarBlackListedScenes();
 
@@ -668,6 +668,12 @@ public class CPHInline
         {
            CPH.TryGetArg(str, out object arg);
               return arg;
+        }
+
+        private int GetArgumentAsInt(string name)
+        {
+            CPH.TryGetArg<int>(name, out int value);
+            return value;
         }
 
         private string GetArgumentAsString(string name)
@@ -712,19 +718,13 @@ public class CPHInline
             return trimmedValues;
         }
 
-        private ActivityBehavior GetGlobalVarBehavior()
+        private ActivityBehavior GetBehavior()
         {
-            var behavior = GetBehavior(CPH.GetGlobalVar<string>(Constants.GlobalVarNameBehavior));
-
-            return behavior;
-        }
-
-        private static ActivityBehavior GetBehavior(string globalVar)
-        {
-            if (string.IsNullOrEmpty(globalVar))
+            string argumentValue = GetArgumentAsString(Constants.GlobalVarNameBehavior);
+            if (string.IsNullOrEmpty(argumentValue))
                 return ActivityBehavior.WhiteList;
 
-            return globalVar.ToLower().Trim() switch
+            return argumentValue.ToLower().Trim() switch
             {
                 "whitelist" => ActivityBehavior.WhiteList,
                 "blacklist" => ActivityBehavior.BlackList,
@@ -773,7 +773,7 @@ public class CPHInline
         }
 
         private int GetGlobalVarSceneSwitchPeriod()
-        {
+        {                   
             var globalVar = GetGlobalVarAsInt(Constants.GlobalVarNameSceneSwitchPeriod,
                 Constants.DefaultSceneSwitchPeriod);
             return globalVar;
