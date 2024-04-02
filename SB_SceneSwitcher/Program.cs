@@ -643,7 +643,7 @@ public class CPHInline
             currentConfig.sceneSwitchCooldownPeriodInSeconds = GetSceneSwitchCooldownPeriod();
             currentConfig.itsBehavior = GetBehavior();
 
-            currentConfig.blackListedScenes = GetGlobalVarBlackListedScenes();
+            currentConfig.blackListedScenes = GetBlackListedScenes();
 
             LogConfigChanges();
 
@@ -682,17 +682,8 @@ public class CPHInline
             CPH.TryGetArg<string>(name, out string value);
             return value;
         }
-        private string GetGlobalVarAsString(string name)
-        {
-            var globalVar = CPH.GetGlobalVar<string>(name);
-            return globalVar;
-        }
 
-        private bool GetGlobalVarAsBool(string name)
-        {
-            var globalVar = CPH.GetGlobalVar<string>(name).ToLower().Contains("true");
-            return globalVar;
-        }
+
 
         private bool GetArgumentAsBool(string name)
         {
@@ -704,17 +695,6 @@ public class CPHInline
             CPH.TryGetArg<string>(name, out string value);
             if (string.IsNullOrEmpty(value)) return null;
             var trimmedValues = Regex.Split(value.Trim(), @"\s*[,;]\s*");
-            return trimmedValues;
-        }
-
-        private string[]? GetGlobalVarAsStringArray(string name)
-        {
-            var rawValue = CPH.GetGlobalVar<string>(name);
-
-            if (string.IsNullOrEmpty(rawValue)) return null;
-
-            var trimmedValues = Regex.Split(rawValue.Trim(), @"\s*[,;]\s*");
-
             return trimmedValues;
         }
 
@@ -790,10 +770,10 @@ public class CPHInline
             return period;
         }
 
-        private string[] GetGlobalVarBlackListedScenes()
+        private string[] GetBlackListedScenes()
         {
             return (currentConfig.itsBehavior == ActivityBehavior.BlackList
-                ? GetGlobalVarAsStringArray(Constants.GlobalVarNameBlackList)
+                ? GetArgumentAsStringArray(Constants.GlobalVarNameBlackList)
                 : new string[1])!;
         }
 
