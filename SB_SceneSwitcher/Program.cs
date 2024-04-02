@@ -162,6 +162,8 @@ public class CPHInline
     }
 
 
+   
+
     public class SceneInteractor
     {
         private const string MessageNoStreamAppConnectionAvailable =
@@ -424,6 +426,7 @@ public class CPHInline
 
         private Response currentResponse = null!;
         private NoteData lastNoteData = null!;
+        private DataHandler itsDataHandler = null!;
 
         private UInt32 totalNotesThisStream;
         private UInt32 totalNotesHitThisStream;
@@ -459,11 +462,12 @@ public class CPHInline
         private bool arrangementIdentified = false;
 
 
-        public ResponseParser(IInlineInvokeProxy cph, SceneInteractor interactor, GuessingGame guessing)
+        public ResponseParser(IInlineInvokeProxy cph, SceneInteractor interactor, GuessingGame guessing, DataHandler dataHandler)
         {
             CPH = cph;
             itsSceneInterActor = interactor;
             itsGuessingGame = guessing;
+            itsDataHandler = dataHandler;
         }
 
         public double GetCurrentTimer()
@@ -600,9 +604,9 @@ public class CPHInline
 
         public void UpdateConfig()
         {
-            currentConfig.menuScene = GetArgumentAsString(Constants.GlobalVarNameMenuScene);
+            currentConfig.menuScene = itsDataHandler.ReadArgumentAsString(Constants.GlobalVarNameMenuScene);
 
-            string[] songScenesRaw = GetArgumentAsStringArray(Constants.GlobalVarNameSongScenes);
+            string[] songScenesRaw = itsDataHandler.ReadArgumentAsStringArray(Constants.GlobalVarNameSongScenes);
             currentConfig.songScenes = new SongScene[songScenesRaw.Length];
             for (var i = 0; i < songScenesRaw.Length; ++i)
             {
@@ -632,12 +636,12 @@ public class CPHInline
                 }
             }
 
-            currentConfig.songPausedScene = GetArgumentAsString(Constants.GlobalVarNamePauseScene);
-            currentConfig.switchScenes = GetArgumentAsBool(Constants.GlobalVarNameSwitchScenes);
+            currentConfig.songPausedScene = itsDataHandler.ReadArgumentAsString(Constants.GlobalVarNamePauseScene);
+            currentConfig.switchScenes = itsDataHandler.ReadArgumentAsBool(Constants.GlobalVarNameSwitchScenes);
 
-            currentConfig.songSceneAutoSwitchMode = GetArgumentSongSceneAutoSwitchMode();
+            currentConfig.songSceneAutoSwitchMode = GetSongSceneAutoSwitchMode();
 
-            currentConfig.reactingToSections = GetArgumentAsBool(Constants.GlobalVarNameSectionActions);
+            currentConfig.reactingToSections = itsDataHandler.ReadArgumentAsBool(Constants.GlobalVarNameSectionActions);
 
             currentConfig.defaultSceneSwitchPeriodInSeconds = GetSceneSwitchPeriod();
             currentConfig.sceneSwitchCooldownPeriodInSeconds = GetSceneSwitchCooldownPeriod();
@@ -665,42 +669,11 @@ public class CPHInline
             }
         }
 
-        private object GetArgument(string str)
-        {
-           CPH.TryGetArg(str, out object arg);
-              return arg;
-        }
 
-        private int GetArgumentAsInt(string name)
-        {
-            CPH.TryGetArg<int>(name, out int value);
-            return value;
-        }
-
-        private string GetArgumentAsString(string name)
-        {
-            CPH.TryGetArg<string>(name, out string value);
-            return value;
-        }
-
-
-
-        private bool GetArgumentAsBool(string name)
-        {
-            CPH.TryGetArg<bool>(name, out bool value);
-            return value;
-        }
-        private string[]? GetArgumentAsStringArray(string name)
-        {
-            CPH.TryGetArg<string>(name, out string value);
-            if (string.IsNullOrEmpty(value)) return null;
-            var trimmedValues = Regex.Split(value.Trim(), @"\s*[,;]\s*");
-            return trimmedValues;
-        }
 
         private ActivityBehavior GetBehavior()
         {
-            string argumentValue = GetArgumentAsString(Constants.GlobalVarNameBehavior);
+            string argumentValue = itsDataHandler.ReadArgumentAsString(Constants.GlobalVarNameBehavior);
             if (string.IsNullOrEmpty(argumentValue))
                 return ActivityBehavior.WhiteList;
 
@@ -713,25 +686,20 @@ public class CPHInline
             };
         }
 
-        private SongSceneAutoSwitchMode GetArgumentSongSceneAutoSwitchMode()
+        private SongSceneAutoSwitchMode GetSongSceneAutoSwitchMode()
         {
-            var autoSwitchMode =
-                GetSongSceneAutoSwitchMode(GetArgumentAsString(Constants.GlobalVarNameSongSceneAutoSwitchMode));
-            return autoSwitchMode;
-        }
-
-        private static SongSceneAutoSwitchMode GetSongSceneAutoSwitchMode(string globalVar)
-        {
-            if (string.IsNullOrEmpty(globalVar))
+            var autoSwitchMode =  itsDataHandler.ReadArgumentAsString(Constants.GlobalVarNameSongSceneAutoSwitchMode);
+            if (string.IsNullOrEmpty(autoSwitchMode))
                 return SongSceneAutoSwitchMode.Off;
 
-            return globalVar.ToLower().Trim() switch
+            return autoSwitchMode.ToLower().Trim() switch
             {
                 "off" => SongSceneAutoSwitchMode.Off,
                 "sequential" => SongSceneAutoSwitchMode.Sequential,
                 "random" => SongSceneAutoSwitchMode.Random,
                 _ => SongSceneAutoSwitchMode.Off
             };
+
         }
 
         private int GetGlobalVarAsInt(string name, int def = 0)
@@ -754,7 +722,7 @@ public class CPHInline
 
         private int GetSceneSwitchPeriod()
         {
-            var raw = GetArgument(Constants.GlobalVarNameSceneSwitchPeriod);
+            var raw = itsDataHandler.ReadArgument(Constants.GlobalVarNameSceneSwitchPeriod);
             if (!int.TryParse(raw.ToString(), out var period))
                 return Constants.DefaultSceneSwitchPeriod;
                        
@@ -763,7 +731,7 @@ public class CPHInline
 
         private int GetSceneSwitchCooldownPeriod()
         {
-            var raw = GetArgument(Constants.GlobalVarNameSceneSwitchCooldownPeriod);
+            var raw = itsDataHandler.ReadArgument(Constants.GlobalVarNameSceneSwitchCooldownPeriod);
             if (!int.TryParse(raw.ToString(), out var period))
                 return Constants.DefaultSceneSwitchCooldownPeriod;
 
@@ -773,7 +741,7 @@ public class CPHInline
         private string[] GetBlackListedScenes()
         {
             return (currentConfig.itsBehavior == ActivityBehavior.BlackList
-                ? GetArgumentAsStringArray(Constants.GlobalVarNameBlackList)
+                ? itsDataHandler.ReadArgumentAsStringArray(Constants.GlobalVarNameBlackList)
                 : new string[1])!;
         }
 
@@ -1383,8 +1351,8 @@ public class CPHInline
             {
                 guessWinningCountDict = JsonConvert.DeserializeObject<Dictionary<string, int>>(temp);
             }
-            currentConfig = new Config();
-            lastConfig = new Config();
+            currentConfig = new UserConfig();
+            lastConfig = new UserConfig();
 
         }
         
@@ -1577,7 +1545,6 @@ public class CPHInline
 
         public object ReadArgument(string name)
         {
-            // the CPHmock. needs to be commented out in SB
             arguments.TryGetValue(name, out var arg);
 
             return arg;
@@ -1601,6 +1568,14 @@ public class CPHInline
         public bool ReadArgumentAsBool(string name)
         {
             return bool.TryParse(ReadArgumentAsString(name), out var result) && result;
+        }
+
+        public string[]? ReadArgumentAsStringArray(string name)
+        {
+            CPH.TryGetArg<string>(name, out string value);
+            if (string.IsNullOrEmpty(value)) return null;
+            var trimmedValues = Regex.Split(value.Trim(), @"\s*[,;]\s*");
+            return trimmedValues;
         }
 
     }
@@ -1640,7 +1615,7 @@ public class CPHInline
         itsSceneInteractor = new SceneInteractor(CPH);
         itsFetcher = new ResponseFetcher(CPH, snifferIp, snifferPort);
         itsGuessingGame = new GuessingGame(CPH, itsDataHandler);
-        itsParser = new ResponseParser(CPH, itsSceneInteractor, itsGuessingGame);
+        itsParser = new ResponseParser(CPH, itsSceneInteractor, itsGuessingGame, itsDataHandler);
 
 
         itsParser.Init();
