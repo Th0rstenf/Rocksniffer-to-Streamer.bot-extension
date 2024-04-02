@@ -41,18 +41,18 @@ public class CPHmock : IInlineInvokeProxy
         triggers = new Dictionary<string, Tuple<string, String[]>>();
 
 
-        args.Add(Constants.GlobalVarNameSnifferIP, _config.snifferIp);
-        args.Add(Constants.GlobalVarNameSnifferPort, _config.snifferPort);
-        args.Add(Constants.GlobalVarNameMenuScene, _config.menuScene);
-        args.Add(Constants.GlobalVarNameSongScenes, _config.songScenes);
-        args.Add(Constants.GlobalVarNamePauseScene, _config?.pauseScene);
-        args.Add(Constants.GlobalVarNameSwitchScenes, _config?.switchScenes);
-        args.Add(Constants.GlobalVarNameSceneSwitchPeriod, _config?.sceneSwitchPeriod);
-        args.Add(Constants.GlobalVarNameSceneSwitchCooldownPeriod, _config.sceneSwitchCooldownPeriod);
-        args.Add(Constants.GlobalVarNameSongSceneAutoSwitchMode, _config?.songSceneAutoSwitchMode);
-        args.Add(Constants.GlobalVarNameSectionActions, _config?.sectionActions);
-        args.Add(Constants.GlobalVarNameBehavior, _config?.behavior);
-        args.Add(Constants.GlobalVarNameBlackList, _config?.blackList);
+        args.Add(Constants.ArgumentNameSnifferIP, _config.snifferIp);
+        args.Add(Constants.ArgumentNameSnifferPort, _config.snifferPort);
+        args.Add(Constants.ArgumentNameMenuScene, _config.menuScene);
+        args.Add(Constants.ArgumentNameSongScenes, _config.songScenes);
+        args.Add(Constants.ArgumentNamePauseScene, _config?.pauseScene);
+        args.Add(Constants.ArgumentNameSwitchScenes, _config?.switchScenes);
+        args.Add(Constants.ArgumentNameSceneSwitchPeriod, _config?.sceneSwitchPeriod);
+        args.Add(Constants.ArgumentNameSceneSwitchCooldownPeriod, _config.sceneSwitchCooldownPeriod);
+        args.Add(Constants.ArgumentNameSongSceneAutoSwitchMode, _config?.songSceneAutoSwitchMode);
+        args.Add(Constants.ArgumentNameSectionActions, _config?.sectionActions);
+        args.Add(Constants.ArgumentNameBehavior, _config?.behavior);
+        args.Add(Constants.ArgumentNameBlackList, _config?.blackList);
 
 
 

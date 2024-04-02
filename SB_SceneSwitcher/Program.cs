@@ -12,18 +12,18 @@ public struct Constants
 {
     public const string AppName = "RS2SB :: ";
 
-    public const string GlobalVarNameSnifferIP = "snifferIP";
-    public const string GlobalVarNameSnifferPort = "snifferPort";
-    public const string GlobalVarNameMenuScene = "menuScene";
-    public const string GlobalVarNameSongScenes = "songScenes";
-    public const string GlobalVarNamePauseScene = "pauseScene";
-    public const string GlobalVarNameSwitchScenes = "switchScenes";
-    public const string GlobalVarNameSceneSwitchPeriod = "sceneSwitchPeriod";
-    public const string GlobalVarNameSceneSwitchCooldownPeriod = "sceneSwitchCooldownPeriod";
-    public const string GlobalVarNameSongSceneAutoSwitchMode = "songSceneAutoSwitchMode";
-    public const string GlobalVarNameSectionActions = "sectionActions";
-    public const string GlobalVarNameBehavior = "behavior";
-    public const string GlobalVarNameBlackList = "blackList";
+    public const string ArgumentNameSnifferIP = "snifferIP";
+    public const string ArgumentNameSnifferPort = "snifferPort";
+    public const string ArgumentNameMenuScene = "menuScene";
+    public const string ArgumentNameSongScenes = "songScenes";
+    public const string ArgumentNamePauseScene = "pauseScene";
+    public const string ArgumentNameSwitchScenes = "switchScenes";
+    public const string ArgumentNameSceneSwitchPeriod = "sceneSwitchPeriod";
+    public const string ArgumentNameSceneSwitchCooldownPeriod = "sceneSwitchCooldownPeriod";
+    public const string ArgumentNameSongSceneAutoSwitchMode = "songSceneAutoSwitchMode";
+    public const string ArgumentNameSectionActions = "sectionActions";
+    public const string ArgumentNameBehavior = "behavior";
+    public const string ArgumentNameBlackList = "blackList";
 
     public const string ActionNameSongStart = "SongStart";
     public const string ActionNameLeavePause = "leavePause";
@@ -48,8 +48,8 @@ public struct Constants
     public const string GlobalVarNameGuessingMinGuesser = "guessMinGuesserCount";
     public const string GlobalVarNameGuessingGuessTime = "guessTime";
 
-    public const string GlobalVarNameGuessingStartedText = "guessStartingText";
-    public const string GlobalVarNameGuessingTimeoutText = "guessTimeoutText";
+    public const string ArgumentNameGuessingStartedText = "guessStartingText";
+    public const string ArgumentNameGuessingTimeoutText = "guessTimeoutText";
     public const string GlobarVarNameGuessingWinner = "guessWinner";
     public const string GlobarVarNameGuessingWinningGuess = "guessWinningGuess";
     public const string GlobalVarNameGuessingWinnersCount = "guessWinnersCount";
@@ -568,10 +568,10 @@ public class CPHInline
             totalNotesHitThisStream = 0;
             totalNotesMissedThisStream = 0;
             accuracyThisStream = 0;
-            totalNotesLifeTime = GetGlobalVarAsUInt64(Constants.GlobalVarNameTotalNotesLifeTime);
-            totalNotesHitLifeTime = GetGlobalVarAsUInt64(Constants.GlobalVarNameTotalNotesHitLifeTime);
-            totalNotesMissedLifeTime = GetGlobalVarAsUInt64(Constants.GlobalVarNameTotalNotesMissedLifeTime);
-            accuracyLifeTime = GetGlobalVarAsDouble(Constants.GlobalVarNameAccuracyLifeTime);
+            totalNotesLifeTime = itsDataHandler.GetGlobalVarAsUInt64(Constants.GlobalVarNameTotalNotesLifeTime);
+            totalNotesHitLifeTime = itsDataHandler.GetGlobalVarAsUInt64(Constants.GlobalVarNameTotalNotesHitLifeTime);
+            totalNotesMissedLifeTime = itsDataHandler.GetGlobalVarAsUInt64(Constants.GlobalVarNameTotalNotesMissedLifeTime);
+            accuracyLifeTime = itsDataHandler.GetGlobalVarAsDouble(Constants.GlobalVarNameAccuracyLifeTime);
             highestStreakSinceLaunch = 0;
             currentSectionIndex = -1;
             currentSongSceneIndex = 0;
@@ -604,9 +604,9 @@ public class CPHInline
 
         public void UpdateConfig()
         {
-            currentConfig.menuScene = itsDataHandler.ReadArgumentAsString(Constants.GlobalVarNameMenuScene);
+            currentConfig.menuScene = itsDataHandler.ReadArgumentAsString(Constants.ArgumentNameMenuScene);
 
-            string[] songScenesRaw = itsDataHandler.ReadArgumentAsStringArray(Constants.GlobalVarNameSongScenes);
+            string[] songScenesRaw = itsDataHandler.ReadArgumentAsStringArray(Constants.ArgumentNameSongScenes);
             currentConfig.songScenes = new SongScene[songScenesRaw.Length];
             for (var i = 0; i < songScenesRaw.Length; ++i)
             {
@@ -636,12 +636,12 @@ public class CPHInline
                 }
             }
 
-            currentConfig.songPausedScene = itsDataHandler.ReadArgumentAsString(Constants.GlobalVarNamePauseScene);
-            currentConfig.switchScenes = itsDataHandler.ReadArgumentAsBool(Constants.GlobalVarNameSwitchScenes);
+            currentConfig.songPausedScene = itsDataHandler.ReadArgumentAsString(Constants.ArgumentNamePauseScene);
+            currentConfig.switchScenes = itsDataHandler.ReadArgumentAsBool(Constants.ArgumentNameSwitchScenes);
 
             currentConfig.songSceneAutoSwitchMode = GetSongSceneAutoSwitchMode();
 
-            currentConfig.reactingToSections = itsDataHandler.ReadArgumentAsBool(Constants.GlobalVarNameSectionActions);
+            currentConfig.reactingToSections = itsDataHandler.ReadArgumentAsBool(Constants.ArgumentNameSectionActions);
 
             currentConfig.defaultSceneSwitchPeriodInSeconds = GetSceneSwitchPeriod();
             currentConfig.sceneSwitchCooldownPeriodInSeconds = GetSceneSwitchCooldownPeriod();
@@ -673,7 +673,7 @@ public class CPHInline
 
         private ActivityBehavior GetBehavior()
         {
-            string argumentValue = itsDataHandler.ReadArgumentAsString(Constants.GlobalVarNameBehavior);
+            string argumentValue = itsDataHandler.ReadArgumentAsString(Constants.ArgumentNameBehavior);
             if (string.IsNullOrEmpty(argumentValue))
                 return ActivityBehavior.WhiteList;
 
@@ -688,7 +688,7 @@ public class CPHInline
 
         private SongSceneAutoSwitchMode GetSongSceneAutoSwitchMode()
         {
-            var autoSwitchMode =  itsDataHandler.ReadArgumentAsString(Constants.GlobalVarNameSongSceneAutoSwitchMode);
+            var autoSwitchMode =  itsDataHandler.ReadArgumentAsString(Constants.ArgumentNameSongSceneAutoSwitchMode);
             if (string.IsNullOrEmpty(autoSwitchMode))
                 return SongSceneAutoSwitchMode.Off;
 
@@ -702,27 +702,11 @@ public class CPHInline
 
         }
 
-        private int GetGlobalVarAsInt(string name, int def = 0)
-        {
-            var globalVar = CPH.GetGlobalVar<string>(name);
-            return string.IsNullOrEmpty(globalVar) ? def : int.Parse(globalVar);
-        }
-
-        private UInt64 GetGlobalVarAsUInt64(string name, UInt64 def = 0)
-        {
-            var globalVar = CPH.GetGlobalVar<string>(name);
-            return string.IsNullOrEmpty(globalVar) ? def : UInt64.Parse(globalVar);
-        }
-
-        private double GetGlobalVarAsDouble(string name, double def = 0)
-        {
-            var globalVar = CPH.GetGlobalVar<string>(name);
-            return string.IsNullOrEmpty(globalVar) ? def : double.Parse(globalVar);
-        }
+       
 
         private int GetSceneSwitchPeriod()
         {
-            var raw = itsDataHandler.ReadArgument(Constants.GlobalVarNameSceneSwitchPeriod);
+            var raw = itsDataHandler.ReadArgument(Constants.ArgumentNameSceneSwitchPeriod);
             if (!int.TryParse(raw.ToString(), out var period))
                 return Constants.DefaultSceneSwitchPeriod;
                        
@@ -731,7 +715,7 @@ public class CPHInline
 
         private int GetSceneSwitchCooldownPeriod()
         {
-            var raw = itsDataHandler.ReadArgument(Constants.GlobalVarNameSceneSwitchCooldownPeriod);
+            var raw = itsDataHandler.ReadArgument(Constants.ArgumentNameSceneSwitchCooldownPeriod);
             if (!int.TryParse(raw.ToString(), out var period))
                 return Constants.DefaultSceneSwitchCooldownPeriod;
 
@@ -741,7 +725,7 @@ public class CPHInline
         private string[] GetBlackListedScenes()
         {
             return (currentConfig.itsBehavior == ActivityBehavior.BlackList
-                ? itsDataHandler.ReadArgumentAsStringArray(Constants.GlobalVarNameBlackList)
+                ? itsDataHandler.ReadArgumentAsStringArray(Constants.ArgumentNameBlackList)
                 : new string[1])!;
         }
 
@@ -1380,13 +1364,13 @@ public class CPHInline
         public void UpdateConfig()
         {
             //TODO: refactor accessing globals to its own subclass and make it available here
-            string temp = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingIsActive, false);
+            string temp = itsDataHandler.ReadArgumentAsString(Constants.GlobalVarNameGuessingIsActive);
             currentConfig.isActive = temp.ToLower().Contains("true");
 
-            temp = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingMinGuesser, false);
+            temp = itsDataHandler.ReadArgumentAsString(Constants.GlobalVarNameGuessingMinGuesser);
             currentConfig.minimumGuesses = string.IsNullOrEmpty(temp) ? 2 : int.Parse(temp);
 
-            temp = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingGuessTime, false);
+            temp = itsDataHandler.ReadArgumentAsString(Constants.GlobalVarNameGuessingGuessTime);
             currentConfig.timeOut = string.IsNullOrEmpty(temp) ? 30 : int.Parse(temp);
 
             LogConfigChanges();
@@ -1442,7 +1426,7 @@ public class CPHInline
             {
                 ResetGuesses();
                 SetState(State.AcceptingGuesses);
-                string message = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingStartedText, false);
+                string message = itsDataHandler.ReadArgumentAsString(Constants.ArgumentNameGuessingStartedText);
                 SendToChats(message);
             }
         }
@@ -1463,7 +1447,7 @@ public class CPHInline
             if (currentConfig.isActive && itsState == State.AcceptingGuesses)
             {
                 SetState(State.WaitingForTheSongToFinish);
-                string message = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingTimeoutText, false);
+                string message = itsDataHandler.ReadArgumentAsString(Constants.ArgumentNameGuessingTimeoutText);
                 SendToChats(message);
                 string temp = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingDictionary, false);
                 if (temp != null)
@@ -1529,11 +1513,6 @@ public class CPHInline
         }
     }
 
-    // -------------------------------------------------
-    // Needs to be commented out in streamer bot!
-    private CPHmock CPH = new CPHmock();
-    private Dictionary<string, object> args = CPHmock.args;
-    // -------------------------------------------------
 
     public class DataHandler
     {
@@ -1578,7 +1557,31 @@ public class CPHInline
             return trimmedValues;
         }
 
+        public int GetGlobalVarAsInt(string name, int def = 0)
+        {
+            var globalVar = CPH.GetGlobalVar<string>(name);
+            return string.IsNullOrEmpty(globalVar) ? def : int.Parse(globalVar);
+        }
+
+        public UInt64 GetGlobalVarAsUInt64(string name, UInt64 def = 0)
+        {
+            var globalVar = CPH.GetGlobalVar<string>(name);
+            return string.IsNullOrEmpty(globalVar) ? def : UInt64.Parse(globalVar);
+        }
+
+        public double GetGlobalVarAsDouble(string name, double def = 0)
+        {
+            var globalVar = CPH.GetGlobalVar<string>(name);
+            return string.IsNullOrEmpty(globalVar) ? def : double.Parse(globalVar);
+        }
     }
+
+
+    // -------------------------------------------------
+    // Needs to be commented out in streamer bot!
+    private CPHmock CPH = new CPHmock();
+    private Dictionary<string, object> args = CPHmock.args;
+    // -------------------------------------------------
 
     private SceneInteractor itsSceneInteractor = null!;
     private ResponseFetcher itsFetcher = null!;
@@ -1637,14 +1640,14 @@ public class CPHInline
 
     private string GetSnifferIp()
     {
-        var globalVar = CPH.GetGlobalVar<string>(Constants.GlobalVarNameSnifferIP);
+        var globalVar = itsDataHandler.ReadArgumentAsString(Constants.ArgumentNameSnifferIP);
         // TODO in case not found, return null, or return default localhost?
         return string.IsNullOrEmpty(globalVar) ? null : globalVar.Replace('"', ' ').Trim();
     }
 
     private string GetSnifferPort()
     {
-        var globalVar = CPH.GetGlobalVar<string>(Constants.GlobalVarNameSnifferPort);
+        var globalVar = itsDataHandler.ReadArgumentAsString(Constants.ArgumentNameSnifferPort);
         return string.IsNullOrEmpty(globalVar) ? Constants.SnifferPortDefault : globalVar.Trim();
     }
 
