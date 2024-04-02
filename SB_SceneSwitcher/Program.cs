@@ -1338,12 +1338,25 @@ public class CPHInline
             AcceptingGuesses,
             WaitingForTheSongToFinish
         }
-
-        private Boolean isActive;
+        
         private State itsState;
 
-        private int minimumGuesses = 2;
-        private int timeOut;
+        struct UserConfig 
+        {
+            public Boolean isActive;
+            public int minimumGuesses;
+            public int timeOut;
+            public UserConfig()
+            {
+                isActive = false;
+                minimumGuesses = 2;
+                timeOut = 60;
+            }
+        }
+
+        private UserConfig currentConfig;
+        private UserConfig lastConfig;
+
         private IInlineInvokeProxy CPH;
         private DataHandler itsDataHandler;
 
@@ -1370,6 +1383,8 @@ public class CPHInline
             {
                 guessWinningCountDict = JsonConvert.DeserializeObject<Dictionary<string, int>>(temp);
             }
+            currentConfig = new Config();
+            lastConfig = new Config();
 
         }
         
@@ -1396,7 +1411,33 @@ public class CPHInline
         
         public void UpdateConfig()
         {
-            ReadConfig();
+            //TODO: refactor accessing globals to its own subclass and make it available here
+            string temp = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingIsActive, false);
+            currentConfig.isActive = temp.ToLower().Contains("true");
+
+            temp = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingMinGuesser, false);
+            currentConfig.minimumGuesses = string.IsNullOrEmpty(temp) ? 2 : int.Parse(temp);
+
+            temp = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingGuessTime, false);
+            currentConfig.timeOut = string.IsNullOrEmpty(temp) ? 30 : int.Parse(temp);
+
+            LogConfigChanges();
+        }
+
+        private void LogConfigChanges()
+        {
+            var properties = typeof(UserConfig).GetProperties();
+            foreach (var property in properties)
+            {
+                var currentValue = property.GetValue(currentConfig);
+                var lastValue = property.GetValue(lastConfig);
+
+                if (!Equals(currentValue, lastValue))
+                {
+                    Console.WriteLine($"Property {property.Name} changed from {lastValue} to {currentValue}");
+                    property.SetValue(lastConfig, currentValue);
+                }
+            }
         }
 
         private void SendToChats(string str)
@@ -1412,18 +1453,6 @@ public class CPHInline
             CPH.SetGlobalVar(Constants.GlobalVarNameGuessingDictionary, DictAsString, false);
         }
 
-        private void ReadConfig()
-        {
-            //TODO: refactor accessing globals to its own subclass and make it available here
-            string temp = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingIsActive, false);
-            isActive = temp.ToLower().Contains("true");
-
-            temp = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingMinGuesser, false);
-            minimumGuesses = string.IsNullOrEmpty(temp) ? 2 : int.Parse(temp);
-
-            temp = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingGuessTime, false);
-            timeOut = string.IsNullOrEmpty(temp) ? 30 : int.Parse(temp);
-        }
 
         private void SetState(GuessingGame.State state)
         {
@@ -1434,14 +1463,14 @@ public class CPHInline
         public void Init()
         {
             ResetGuesses();
-            ReadConfig();
+            UpdateConfig();
 
         }
 
         public void StartAcceptingGuesses()
         {
             //Plausability check
-            if (isActive && itsState != State.AcceptingGuesses)
+            if (currentConfig.isActive && itsState != State.AcceptingGuesses)
             {
                 ResetGuesses();
                 SetState(State.AcceptingGuesses);
@@ -1452,9 +1481,9 @@ public class CPHInline
 
         public void CheckTimeout(int currentTimer)
         {
-            if (isActive && itsState == State.AcceptingGuesses)
+            if (currentConfig.isActive && itsState == State.AcceptingGuesses)
             {
-                if (currentTimer >= timeOut)
+                if (currentTimer >= currentConfig.timeOut)
                 {
                     StopAcceptingGuesses();
                 }
@@ -1463,7 +1492,7 @@ public class CPHInline
 
         private void StopAcceptingGuesses()
         {
-            if (isActive && itsState == State.AcceptingGuesses)
+            if (currentConfig.isActive && itsState == State.AcceptingGuesses)
             {
                 SetState(State.WaitingForTheSongToFinish);
                 string message = CPH.GetGlobalVar<string>(Constants.GlobalVarNameGuessingTimeoutText, false);
@@ -1483,9 +1512,9 @@ public class CPHInline
         public void FinishAndEvaluate(double totalLength, NoteData currentNoteData)
         {
             SetState(State.InActive);
-            if (!isActive)
+            if (!currentConfig.isActive)
                 return;
-            if (totalLength < timeOut)
+            if (totalLength < currentConfig.timeOut)
             {
                 SendToChats("This song was too short to count for the guessing game");
             }
@@ -1493,9 +1522,9 @@ public class CPHInline
             {
                 SendToChats("It seems the song was not played to the end, guessing game is not counting this one.");
             }
-            else if (guesses.Count < minimumGuesses)
+            else if (guesses.Count < currentConfig.minimumGuesses)
             {
-                SendToChats(string.Format("Unfortunately only {0} out of required {1} people have guessed", guesses.Count, minimumGuesses));
+                SendToChats(string.Format("Unfortunately only {0} out of required {1} people have guessed", guesses.Count, currentConfig.minimumGuesses));
             }
             else
             {
