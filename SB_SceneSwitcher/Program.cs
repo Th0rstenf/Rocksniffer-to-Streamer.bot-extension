@@ -707,19 +707,43 @@ public class CPHInline
         private int GetSceneSwitchPeriod()
         {
             var raw = itsDataHandler.ReadArgument(Constants.ArgumentNameSceneSwitchPeriod);
-            if (!int.TryParse(raw.ToString(), out var period))
+            if (raw == null)
+            {
+                CPH.LogDebug(Constants.AppName + $"Scene switch period is not set. Using default value.");
                 return Constants.DefaultSceneSwitchPeriod;
-                       
-            return period;
+            }
+            try
+            {
+                int.TryParse(raw.ToString(), out var period);
+                return period;
+            }
+            catch (Exception e)
+            {
+                CPH.LogDebug(Constants.AppName + $"Tried parsing {Constants.ArgumentNameSceneSwitchPeriod}, lead to error : {e.Message}");
+                return Constants.DefaultSceneSwitchPeriod;
+            }
+
         }
 
         private int GetSceneSwitchCooldownPeriod()
         {
             var raw = itsDataHandler.ReadArgument(Constants.ArgumentNameSceneSwitchCooldownPeriod);
-            if (!int.TryParse(raw.ToString(), out var period))
+            if (raw == null)
+            {
+                CPH.LogDebug(Constants.AppName + $"Scene switch cooldown period is not set. Using default value.");
                 return Constants.DefaultSceneSwitchCooldownPeriod;
+            }
+            try
+            {
+                int.TryParse(raw.ToString(), out var period);
+                return period;
+            }
+            catch (Exception e)
+            {
+                CPH.LogDebug(Constants.AppName + $"Tried parsing {Constants.ArgumentNameSceneSwitchCooldownPeriod}, lead to error : {e.Message}");
+                return Constants.DefaultSceneSwitchCooldownPeriod;
+            }
 
-            return period;
         }
 
         private string[] GetBlackListedScenes()
@@ -1524,9 +1548,19 @@ public class CPHInline
 
         public object ReadArgument(string name)
         {
-            arguments.TryGetValue(name, out var arg);
+            CPH.LogVerbose(Constants.AppName + $"Reading argument {name}");
+           
+            try
+            {
+                arguments.TryGetValue(name, out var arg);
+                return arg;
+            }
+            catch (Exception e)
+            {
+                CPH.LogDebug(Constants.AppName + $"Error reading argument {name}: {e.Message}");
+            }
 
-            return arg;
+            return "";
         }
 
         public string ReadArgumentAsString(string name)
@@ -1536,7 +1570,16 @@ public class CPHInline
 
         public int ReadArgumentAsInt(string name)
         {
-            return int.TryParse(ReadArgumentAsString(name), out var result) ? result : 0;
+            try
+            {
+                return int.TryParse(ReadArgumentAsString(name), out var result) ? result : 0;
+            }
+            catch(Exception e)
+            {
+                CPH.LogDebug(Constants.AppName + $"Error parsing argument {name}: {e.Message}");
+                return 0;
+            }
+            
         }
 
         public float ReadArgumentAsFloat(string name)
