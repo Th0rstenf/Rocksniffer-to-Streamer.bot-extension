@@ -562,7 +562,7 @@ public class CPHInline
 
         public void Init()
         {
-            UpdateConfig();
+            //UpdateConfig();
 
             totalNotesThisStream = 0;
             totalNotesHitThisStream = 0;
@@ -1546,14 +1546,24 @@ public class CPHInline
 
         public DataHandler(IInlineInvokeProxy cph, Dictionary<string, object> args) { CPH = cph; arguments = args; }
 
+        public void setArguments(Dictionary<string, object> args)
+        {
+            arguments = args;
+        }
+
         public object ReadArgument(string name)
         {
-            CPH.LogVerbose(Constants.AppName + $"Reading argument {name}");
-           
+            CPH.LogVerbose(Constants.AppName + $"Reading argument {name}");        
             try
             {
-                arguments.TryGetValue(name, out var arg);
-                return arg;
+                if (arguments.TryGetValue(name, out var arg))
+                {
+                    return arg; 
+                }
+                else
+                {
+                    CPH.LogDebug(Constants.AppName + $"Parsing argument {name} failed");
+                }
             }
             catch (Exception e)
             {
@@ -1662,7 +1672,7 @@ public class CPHInline
         itsFetcher = new ResponseFetcher(CPH, snifferIp, snifferPort);
         itsGuessingGame = new GuessingGame(CPH, itsDataHandler);
         itsParser = new ResponseParser(CPH, itsSceneInteractor, itsGuessingGame, itsDataHandler);
-
+        itsDataHandler.setArguments(args);
 
         itsParser.Init();
         UpdateConfig();
@@ -1699,6 +1709,7 @@ public class CPHInline
         var executionStart = DateTime.Now;
         CPH.LogDebug(Constants.AppName + "Action main ------- START! -------");
 
+        itsDataHandler.setArguments(args);
         UpdateCurrentScene();
         UpdateConfig();
         itsParser.UpdateConfig();
