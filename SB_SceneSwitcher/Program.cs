@@ -438,6 +438,8 @@ public class CPHInline
         private UInt64 totalNotesMissedLifeTime;
         private double accuracyLifeTime;
 
+        private System.DateTime lastPersistingVariables = System.DateTime.Now;
+
         // Configuration attributes filled by user config!
         struct UserConfig
         {
@@ -933,18 +935,23 @@ public class CPHInline
                             totalNotesHitLifeTime += (UInt64)additionalNotesHit;
                             totalNotesMissedLifeTime += (uint)additionalNotesMissed;
                             totalNotesLifeTime += (uint)additionalNotes;
-                            CPH.SetGlobalVar(Constants.GlobalVarNameTotalNotesLifeTime, totalNotesLifeTime, true);
-                            CPH.SetGlobalVar(Constants.GlobalVarNameTotalNotesHitLifeTime, totalNotesHitLifeTime, true);
-                            CPH.SetGlobalVar(Constants.GlobalVarNameTotalNotesMissedLifeTime, totalNotesMissedLifeTime, true);
+                           
 
                             if (totalNotesThisStream > 0)
                             {
                                 accuracyThisStream = 100.0 * ((double)totalNotesHitThisStream / totalNotesThisStream);
                                 accuracyLifeTime = 100.0 * ((double)totalNotesHitLifeTime / totalNotesLifeTime);
                             }
-
                             CPH.SetGlobalVar("accuracySinceLaunch", accuracyThisStream, false);
-                            CPH.SetGlobalVar(Constants.GlobalVarNameAccuracyLifeTime, accuracyLifeTime, true);
+
+                            if ((System.DateTime.Now - lastPersistingVariables) > TimeSpan.FromSeconds(30))
+                            {
+                                CPH.SetGlobalVar(Constants.GlobalVarNameTotalNotesLifeTime, totalNotesLifeTime, true);
+                                CPH.SetGlobalVar(Constants.GlobalVarNameTotalNotesHitLifeTime, totalNotesHitLifeTime, true);
+                                CPH.SetGlobalVar(Constants.GlobalVarNameTotalNotesMissedLifeTime, totalNotesMissedLifeTime, true);
+                                CPH.SetGlobalVar(Constants.GlobalVarNameAccuracyLifeTime, accuracyLifeTime, true);
+                                lastPersistingVariables = System.DateTime.Now;
+                            }
                         }
 
                         lastNoteData = currentResponse.MemoryReadout.NoteData;
