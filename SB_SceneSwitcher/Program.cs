@@ -47,16 +47,18 @@ public struct Constants
     public const string GlobalVarNameGuessingState = "guessingState";
     public const string GlobalVarNameGuessingMinGuesser = "guessMinGuesserCount";
     public const string GlobalVarNameGuessingGuessTime = "guessTime";
+    public const string GlobalVarNameGuessingWinnersCount = "guessWinnersCount";
 
     public const string ArgumentNameGuessingStartedText = "guessStartingText";
     public const string ArgumentNameGuessingTimeoutText = "guessTimeoutText";
-    public const string GlobarVarNameGuessingWinner = "guessWinner";
-    public const string GlobarVarNameGuessingWinningGuess = "guessWinningGuess";
-    public const string GlobalVarNameGuessingWinnersCount = "guessWinnersCount";
-    public const string GlobalVarNameGuessingWinningDeviation = "guessWinningDeviation";
-    public const string GlobalVarNameGuessingFinalAccuracy = "guessFinalAccuracy";
+    public const string ArgumentNameGuessingWinner = "guessWinner";
+    public const string ArgumentNameGuessingWinningGuess = "guessWinningGuess";
+    
+    public const string ArgumentNameGuessingWinningDeviation = "guessWinningDeviation";
+    public const string ArgumentNameGuessingFinalAccuracy = "guessFinalAccuracy";
 
-    public const string ActionNameGuessingFinished = "guessWinner";
+    public const string TriggerNameGuessWinnerDetermined = "guessWinner";
+    
 
 
 }
@@ -1347,6 +1349,7 @@ public class CPHInline
         // JsonConvert shall be used to store/extract in in a variable.
         Dictionary<string, float> guesses;
         Dictionary<string, int> guessWinningCountDict;
+        
 
 
         public GuessingGame(IInlineInvokeProxy cph, DataHandler dataHandler)
@@ -1368,6 +1371,8 @@ public class CPHInline
             }
             currentConfig = new UserConfig();
             lastConfig = new UserConfig();
+            String[] categories = new[] { "Rocksmith to Streamer.bot" };
+            bool success = CPH.RegisterCustomTrigger("Guessing game finished",Constants.TriggerNameGuessWinnerDetermined , categories);
 
         }
         
@@ -1375,6 +1380,7 @@ public class CPHInline
         {
             var sorted = guessWinningCountDict.OrderByDescending(x => x.Value).ToDictionary(pair => pair.Key, pair => pair.Value);
             var topTen = sorted.Take(10);
+            topTen = topTen.OrderByDescending(x => x.Value).ToDictionary(pair => pair.Key, pair => pair.Value);
             int rank = 1;
             for (int i = 0; i < topTen.Count(); ++i)
             {
@@ -1387,7 +1393,7 @@ public class CPHInline
                         ++rank;
                     }
                 }
-                SendToChats($"Rank {rank}: Wins:{entry.Value} {entry.Key}");
+                SendToChats($"Rank {rank}: {entry.Key} {entry.Value} Wins");
             }
             return true;
         }
@@ -1522,12 +1528,21 @@ public class CPHInline
                         minimumDeviation = deviation;
                     }
                 }
+                /*
                 CPH.SetGlobalVar(Constants.GlobarVarNameGuessingWinner, winnerName, false);
                 CPH.SetGlobalVar(Constants.GlobarVarNameGuessingWinningGuess, guesses[winnerName], false);
                 CPH.SetGlobalVar(Constants.GlobalVarNameGuessingWinningDeviation, minimumDeviation, false);
                 CPH.SetGlobalVar(Constants.GlobalVarNameGuessingFinalAccuracy, currentNoteData.Accuracy, false);
 
                 CPH.RunAction(Constants.ActionNameGuessingFinished);
+                */
+                Dictionary<string, object> evenArgs =  new Dictionary<string, object>();
+                evenArgs.Add(Constants.ArgumentNameGuessingWinner, winnerName);
+                evenArgs.Add(Constants.ArgumentNameGuessingWinningGuess, guesses[winnerName]);
+                evenArgs.Add(Constants.ArgumentNameGuessingWinningDeviation, minimumDeviation);
+                evenArgs.Add(Constants.ArgumentNameGuessingFinalAccuracy, currentNoteData.Accuracy);
+                CPH.TriggerCodeEvent(Constants.TriggerNameGuessWinnerDetermined, evenArgs);
+
 
                 if (guessWinningCountDict.TryGetValue(winnerName, out int currentCount))
                 {
