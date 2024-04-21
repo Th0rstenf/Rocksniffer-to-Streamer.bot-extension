@@ -252,7 +252,10 @@ public class CPHmock : IInlineInvokeProxy
         return false;
     }
    
-
+    public void Wait(int milliseconds)
+    {
+        Thread.Sleep(milliseconds);
+    }
 
     public static void Main(string[] args)
     {
@@ -264,7 +267,11 @@ public class CPHmock : IInlineInvokeProxy
 
         if (testTopGuessers)
         {
-            cphInline.GetTopGuessers();
+            for (; ; )
+            {
+                cphInline.GetTopGuessers();
+                Thread.Sleep(1000);
+            }
             return;
         }
         while (true)

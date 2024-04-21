@@ -21,6 +21,10 @@
     void TriggerCodeEvent(string eventName, bool useArgs = true);
     void TriggerCodeEvent(string eventName, Dictionary<string,object> args);
 
+    void Wait(int milliseconds);
+
     bool TryGetArg<T>(string argName, out T value);
     bool TryGetArg(string argName, out object value);
+
+
 }

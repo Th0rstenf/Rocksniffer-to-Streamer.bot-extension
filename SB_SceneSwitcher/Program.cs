@@ -1418,7 +1418,8 @@ public class CPHInline
                         break;
                     }
                 }
-                SendToChats(message);        
+                SendToChats(message);
+                CPH.Wait(250);
             }           
 
             return true;
