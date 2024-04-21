@@ -4,7 +4,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Net.Http;
+using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 
@@ -1379,9 +1381,11 @@ public class CPHInline
         public bool GetTopGuessers()
         {
             var sorted = guessWinningCountDict.OrderByDescending(x => x.Value).ToDictionary(pair => pair.Key, pair => pair.Value);
-            var topTen = sorted.Take(10);
-            topTen = topTen.OrderByDescending(x => x.Value).ToDictionary(pair => pair.Key, pair => pair.Value);
+            var topTen = sorted.Take(10);         
             int rank = 1;
+            // Assuming the container is a dictionary where the key is the rank and the value is a list of elements on that rank
+            Dictionary<int, Tuple<int, List<string>>> container = new Dictionary<int, Tuple<int, List<string>>>();
+            //Assemble top list
             for (int i = 0; i < topTen.Count(); ++i)
             {
                 var entry = topTen.ElementAt(i);
@@ -1393,14 +1397,36 @@ public class CPHInline
                         ++rank;
                     }
                 }
-                SendToChats($"Rank {rank}: {entry.Key} {entry.Value} Wins");
+                if (!container.ContainsKey(rank))
+                {
+                    container[rank] = new Tuple<int, List<string>>(entry.Value, new List<string>());
+                }
+                container[rank].Item2.Add(entry.Key);                
             }
+            for (int i = 1; i <= container.Count; ++i)
+            {
+                string message = $"Rank {i} ({container[i].Item1} win): ";
+                for (var iter = container[i].Item2.GetEnumerator();;)
+                {
+                    message += $"{iter.Current}";
+                    if (iter.MoveNext())
+                    {
+                        message += ", ";
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                SendToChats(message);        
+            }           
+
             return true;
         }
         
         public void UpdateConfig()
         {
-            //TODO: refactor accessing globals to its own subclass and make it available here
+
             string temp = itsDataHandler.ReadArgumentAsString(Constants.GlobalVarNameGuessingIsActive);
             currentConfig.isActive = temp.ToLower().Contains("true");
 

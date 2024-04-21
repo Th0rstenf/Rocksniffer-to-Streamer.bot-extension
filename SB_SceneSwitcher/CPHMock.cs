@@ -174,6 +174,7 @@ public class CPHmock : IInlineInvokeProxy
             Constants.GlobalVarNameTotalNotesHitLifeTime => "0",
             Constants.GlobalVarNameTotalNotesMissedLifeTime => "0",
             Constants.GlobalVarNameAccuracyLifeTime => "0,0",
+            Constants.GlobalVarNameGuessingWinnersCount => "{\"Th0lamin (twitch)\":4,\"RedVarg91 (twitch)\":2,\"Skippern666 (twitch)\":1,\"RubberDave (twitch)\":3,\"Puffelmuggu (twitch)\":1,\"Boernii (twitch)\":1,\"cryptghoul (twitch)\":1,\"theshadow63 (twitch)\":1,\"vincent77600 (twitch)\":1,\"Basilius_Fleischlein (twitch)\":1,\"maxwattel20 (twitch)\":1,\"FF_ByTheSword (twitch)\":1,\"DerPlaymo (twitch)\":4,\"naturaledge (twitch)\":1}",
             _ => null
         }; ;
 
@@ -257,11 +258,21 @@ public class CPHmock : IInlineInvokeProxy
     {
         CPHInline cphInline = new CPHInline();
 
+        bool testTopGuessers = true;
+
         cphInline.Init();
+
+        if (testTopGuessers)
+        {
+            cphInline.GetTopGuessers();
+            return;
+        }
         while (true)
         {
             cphInline.Execute();
             Thread.Sleep(1000);
+
+
         }
     }
 
