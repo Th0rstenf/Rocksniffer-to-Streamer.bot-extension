@@ -20,6 +20,10 @@ public class CPHmock : IInlineInvokeProxy
     private static LogLevels LogLevelSB;
     private string? currentScene;
 
+    public static Dictionary<string, object> args;
+
+    private static Dictionary<string, Tuple<string, String[]>> triggers;
+
     public enum LogLevels
     {
         Verbose,
@@ -28,6 +32,31 @@ public class CPHmock : IInlineInvokeProxy
         Warn,
         Error_
     }
+
+    public CPHmock()
+    {
+        LogLevel = GetLogLevel(_config?.logLevel);
+        LogLevelSB = GetLogLevel(_config?.logLevelSB);
+        args = new Dictionary<string, object>();
+        triggers = new Dictionary<string, Tuple<string, String[]>>();
+
+
+        args.Add(Constants.ArgumentNameSnifferIP, _config.snifferIp);
+        args.Add(Constants.ArgumentNameSnifferPort, _config.snifferPort);
+        args.Add(Constants.ArgumentNameMenuScene, _config.menuScene);
+        args.Add(Constants.ArgumentNameSongScenes, _config.songScenes);
+        args.Add(Constants.ArgumentNamePauseScene, _config?.pauseScene);
+        args.Add(Constants.ArgumentNameSwitchScenes, _config?.switchScenes);
+        args.Add(Constants.ArgumentNameSceneSwitchPeriod, _config?.sceneSwitchPeriod);
+        args.Add(Constants.ArgumentNameSceneSwitchCooldownPeriod, _config.sceneSwitchCooldownPeriod);
+        args.Add(Constants.ArgumentNameSongSceneAutoSwitchMode, _config?.songSceneAutoSwitchMode);
+        args.Add(Constants.ArgumentNameSectionActions, _config?.sectionActions);
+        args.Add(Constants.ArgumentNameBehavior, _config?.behavior);
+        args.Add(Constants.ArgumentNameBlackList, _config?.blackList);
+
+
+
+}
 
     public void LogWarn(string str)
     {
@@ -82,7 +111,7 @@ public class CPHmock : IInlineInvokeProxy
     public string ObsGetCurrentScene()
     {
         var obsGetCurrentScene = currentScene ??= _config?.menuScene ?? "";
-        Console.WriteLine(MockAppName + $"OBS current scene is: {obsGetCurrentScene}");
+        //Console.WriteLine(MockAppName + $"OBS current scene is: {obsGetCurrentScene}");
         return obsGetCurrentScene;
     }
 
@@ -101,17 +130,24 @@ public class CPHmock : IInlineInvokeProxy
         return currentScene;
     }
 
-    public void SendMessage(string str)
+    public void SendMessage(string str, bool bot = true)
     {
         Console.WriteLine(MockAppName + $"SendMessage: {str}");
     }
 
-    public void RunAction(string str)
+    public void SendYouTubeMessage(string str, bool bot = true)
     {
-        Console.WriteLine(MockAppName + $"Running action: {str}");
+
     }
 
-    public string? GetGlobalVar<Type>(string key)
+    public void RunAction(string str, bool runImmediately = true)
+    {
+        string when = runImmediately ? "immediately" : "consecutively";
+        Console.WriteLine(MockAppName + $"Running action: {str} {when}");
+    }
+
+
+    public string? GetGlobalVar<Type>(string key, bool persisted = true)
     {
         var value = key switch
         {
@@ -128,12 +164,19 @@ public class CPHmock : IInlineInvokeProxy
             "sectionActions" => _config?.sectionActions,
             "blackList" => _config?.blackList,
             "logLevel" => _config == null ? DefaultLogLevel.ToString() : _config.logLevel,
+            "guessingIsActive" => "True",
+            "guessMinGuesserCount" => _config == null ? "1" : _config.guessMinGuesserCount,
+            "guessTime" => _config == null ? "30" : _config.guessTime,
+            "guessingDictionary" => _config == null ? "{{Th0lamin : 90}}" :_config.guessingDictionary,
+            "guessStartingText" => "Starting to accept guesses",
+            "guessTimeoutText" => "No more guesses allowed",
             Constants.GlobalVarNameTotalNotesLifeTime => "0",
             Constants.GlobalVarNameTotalNotesHitLifeTime => "0",
             Constants.GlobalVarNameTotalNotesMissedLifeTime => "0",
             Constants.GlobalVarNameAccuracyLifeTime => "0,0",
+            Constants.GlobalVarNameGuessingWinnersCount => "{\"Th0lamin (twitch)\":4,\"RedVarg91 (twitch)\":2,\"Skippern666 (twitch)\":1,\"RubberDave (twitch)\":3,\"Puffelmuggu (twitch)\":1,\"Boernii (twitch)\":1,\"cryptghoul (twitch)\":1,\"theshadow63 (twitch)\":1,\"vincent77600 (twitch)\":1,\"Basilius_Fleischlein (twitch)\":1,\"maxwattel20 (twitch)\":1,\"FF_ByTheSword (twitch)\":1,\"DerPlaymo (twitch)\":4,\"naturaledge (twitch)\":1}",
             _ => null
-        };
+        }; ;
 
         if (value == null) Console.WriteLine($"{MockAppName}Key {key} is not found in config.yml!");
 
@@ -167,16 +210,76 @@ public class CPHmock : IInlineInvokeProxy
     {
         Console.WriteLine(MockAppName + $"UnsetGlobalVar var: {varName}");
     }
+    
+    public bool RegisterCustomTrigger(string triggerName, string eventName, String[] categories)
+    {
+        if (!triggers.ContainsKey(eventName))
+        {
+            triggers.Add(eventName, new Tuple<string, string[]>(triggerName, categories));
+            return true;
+        }
+        return false;
+    }
+
+    public void TriggerCodeEvent(string eventName, bool useArgs = true)
+    {
+
+    }
+    public void TriggerCodeEvent(string eventName, Dictionary<string, object> args)
+    {
+
+    }
+
+    public bool TryGetArg<T>(string argName, out T value)
+    {
+        if (args.ContainsKey(argName))
+        {
+            value = (T)args[argName];
+            return true;
+        }
+        value = default(T);
+        return false;
+    }
+
+    public bool TryGetArg(string argName, out object value)
+    {
+        if (args.ContainsKey(argName))
+        {
+            value = args[argName];
+            return true;
+        }
+        value = null;
+        return false;
+    }
+   
+    public void Wait(int milliseconds)
+    {
+        Thread.Sleep(milliseconds);
+    }
 
     public static void Main(string[] args)
     {
         CPHInline cphInline = new CPHInline();
 
+        bool testTopGuessers = true;
+
         cphInline.Init();
+
+        if (testTopGuessers)
+        {
+            for (; ; )
+            {
+                cphInline.GetTopGuessers();
+                Thread.Sleep(1000);
+            }
+            return;
+        }
         while (true)
         {
             cphInline.Execute();
             Thread.Sleep(1000);
+
+
         }
     }
 
@@ -231,6 +334,9 @@ public class CPHmock : IInlineInvokeProxy
         public string? sectionActions { get; set; }
         public string? logLevel { get; set; }
         public string? logLevelSB { get; set; }
+        public string? guessMinGuesserCount { get; set; }
+        public string? guessTime { get; set; }
+        public string? guessingDictionary { get; set; }
 
         public override string ToString()
         {

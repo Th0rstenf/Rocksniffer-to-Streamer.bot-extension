@@ -54,6 +54,27 @@ Assuming the song has properly named sections, the following section types are r
 For each of those sections, an enter and leave action is provided. Those will automatically be called by the SceneSwitcher action. Feel free to fill them with whatever you like.  
 In addition to that, actions for entering/leaving a pause, the tuner and starting or ending a song are provided. 
 
+## Guessing Game
+
+The guessing game was introduced in version 0.3.0. When active, after start of a song the users have a configurable amount of time to guess your accuracy.
+The game will only validate guesses if the amount of guesses is above a configurable threshold. The closest guess will be displayed in the chat.
+In addition to that win counts for each user are tracked and can be fetched either as top ten list, or the rank for a specific user.
+
+### Commands
+
+* **!guess** - Guess the accuracy of the current song. Usage: `!guess 99.99`
+
+(Introduced in release v0.3.0)
+
+### Configurable Options
+
+* **guessingIsActive** - Enable or disable the guessing game
+* **MinGuesserCount  ** - Minimum number of valid guesses for the game to validate the round (default: 2) 
+* **guessTimeOut** - Time in seconds to accept guesses(default: 30)
+* **guessStartingText** - Text to display when the game starts
+* **guessTimeOutText** - Text to display when no more guesses are accepted
+
+
 ## Installation and configuration
 
 ### Add to Streamer.bot
@@ -71,7 +92,7 @@ In addition to that, actions for entering/leaving a pause, the tuner and startin
 
 ### Adapt to your needs
 
-Inside the SceneSwitcher action, there are several global parameters that can/need to be changed:
+Inside the SceneSwitcher action, there are several arguments that can/need to be changed:
 For scene switching:
 * menuScene - this should be the scene you want to load when you're in the menu or tuner
 * songScenes - a comma separated list of scenes you could switch to during a song play (at start, the first is used)  
