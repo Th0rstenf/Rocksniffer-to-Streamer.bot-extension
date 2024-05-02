@@ -1419,7 +1419,7 @@ public class CPHInline
                     }
                 }
                 SendToChats(message);
-                CPH.Wait(250);
+                CPH.Wait(350);
             }           
 
             return true;
