@@ -1,0 +1,32 @@
+# Create from this template a config.yml file and adapt to your needs!
+# Move the created file beside your executable's dir
+# ---------------------------------------------------------------------------
+
+# OBS
+menuScene: <This should be scene you want to load when you're in the menu or tuner>
+songScenes: <The scene you switch to when the song starts>
+pauseScene: <The scene that will be loaded when pausing during a song.>
+
+# RockSniffer connection 
+snifferIp: <Ip address of the PC that is running RockSniffer>
+snifferPort: <Port of your RockSniffer. Usually 9938>
+
+# For determining when it is active
+behavior: <The following options are available - Whitelist, Blacklist, AlwaysOn>
+blackList: <Blacklisted scenes>
+
+# Scene switching
+switchScenes: <True/False - enable or disable scene switching>
+sceneSwitchPeriod: <Automatic switching time between songScenes in seconds>
+sceneSwitchCooldownPeriod: <Cooldown time to wait after one scene change in seconds>
+songSceneAutoSwitchMode: <Off/Sequential/Random the mode of the automatic switching between the given song scenes after reached the songSwitchPeriod>
+
+# Other
+sectionActions: True
+
+# Logging
+# Possible values: VERBOSE, DEBUG, INFO, WARN, ERROR
+# Default logLevel: INFO | logLevelSB: DEBUG
+logLevel: DEBUG
+logLevelSB: DEBUG
+

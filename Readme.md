@@ -1,17 +1,19 @@
-# Rocksniffer to Streamer.bot extension
+# RockSniffer to Streamer.bot extension
 
-A [streamer.bot](https://streamer.bot) implementation to replace Warth's SceneSwitcher, and more.
+A [streamer.bot](https://streamer.bot) implementation to replace Warths SceneSwitcher, and more.
 
 ## Description
 
 ## Switching Scenes
-This code fetches the output of Rocksniffer and evaluates game state and song timer. Depending on the state it switches to the scenes defined in global variables for Rocksmith, song, and break (pausing during a song).  
+This code fetches the output of RockSniffer and evaluates game state and song timer. Depending on the state it switches to the scenes defined in global variables for Rocksmith, song, and break (pausing during a song).  
 
 ## Providing Global variables
 
 The following data is written to global variables whenever they change:
 * accuracy
 * currentHitStreak
+* highestHitStreak
+* highestHitStreakSinceLaunch
 * currentMissStreak
 * totalNotes
 * totalNotesHit
@@ -20,6 +22,10 @@ The following data is written to global variables whenever they change:
 * totalNotesHitSinceLaunch
 * totalNotesMissedSinceLaunch
 * accuracySinceLaunch
+* totalNotesLifeTime
+* totalNotesHitLifeTime
+* totalNotesMissedLifeTime
+* accuracyLifeTime
 * songLength (raw seconds)
 * songLengthFormatted (Formatted as HH:MM:SS)
 
@@ -48,9 +54,30 @@ Assuming the song has properly named sections, the following section types are r
 For each of those sections, an enter and leave action is provided. Those will automatically be called by the SceneSwitcher action. Feel free to fill them with whatever you like.  
 In addition to that, actions for entering/leaving a pause, the tuner and starting or ending a song are provided. 
 
-## Installing
+## Guessing Game
 
-### Adding it to streamerbot
+The guessing game was introduced in version 0.3.0. When active, after start of a song the users have a configurable amount of time to guess your accuracy.
+The game will only validate guesses if the amount of guesses is above a configurable threshold. The closest guess will be displayed in the chat.
+In addition to that win counts for each user are tracked and can be fetched either as top ten list, or the rank for a specific user.
+
+### Commands
+
+* **!guess** - Guess the accuracy of the current song. Usage: `!guess 99.99`
+
+(Introduced in release v0.3.0)
+
+### Configurable Options
+
+* **guessingIsActive** - Enable or disable the guessing game
+* **MinGuesserCount  ** - Minimum number of valid guesses for the game to validate the round (default: 2) 
+* **guessTimeOut** - Time in seconds to accept guesses(default: 30)
+* **guessStartingText** - Text to display when the game starts
+* **guessTimeOutText** - Text to display when no more guesses are accepted
+
+
+## Installation and configuration
+
+### Add to Streamer.bot
 * Import the content of importCode.txt into streamer.bot
 * Modify the global variables inside the *SceneSwitcher* action to match your configuration
 * Check if the code is compiling. If it doesn't, a reference is missing. References necessary are:
@@ -65,32 +92,49 @@ In addition to that, actions for entering/leaving a pause, the tuner and startin
 
 ### Adapt to your needs
 
-Inside the SceneSwitcher action, there are several global parameters that can/need to be changed:
+Inside the SceneSwitcher action, there are several arguments that can/need to be changed:
 For scene switching:
-* menuScene - This should be scene you want to load when you're in the menu or tuner
-* songScene - The scene you switch to when the song starts
-* pauseScene - the scene that will be loaded when pausing during a song.  
+* menuScene - this should be the scene you want to load when you're in the menu or tuner
+* songScenes - a comma separated list of scenes you could switch to during a song play (at start, the first is used)  
+    * Song scenes can be switched automatically (see section scene switching)
+    * The configured global songSwitchPeriod can be overriden for each scene individually.
+    * It is possible to define a range, and have a randomized time each cycle  
+    * Example: Scene1,Scene2#5-10,Scene3,Scene4#7
+        * Scene1 would be active according to songSwitchPeriod
+        * Scene2 would be active between 5 and 10 seconds, randomized each time
+        * Scene3 would be active according to songSwitchPeriod
+        * Scene4 would be active for 7 seconds
+
+* pauseScene - the scene that will be loaded when pausing during a song
 
 For the sniffer connection:
-* snifferIP - ip address of the PC that is running rocksniffer. If it's the same it should be `"127.0.0.1"` (Quotes are not optional!)
-* snifferPort - should usually never be touched (`9938`), but provided for sake of completeness.
+* snifferIP - ip address of the PC that is running RockSniffer. If it's the same it should be `"127.0.0.1"` (Quotes are not optional!)
+* snifferPort - should usually never be touched (`9938`), but provided for sake of completeness
 
 For determining when it is active:
 * behavior - The following options are available:
-    * Whitelist - Will only be active during the scenes defined in *menuScene*, *songScene* and *pauseScene*
-    * Blacklist - Will be active unless the current scene is in the blacklist
-    * AlwaysOn - Self-explanatory
-* blackList - Enter blacklisted scenes, coma separated.
+  * Whitelist - Will only be active during the scenes defined in *menuScene*, *songScenes* and *pauseScene*
+  * Blacklist - Will be active unless the current scene is in the blacklist
+  * AlwaysOn - Self-explanatory
+* blackList - a comma separated list of blacklisted scenes
 
-To disable certain aspects:
-* switchScenes - True or false
-* sectionActions - True or false
+Scene switching:
+* switchScenes - True/False - enable or disable scene switching
+* sceneSwitchPeriod - Automatic switching time between songScenes in seconds
+* sceneSwitchCooldownPeriod - Cooldown time to wait after one scene change in seconds
+* songSceneAutoSwitchMode - the mode of the automatic switching between the given song scenes after reached the songSwitchPeriod 
+  * Off - automatic switching is disabled
+  * Sequential - runs over the song scene list sequentially
+  * Random - runs over the song scene list randomly
 
+To enable/disable or set certain functions:
+* sectionActions - True or False
+ 
 
 ## Dependencies
 
 * Rocksmith
-* [Rocksniffer](https://github.com/kokolihapihvi/RockSniffer/releases)
+* [RockSniffer](https://github.com/kokolihapihvi/RockSniffer/releases)
 * [streamer.bot](https://streamer.bot)
 
 ## Help
@@ -100,7 +144,7 @@ Note that the IP address needs to be entered with quotes e.g.
 ```
 "127.0.0.1"
 ```
-Otherwise streamerbot will misinterpret it as double value. If the issues can not be solved this way, feel free to contact me in discord. See below.
+Otherwise Streamer.bot will misinterpret it as double value. If the issues can not be solved this way, feel free to contact me in discord. See below.
 
 With the usage of whitelist or blacklist, make sure to only switch to scenes that are valid for running. Otherwise you will not automatically switch back!
 
@@ -111,9 +155,9 @@ With the usage of whitelist or blacklist, make sure to only switch to scenes tha
 
 ## Version History
 * 0.2
-   * Detecting different tyes of sections and calling enter/leave actions in Streamerbot 
+   * Detecting different types of sections and calling enter/leave actions in Streamer.bot 
    * Storing Note data and other meta data in global variables to be used in other actions
-   * Behavior can now be changed between Whitelist / Blacklist / Alwayson
+   * Behavior can now be changed between **Whitelist** / **Blacklist** / **Always on**
    * Added option to disable scene switches
    * Added option to disable section change actions
    * Providing note & meta data in global variables
@@ -128,4 +172,3 @@ This project is licensed under the MIT License - see the LICENSE.txt file for de
 
 * [awesome-readme](https://github.com/matiassingers/awesome-readme)
 * [Warths Scene Switcher](https://github.com/Warths/Rocksmith-Scene-Switcher)
-
