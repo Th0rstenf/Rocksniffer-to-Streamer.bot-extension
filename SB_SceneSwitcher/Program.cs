@@ -168,7 +168,7 @@ public class CPHInline
 
    
 
-    public class SceneInteractor
+    public class SceneController
     {
         private const string MessageNoStreamAppConnectionAvailable =
             Constants.AppName +
@@ -186,7 +186,7 @@ public class CPHInline
         private StreamApp? itsStreamApp;
         private StreamApp? itsLastStreamApp;
 
-        public SceneInteractor(IInlineInvokeProxy cph)
+        public SceneController(IInlineInvokeProxy cph)
         {
             CPH = cph;
             cooldownPeriod = Constants.DefaultSceneSwitchCooldownPeriod;
@@ -413,7 +413,7 @@ public class CPHInline
         private SectionType lastSectionType;
 
 
-        private SceneInteractor itsSceneInterActor;
+        private SceneController itsSceneController;
         private IInlineInvokeProxy CPH;
         private GuessingGame itsGuessingGame;
 
@@ -468,10 +468,10 @@ public class CPHInline
         private bool arrangementIdentified = false;
 
 
-        public ResponseParser(IInlineInvokeProxy cph, SceneInteractor interactor, GuessingGame guessing, DataHandler dataHandler)
+        public ResponseParser(IInlineInvokeProxy cph, SceneController controller, GuessingGame guessing, DataHandler dataHandler)
         {
             CPH = cph;
-            itsSceneInterActor = interactor;
+            itsSceneController = controller;
             itsGuessingGame = guessing;
             itsDataHandler = dataHandler;
         }
@@ -1133,14 +1133,14 @@ public class CPHInline
                 if (!songTimer.Equals(lastSongTimer))
                 {
                     sameTimeCounter = 0;
-                    if (itsSceneInterActor.IsNotInCooldown())
+                    if (itsSceneController.IsNotInCooldown())
                     {
                         if (currentScene.Equals(currentConfig.songPausedScene))
                         {
                             TriggerAction(Constants.ActionNameLeavePause);
                         }
 
-                        itsSceneInterActor.SwitchToScene(currentConfig.songScenes[currentSongSceneIndex].Name, currentConfig.switchScenes);
+                        itsSceneController.SwitchToScene(currentConfig.songScenes[currentSongSceneIndex].Name, currentConfig.switchScenes);
                     }
                 }
             }
@@ -1152,7 +1152,7 @@ public class CPHInline
                 if (IsInPause())
                 {
                     TriggerAction(Constants.ActionNameEnterPause);
-                    itsSceneInterActor.SwitchToScene(currentConfig.songPausedScene, currentConfig.switchScenes);
+                    itsSceneController.SwitchToScene(currentConfig.songPausedScene, currentConfig.switchScenes);
                 }
                 else if (HasToSwitchScene())
                 {
@@ -1180,7 +1180,7 @@ public class CPHInline
 
         private bool ItsTimeToSwitchScene()
         {
-            var timeSinceLastSceneChange = itsSceneInterActor.GetTimeSinceLastSceneChange();
+            var timeSinceLastSceneChange = itsSceneController.GetTimeSinceLastSceneChange();
             CPH.LogVerbose($"{Constants.AppName}songScene={currentConfig.songScenes[currentSongSceneIndex]}");
             CPH.LogVerbose($"{Constants.AppName}timeSinceLastSceneChange={timeSinceLastSceneChange}");
             return timeSinceLastSceneChange >= currentConfig.songScenes[currentSongSceneIndex].currentSwitchPeriod;
@@ -1193,7 +1193,7 @@ public class CPHInline
                 currentSongSceneIndex = 0;
             }
 
-            itsSceneInterActor.SwitchToScene(currentConfig.songScenes[currentSongSceneIndex].Name, currentConfig.switchScenes);
+            itsSceneController.SwitchToScene(currentConfig.songScenes[currentSongSceneIndex].Name, currentConfig.switchScenes);
             currentConfig.songScenes[currentSongSceneIndex].RandomizePeriodIfNecessary();
         }
 
@@ -1212,7 +1212,7 @@ public class CPHInline
             } while (newSongSceneIndex == currentSongSceneIndex);
 
             currentSongSceneIndex = newSongSceneIndex;
-            itsSceneInterActor.SwitchToScene(currentConfig.songScenes[currentSongSceneIndex].Name, currentConfig.switchScenes);
+            itsSceneController.SwitchToScene(currentConfig.songScenes[currentSongSceneIndex].Name, currentConfig.switchScenes);
             currentConfig.songScenes[currentSongSceneIndex].RandomizePeriodIfNecessary();
         }
 
@@ -1246,7 +1246,7 @@ public class CPHInline
         {
             if (currentConfig.switchScenes && !currentScene.Equals(currentConfig.menuScene))
             {
-                itsSceneInterActor.SwitchToScene(currentConfig.menuScene, currentConfig.switchScenes);
+                itsSceneController.SwitchToScene(currentConfig.menuScene, currentConfig.switchScenes);
             }
 
             if (lastGameStage == GameStage.InSong)
@@ -1685,7 +1685,7 @@ public class CPHInline
     private Dictionary<string, object> args = CPHmock.args;
     // -------------------------------------------------
 
-    private SceneInteractor itsSceneInteractor = null!;
+    private SceneController itsSceneController = null!;
     private ResponseFetcher itsFetcher = null!;
     private ResponseParser itsParser = null!;
     private GuessingGame itsGuessingGame = null!;
@@ -1698,8 +1698,8 @@ public class CPHInline
 
     private void UpdateCurrentScene()
     {
-        if (itsSceneInteractor == null) { CPH.LogDebug(Constants.AppName + $"SceneInteractor is null!"); }
-        var newCurrentScene = itsSceneInteractor.GetCurrentScene();
+        if (itsSceneController == null) { CPH.LogDebug(Constants.AppName + $"SceneController is null!"); }
+        var newCurrentScene = itsSceneController.GetCurrentScene();
 
         if (newCurrentScene.Equals(currentScene))
         {
@@ -1717,15 +1717,15 @@ public class CPHInline
         CPH.LogInfo($"{Constants.AppName}!!! Initialising RockSniffer to SB plugin !!!");
 
         itsDataHandler = new DataHandler(CPH, args);
-        itsSceneInteractor = new SceneInteractor(CPH);
+        itsSceneController = new SceneController(CPH);
         itsFetcher = new ResponseFetcher(CPH, snifferIp, snifferPort);
         itsGuessingGame = new GuessingGame(CPH, itsDataHandler);
-        itsParser = new ResponseParser(CPH, itsSceneInteractor, itsGuessingGame, itsDataHandler);
+        itsParser = new ResponseParser(CPH, itsSceneController, itsGuessingGame, itsDataHandler);
         itsDataHandler.setArguments(args);
 
         itsParser.Init();
         UpdateConfig();
-        itsSceneInteractor.SetCooldownPeriod(itsParser.GetSceneSwitchCooldownPeriodInSeconds());
+        itsSceneController.SetCooldownPeriod(itsParser.GetSceneSwitchCooldownPeriodInSeconds());
 
         currentScene = "";
     }
