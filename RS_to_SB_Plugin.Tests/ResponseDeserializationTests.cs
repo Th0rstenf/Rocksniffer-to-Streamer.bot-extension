@@ -99,77 +99,101 @@ public class ResponseDeserializationTests
     [Fact]
     public void DeserializeResponse_InSongJson_ParsesMemoryReadoutCorrectly()
     {
+        // Given a valid in-song JSON payload from RockSniffer
+
+        // When the response is deserialized
         var response = JsonConvert.DeserializeObject<Response>(SampleResponseJson);
 
+        // Then the MemoryReadout fields match the JSON values
         Assert.NotNull(response);
         Assert.NotNull(response!.MemoryReadout);
-        Assert.Equal("abc123", response.MemoryReadout.SongId);
-        Assert.Equal("arr456", response.MemoryReadout.ArrangementId);
+        Assert.Equal("abc123",   response.MemoryReadout.SongId);
+        Assert.Equal("arr456",   response.MemoryReadout.ArrangementId);
         Assert.Equal("las_game", response.MemoryReadout.GameStage);
-        Assert.Equal(45.5, response.MemoryReadout.SongTimer);
+        Assert.Equal(45.5,       response.MemoryReadout.SongTimer);
     }
 
     [Fact]
     public void DeserializeResponse_InSongJson_ParsesNoteDataCorrectly()
     {
+        // Given a valid in-song JSON payload from RockSniffer
+
+        // When the response is deserialized
         var response = JsonConvert.DeserializeObject<Response>(SampleResponseJson);
 
+        // Then all NoteData fields are correctly parsed
         Assert.NotNull(response!.MemoryReadout.NoteData);
         Assert.Equal(95.3, response.MemoryReadout.NoteData.Accuracy);
-        Assert.Equal(200, response.MemoryReadout.NoteData.TotalNotes);
-        Assert.Equal(190, response.MemoryReadout.NoteData.TotalNotesHit);
-        Assert.Equal(10, response.MemoryReadout.NoteData.TotalNotesMissed);
-        Assert.Equal(15, response.MemoryReadout.NoteData.CurrentHitStreak);
-        Assert.Equal(30, response.MemoryReadout.NoteData.HighestHitStreak);
-        Assert.Equal(0, response.MemoryReadout.NoteData.CurrentMissStreak);
+        Assert.Equal(200,  response.MemoryReadout.NoteData.TotalNotes);
+        Assert.Equal(190,  response.MemoryReadout.NoteData.TotalNotesHit);
+        Assert.Equal(10,   response.MemoryReadout.NoteData.TotalNotesMissed);
+        Assert.Equal(15,   response.MemoryReadout.NoteData.CurrentHitStreak);
+        Assert.Equal(30,   response.MemoryReadout.NoteData.HighestHitStreak);
+        Assert.Equal(0,    response.MemoryReadout.NoteData.CurrentMissStreak);
     }
 
     [Fact]
     public void DeserializeResponse_InSongJson_ParsesSongDetailsCorrectly()
     {
+        // Given a valid in-song JSON payload from RockSniffer
+
+        // When the response is deserialized
         var response = JsonConvert.DeserializeObject<Response>(SampleResponseJson);
 
+        // Then all SongDetails fields are correctly parsed
         Assert.NotNull(response!.SongDetails);
-        Assert.Equal("Test Song", response.SongDetails.SongName);
+        Assert.Equal("Test Song",   response.SongDetails.SongName);
         Assert.Equal("Test Artist", response.SongDetails.ArtistName);
-        Assert.Equal(240.0, response.SongDetails.SongLength);
-        Assert.Equal("Test Album", response.SongDetails.AlbumName);
-        Assert.Equal(2020, response.SongDetails.AlbumYear);
+        Assert.Equal(240.0,         response.SongDetails.SongLength);
+        Assert.Equal("Test Album",  response.SongDetails.AlbumName);
+        Assert.Equal(2020,          response.SongDetails.AlbumYear);
     }
 
     [Fact]
     public void DeserializeResponse_InSongJson_ParsesArrangementCorrectly()
     {
+        // Given a valid in-song JSON payload with one Lead arrangement
+
+        // When the response is deserialized
         var response = JsonConvert.DeserializeObject<Response>(SampleResponseJson);
 
+        // Then the arrangement fields are correctly parsed
         Assert.NotNull(response!.SongDetails.Arrangements);
         Assert.Single(response.SongDetails.Arrangements);
         var arrangement = response.SongDetails.Arrangements[0];
-        Assert.Equal("Lead", arrangement.Name);
-        Assert.Equal("arr456", arrangement.ArrangementID);
-        Assert.Equal("Lead", arrangement.type);
+        Assert.Equal("Lead",     arrangement.Name);
+        Assert.Equal("arr456",   arrangement.ArrangementID);
+        Assert.Equal("Lead",     arrangement.type);
         Assert.Equal("E Standard", arrangement.Tuning.TuningName);
     }
 
     [Fact]
     public void DeserializeResponse_InSongJson_ParsesSectionsCorrectly()
     {
+        // Given a valid in-song JSON payload with three sections (intro, verse1, chorus1)
+
+        // When the response is deserialized
         var response = JsonConvert.DeserializeObject<Response>(SampleResponseJson);
 
+        // Then all three sections are present with correct names and timestamps
         var sections = response!.SongDetails.Arrangements[0].Sections;
-        Assert.Equal(3, sections.Length);
-        Assert.Equal("intro", sections[0].Name);
-        Assert.Equal(0.0, sections[0].StartTime);
-        Assert.Equal(20.0, sections[0].EndTime);
-        Assert.Equal("verse1", sections[1].Name);
+        Assert.Equal(3,       sections.Length);
+        Assert.Equal("intro",   sections[0].Name);
+        Assert.Equal(0.0,       sections[0].StartTime);
+        Assert.Equal(20.0,      sections[0].EndTime);
+        Assert.Equal("verse1",  sections[1].Name);
         Assert.Equal("chorus1", sections[2].Name);
     }
 
     [Fact]
     public void DeserializeResponse_MenuJson_ParsesGameStageAsMainMenu()
     {
+        // Given a JSON payload representing the Rocksmith main menu state
+
+        // When the response is deserialized
         var response = JsonConvert.DeserializeObject<Response>(MenuResponseJson);
 
+        // Then the game stage is "MainMenu" and the song timer is zero
         Assert.NotNull(response);
         Assert.Equal("MainMenu", response!.MemoryReadout.GameStage);
         Assert.Equal(0.0, response.MemoryReadout.SongTimer);
@@ -178,8 +202,12 @@ public class ResponseDeserializationTests
     [Fact]
     public void DeserializeResponse_TunerJson_ParsesGameStageAsTuner()
     {
+        // Given a JSON payload representing the Rocksmith tuner screen
+
+        // When the response is deserialized
         var response = JsonConvert.DeserializeObject<Response>(TunerResponseJson);
 
+        // Then the game stage is reported as the tuner
         Assert.NotNull(response);
         Assert.Equal("las_tuner", response!.MemoryReadout.GameStage);
     }
@@ -187,6 +215,10 @@ public class ResponseDeserializationTests
     [Fact]
     public void DeserializeResponse_InvalidJson_ThrowsJsonException()
     {
+        // Given a string that is not valid JSON
+
+        // When attempting to deserialize it as a Response
+        // Then a JsonException (or subclass) is thrown
         Assert.ThrowsAny<JsonException>(() =>
             JsonConvert.DeserializeObject<Response>("not valid json"));
     }
